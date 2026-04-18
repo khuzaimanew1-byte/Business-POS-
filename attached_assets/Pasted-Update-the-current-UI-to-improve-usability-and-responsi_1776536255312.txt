@@ -1,0 +1,29 @@
+Update the current UI to improve usability and responsiveness, focusing only on icon clarity and typography scaling. Keep the existing layout, spacing, and design system intact — do not redesign components, only enhance behavior where needed.
+
+First, improve icon usability in places where only icons are used (such as the sidebar and any icon-only buttons). Add subtle tooltips that appear on hover to clearly describe each icon’s function. The tooltip should feel lightweight and fast:
+
+* Appear with a small fade/slide effect
+* Positioned close to the icon without covering other elements
+* Use short, clear labels (e.g., “Home”, “Analytics”, “Add Product”, “Settings”)
+* Disappear quickly when hover ends
+
+The goal is to improve clarity without adding visual clutter.
+
+Next, refine the typography system to be responsive based on display width rather than fixed sizes. Font sizes across the interface (especially product cards, top bar, and key UI text) should scale naturally depending on screen size so readability stays consistent on all devices.
+
+Instead of keeping text at a constant size, allow it to adapt:
+
+* Slightly smaller on compact screens where cards shrink
+* Slightly larger on wider screens where more space is available
+* Maintain good readability without breaking layout balance
+
+Focus on making text feel proportionate to its container and the overall display, not rigid. Avoid sudden jumps in size — transitions should feel smooth and natural.
+
+Ensure these changes apply where they matter most:
+
+* Product card text (name, price, stock)
+* Top bar elements (search input text, icons alignment)
+* Sidebar icon tooltips
+* Any compact UI areas where readability could be affected
+
+Keep all adjustments subtle and aligned with the current visual style. Do not change colors, spacing, layout structure, or component hierarchy — only enhance tooltip behavior and font responsiveness to make the interface clearer and more adaptable across all display sizes.

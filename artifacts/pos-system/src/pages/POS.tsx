@@ -233,7 +233,8 @@ export default function POS() {
               placeholder="Search products or enter #code..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-10 pr-10 text-sm outline-none transition-all placeholder:text-muted-foreground"
+              className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-10 pr-10 outline-none transition-all placeholder:text-muted-foreground"
+              style={{ fontSize: 'clamp(12px, 1.1vw, 14px)' }}
               data-testid="input-search"
             />
             {searchQuery && (
@@ -251,12 +252,21 @@ export default function POS() {
               <TooltipItem icon={<Settings size={20} className="text-muted-foreground" />} label="Edit Mode" />
             </TooltipProvider>
             <Popover>
-              <PopoverTrigger asChild>
-                <button className="relative p-2 rounded-full hover:bg-secondary transition-colors" data-testid="btn-notifications">
-                  <Bell className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border border-background"></span>
-                </button>
-              </PopoverTrigger>
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <PopoverTrigger asChild>
+                      <button className="relative p-2 rounded-full hover:bg-secondary transition-colors" data-testid="btn-notifications">
+                        <Bell className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border border-background"></span>
+                      </button>
+                    </PopoverTrigger>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="font-medium bg-popover border-border">
+                    Notifications
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <PopoverContent className="w-80 p-0 mr-4 mt-2 border-border shadow-xl rounded-xl overflow-hidden glass-panel" align="end">
                 <div className="p-4 border-b border-border/50">
                   <h4 className="font-medium text-sm">Notifications</h4>
@@ -285,11 +295,12 @@ export default function POS() {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   data-testid={`btn-category-${cat}`}
-                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 relative ${
+                  className={`px-4 py-1.5 rounded-full font-medium transition-all duration-200 relative ${
                     selectedCategory === cat 
                       ? "text-primary-foreground bg-primary shadow-sm" 
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                   }`}
+                  style={{ fontSize: 'clamp(11px, 1vw, 14px)' }}
                 >
                   {cat}
                 </button>
@@ -383,17 +394,17 @@ export default function POS() {
               <ShoppingCart className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-semibold text-sm">Current Order</p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <p className="font-semibold" style={{ fontSize: 'clamp(11px, 1vw, 14px)' }}>Current Order</p>
+              <p className="text-muted-foreground flex items-center gap-1" style={{ fontSize: 'clamp(10px, 0.85vw, 12px)' }}>
                 <span id="cart-strip-count" className="font-mono">{cartCount}</span> items
               </p>
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <div className="flex items-center text-muted-foreground gap-2 text-xs">
+            <div className="flex items-center text-muted-foreground gap-2" style={{ fontSize: 'clamp(10px, 0.85vw, 12px)' }}>
               <Zap className="w-4 h-4 text-primary" /> Speed mode active
             </div>
-            <div className="text-xl font-bold text-primary tracking-tight">
+            <div className="font-bold text-primary tracking-tight" style={{ fontSize: 'clamp(16px, 1.5vw, 22px)' }}>
               ${cartTotal.toFixed(2)}
             </div>
           </div>
