@@ -1,0 +1,44 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "rY2PYASe6O5ue-0QP2VH5"
+uri = "file://artifacts/pos-system/public/images/latte.png"
+type = "image"
+title = "Latte art in cup"
+
+[[generated]]
+id = "Hc9lz2BBSNkwW04uYkXa_"
+uri = "file://artifacts/pos-system/public/images/cappuccino.png"
+type = "image"
+title = "Cappuccino in cup"
+
+[[generated]]
+id = "kXS3u0nOQyitBYgvvTj7R"
+uri = "file://artifacts/pos-system/public/images/trail-mix.png"
+type = "image"
+title = "Trail mix snack bowl"
+
+[[generated]]
+id = "SfgK_cbkR4ZH97fptJYHi"
+uri = "file://artifacts/pos-system/public/images/granola-bar.png"
+type = "image"
+title = "Granola bar snack"
+
+[[generated]]
+id = "5WYMo30sjM9BYNk9KHkZ1"
+uri = "file://artifacts/pos-system/public/images/earbuds.png"
+type = "image"
+title = "Wireless earbuds"
+
+[[generated]]
+id = "TVbdfi1YNZM6D2xH0fzKN"
+uri = "file://artifacts/pos-system/public/images/usb-cable.png"
+type = "image"
+title = "USB C cable"
+
+[[generated]]
+id = "4WQlhf2hDcJX360wtMHKU"
+uri = "file://artifacts/pos-system/public/images/phone-stand.png"
+type = "image"
+title = "Phone stand"
