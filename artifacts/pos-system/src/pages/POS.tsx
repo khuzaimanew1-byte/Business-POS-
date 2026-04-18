@@ -211,12 +211,12 @@ export default function POS() {
       <aside className="w-[60px] shrink-0 border-r border-border bg-sidebar flex flex-col items-center py-4 z-20">
         <div className="flex flex-col gap-6">
           <TooltipProvider delayDuration={100}>
-            <TooltipItem icon={<Home size={22} />} label="Home" active />
-            <TooltipItem icon={<BarChart2 size={22} />} label="Analytics" />
+            <TooltipItem icon={<Home style={{ width: 'clamp(17px, 1.5vw, 22px)', height: 'clamp(17px, 1.5vw, 22px)' }} />} label="Home" active />
+            <TooltipItem icon={<BarChart2 style={{ width: 'clamp(17px, 1.5vw, 22px)', height: 'clamp(17px, 1.5vw, 22px)' }} />} label="Analytics" />
             <div onClick={() => setIsAddProductModalOpen(true)}>
-              <TooltipItem icon={<Plus size={22} />} label="Add Product" />
+              <TooltipItem icon={<Plus style={{ width: 'clamp(17px, 1.5vw, 22px)', height: 'clamp(17px, 1.5vw, 22px)' }} />} label="Add Product" />
             </div>
-            <TooltipItem icon={<Settings size={22} />} label="Settings" />
+            <TooltipItem icon={<Settings style={{ width: 'clamp(17px, 1.5vw, 22px)', height: 'clamp(17px, 1.5vw, 22px)' }} />} label="Settings" />
           </TooltipProvider>
         </div>
       </aside>
@@ -227,7 +227,7 @@ export default function POS() {
         {/* TOP BAR */}
         <header className="h-16 border-b border-border flex items-center justify-between px-6 shrink-0 bg-background/80 backdrop-blur-sm z-10 sticky top-0">
           <div className="relative w-full max-w-xl group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" style={{ width: 'clamp(13px, 1.1vw, 17px)', height: 'clamp(13px, 1.1vw, 17px)' }} />
             <input
               type="text"
               placeholder="Search products or enter #code..."
@@ -249,7 +249,7 @@ export default function POS() {
 
           <div className="flex items-center gap-4 ml-4">
             <TooltipProvider delayDuration={100}>
-              <TooltipItem icon={<Settings size={20} className="text-muted-foreground" />} label="Edit Mode" />
+              <TooltipItem icon={<Settings className="text-muted-foreground" style={{ width: 'clamp(14px, 1.2vw, 19px)', height: 'clamp(14px, 1.2vw, 19px)' }} />} label="Edit Mode" />
             </TooltipProvider>
             <Popover>
               <TooltipProvider delayDuration={100}>
@@ -257,12 +257,12 @@ export default function POS() {
                   <TooltipTrigger asChild>
                     <PopoverTrigger asChild>
                       <button className="relative p-2 rounded-full hover:bg-secondary transition-colors" data-testid="btn-notifications">
-                        <Bell className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+                        <Bell className="text-muted-foreground hover:text-foreground transition-colors" style={{ width: 'clamp(14px, 1.2vw, 19px)', height: 'clamp(14px, 1.2vw, 19px)' }} />
                         <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border border-background"></span>
                       </button>
                     </PopoverTrigger>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="font-medium bg-popover border-border">
+                  <TooltipContent side="bottom" className="font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: 'clamp(10px, 0.85vw, 13px)' }}>
                     Notifications
                   </TooltipContent>
                 </Tooltip>
@@ -351,10 +351,10 @@ export default function POS() {
 
                 {/* Card info */}
                 <div className="p-2 flex flex-col gap-1">
-                  <p className="font-semibold truncate leading-snug" style={{ fontSize: 'clamp(10px, 1.8cqi, 13px)' }}>{product.name}</p>
-                  <p className="font-bold text-primary leading-none" style={{ fontSize: 'clamp(10px, 1.9cqi, 13px)' }}>${product.price.toFixed(2)}</p>
+                  <p className="font-semibold truncate leading-snug" style={{ fontSize: 'clamp(12px, 1.05vw, 15px)' }}>{product.name}</p>
+                  <p className="font-bold text-primary leading-none" style={{ fontSize: 'clamp(12px, 1.15vw, 16px)' }}>${product.price.toFixed(2)}</p>
                   <div className="flex items-center justify-between mt-0.5">
-                    <span className="text-muted-foreground leading-none" style={{ fontSize: 'clamp(9px, 1.5cqi, 11px)' }}>Stock: {product.stock}</span>
+                    <span className="text-muted-foreground leading-none" style={{ fontSize: 'clamp(9px, 0.82vw, 12px)' }}>Stock: {product.stock}</span>
                     <button
                       disabled={product.stock <= 0}
                       onClick={(e) => {
@@ -367,7 +367,7 @@ export default function POS() {
                       className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-110 active:scale-90 transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                       data-testid={`btn-add-${product.id}`}
                     >
-                      <ShoppingCart className="w-3 h-3" />
+                      <ShoppingCart style={{ width: 'clamp(10px, 0.85vw, 13px)', height: 'clamp(10px, 0.85vw, 13px)' }} />
                     </button>
                   </div>
                 </div>
@@ -618,7 +618,7 @@ function TooltipItem({ icon, label, active = false }: { icon: React.ReactNode, l
           <div className="absolute inset-0 rounded-xl bg-primary/0 group-hover:bg-primary/5 transition-colors" />
         </button>
       </TooltipTrigger>
-      <TooltipContent side="right" className="ml-2 font-medium bg-popover border-border">
+      <TooltipContent side="right" className="ml-2 font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: 'clamp(10px, 0.85vw, 13px)' }}>
         {label}
       </TooltipContent>
     </Tooltip>
