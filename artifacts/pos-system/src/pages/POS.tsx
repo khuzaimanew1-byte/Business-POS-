@@ -307,11 +307,12 @@ export default function POS() {
 
         {/* PRODUCT GRID */}
         <ScrollArea className="flex-1 pb-20">
-          <div className="p-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
+          <div className="p-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 170px))', gap: '8px' }}>
             {filteredProducts.map(product => (
               <div 
                 key={product.id} 
                 className="group relative bg-card border border-card-border rounded-xl overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 active:scale-[0.98] flex flex-col cursor-pointer"
+                style={{ containerType: 'inline-size' }}
                 data-testid={`card-product-${product.id}`}
               >
                 {/* Image with code overlay */}
@@ -327,7 +328,7 @@ export default function POS() {
                       {renderInitials(product.name)}
                     </div>
                   )}
-                  <span className="absolute top-1.5 left-1.5 bg-background/75 backdrop-blur-sm text-muted-foreground text-[10px] font-mono px-1.5 py-0.5 rounded-md leading-none">
+                  <span className="absolute top-1.5 left-1.5 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-md leading-none" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
                     {product.code}
                   </span>
                   {product.stock <= 0 && (
@@ -339,10 +340,10 @@ export default function POS() {
 
                 {/* Card info */}
                 <div className="p-2 flex flex-col gap-1">
-                  <p className="font-semibold text-xs truncate leading-snug">{product.name}</p>
-                  <p className="font-bold text-xs text-primary leading-none">${product.price.toFixed(2)}</p>
+                  <p className="font-semibold truncate leading-snug" style={{ fontSize: 'clamp(10px, 1.8cqi, 13px)' }}>{product.name}</p>
+                  <p className="font-bold text-primary leading-none" style={{ fontSize: 'clamp(10px, 1.9cqi, 13px)' }}>${product.price.toFixed(2)}</p>
                   <div className="flex items-center justify-between mt-0.5">
-                    <span className="text-[10px] text-muted-foreground leading-none">Stock: {product.stock}</span>
+                    <span className="text-muted-foreground leading-none" style={{ fontSize: 'clamp(9px, 1.5cqi, 11px)' }}>Stock: {product.stock}</span>
                     <button
                       disabled={product.stock <= 0}
                       onClick={(e) => {
@@ -355,7 +356,7 @@ export default function POS() {
                       className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-110 active:scale-90 transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                       data-testid={`btn-add-${product.id}`}
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <ShoppingCart className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
