@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
   Home, BarChart2, Plus, Settings, Search, X, Bell, 
-  ShoppingCart, Trash2, Minus, Zap, Check, ChevronDown 
+  ShoppingCart, Trash2, Minus, Check, ChevronDown 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -401,9 +401,6 @@ export default function POS() {
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <div className="flex items-center text-muted-foreground gap-2" style={{ fontSize: 'clamp(10px, 0.85vw, 12px)' }}>
-              <Zap className="w-4 h-4 text-primary" /> Speed mode active
-            </div>
             <div className="font-bold text-primary tracking-tight" style={{ fontSize: 'clamp(16px, 1.5vw, 22px)' }}>
               ${cartTotal.toFixed(2)}
             </div>
