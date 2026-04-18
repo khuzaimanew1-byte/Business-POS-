@@ -185,4 +185,14 @@
   .active-elevate:active:not(.no-default-active-elevate)::after {
     background-color: var(--elevate-1);
   }
+
+  @keyframes btn-pulse-anim {
+    0% { transform: scale(1); }
+    40% { transform: scale(0.82); }
+    70% { transform: scale(1.12); }
+    100% { transform: scale(1); }
+  }
+  .btn-pulse {
+    animation: btn-pulse-anim 300ms ease-out;
+  }
 }

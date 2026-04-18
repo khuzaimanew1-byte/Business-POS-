@@ -306,74 +306,63 @@ export default function POS() {
         </div>
 
         {/* PRODUCT GRID */}
-        <ScrollArea className="flex-1 p-6 pb-24">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <ScrollArea className="flex-1 pb-20">
+          <div className="p-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
             {filteredProducts.map(product => (
               <div 
                 key={product.id} 
-                className="group relative bg-card border border-card-border rounded-xl overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-200 flex flex-col"
+                className="group relative bg-card border border-card-border rounded-xl overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 active:scale-[0.98] flex flex-col cursor-pointer"
                 data-testid={`card-product-${product.id}`}
               >
-                <div className="absolute top-2 left-2 z-10">
-                  <Badge variant="secondary" className="bg-background/80 backdrop-blur text-xs font-mono border-border text-muted-foreground">
-                    {product.code}
-                  </Badge>
-                </div>
-                <div className="aspect-square w-full bg-secondary/50 relative overflow-hidden flex items-center justify-center">
+                {/* Image with code overlay */}
+                <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1/1' }}>
                   {product.image ? (
                     <img 
                       src={product.image} 
                       alt={product.name} 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-200"
                     />
                   ) : (
-                    <div className="w-full h-full bg-secondary flex items-center justify-center text-3xl font-bold text-muted-foreground/30">
+                    <div className="w-full h-full bg-secondary flex items-center justify-center text-2xl font-bold text-muted-foreground/30">
                       {renderInitials(product.name)}
                     </div>
                   )}
+                  <span className="absolute top-1.5 left-1.5 bg-background/75 backdrop-blur-sm text-muted-foreground text-[10px] font-mono px-1.5 py-0.5 rounded-md leading-none">
+                    {product.code}
+                  </span>
+                  {product.stock <= 0 && (
+                    <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                      <span className="text-xs font-medium text-muted-foreground">Out of Stock</span>
+                    </div>
+                  )}
                 </div>
-                <div className="p-4 flex flex-col flex-1">
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-semibold text-sm line-clamp-1 flex-1 pr-2">{product.name}</h3>
-                    <span className="font-medium text-sm text-primary">${product.price.toFixed(2)}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground mb-4">
-                    Stock: {product.stock}
-                  </div>
-                  <div className="mt-auto">
-                    <Button 
-                      className="w-full relative overflow-hidden active:scale-95 transition-transform" 
-                      variant={product.stock > 0 ? "default" : "secondary"}
+
+                {/* Card info */}
+                <div className="p-2 flex flex-col gap-1">
+                  <p className="font-semibold text-xs truncate leading-snug">{product.name}</p>
+                  <p className="font-bold text-xs text-primary leading-none">${product.price.toFixed(2)}</p>
+                  <div className="flex items-center justify-between mt-0.5">
+                    <span className="text-[10px] text-muted-foreground leading-none">Stock: {product.stock}</span>
+                    <button
                       disabled={product.stock <= 0}
                       onClick={(e) => {
-                        // Create ripple
+                        e.stopPropagation();
                         const btn = e.currentTarget;
-                        const circle = document.createElement("span");
-                        const diameter = Math.max(btn.clientWidth, btn.clientHeight);
-                        const radius = diameter / 2;
-                        circle.style.width = circle.style.height = `${diameter}px`;
-                        circle.style.left = `${e.clientX - btn.getBoundingClientRect().left - radius}px`;
-                        circle.style.top = `${e.clientY - btn.getBoundingClientRect().top - radius}px`;
-                        circle.classList.add("ripple");
-                        
-                        const existingRipple = btn.getElementsByClassName("ripple")[0];
-                        if (existingRipple) {
-                          existingRipple.remove();
-                        }
-                        btn.appendChild(circle);
-                        
+                        btn.classList.add("btn-pulse");
+                        setTimeout(() => btn.classList.remove("btn-pulse"), 300);
                         addToCart(product);
                       }}
+                      className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-110 active:scale-90 transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                       data-testid={`btn-add-${product.id}`}
                     >
-                      {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                    </Button>
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               </div>
             ))}
             {filteredProducts.length === 0 && (
-              <div className="col-span-full py-20 flex flex-col items-center justify-center text-muted-foreground">
+              <div className="py-20 flex flex-col items-center justify-center text-muted-foreground" style={{ gridColumn: '1 / -1' }}>
                 <Search className="w-12 h-12 mb-4 opacity-20" />
                 <p>No products found</p>
               </div>

@@ -1,0 +1,103 @@
+Update the existing product grid and product card components to a more compact, high-density POS layout. Do NOT rebuild from scratch — modify the current implementation.
+
+### 🔧 PRODUCT GRID UPDATE
+
+Refactor the grid layout to use an automatic responsive system instead of fixed columns.
+
+* Replace any fixed column system (like grid-cols-3, grid-cols-4, etc.)
+* Use a CSS grid with auto-fit or auto-fill behavior
+* Set card sizing as:
+
+  * min width: 140px–160px
+  * max width: 180px–200px
+
+The grid should:
+
+* Automatically adjust number of columns based on screen width
+* Fit as many cards per row as possible
+* Avoid large empty gaps
+* Have tight spacing (gap: 8px–12px max)
+
+Remove any excessive padding/margins around the grid.
+
+---
+
+### 🧱 PRODUCT CARD UPDATE
+
+Update the existing product card to a compact POS-style layout.
+
+#### 1. IMAGE SECTION
+
+* Make the product image full width of the card
+* Maintain a strict 1:1 square aspect ratio
+* Remove extra padding around image
+* Add slight rounded corners
+
+#### 2. QUICK CODE (IMPORTANT CHANGE)
+
+* Move the product quick code (#1234) on top of the image as an overlay
+* Position it at top-left or top-right corner
+* Use a small badge style (semi-transparent background)
+
+#### 3. REMOVE UNUSED SPACE
+
+* Reduce internal padding to 8px–10px max
+* Reduce vertical gaps between elements (4px–6px)
+* Remove any unnecessary wrappers causing extra height
+
+#### 4. TEXT LAYOUT
+
+* Product name:
+
+  * single line only
+  * truncate overflow with ellipsis
+
+* Price:
+
+  * slightly bold
+  * compact spacing (no large margin)
+
+#### 5. BOTTOM ROW (IMPORTANT STRUCTURE)
+
+Convert the bottom section into a single horizontal row:
+
+Left side:
+
+* Stock count (small, subtle text)
+
+Right side:
+
+* Add to cart button:
+
+  * icon only (no text)
+  * small circular or compact button
+
+Ensure both are aligned in one line with space-between layout.
+
+---
+
+### ⚡ INTERACTION UPDATE
+
+* Reduce hover effect intensity:
+
+  * very small lift (translateY -2px max)
+  * soft shadow only
+
+* Add to cart:
+
+  * instant response
+  * small pulse animation on icon
+  * no heavy animation
+
+* Card click/tap:
+
+  * subtle press feedback (scale down slightly)
+
+---
+
+### 📱 RESPONSIVENESS
+
+* Ensure card resizes smoothly within grid
+* No layout breaking on smaller screens
+* Maintain compact density on all devices
+
