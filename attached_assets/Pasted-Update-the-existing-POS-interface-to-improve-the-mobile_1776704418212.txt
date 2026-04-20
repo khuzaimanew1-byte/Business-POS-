@@ -1,0 +1,117 @@
+Update the existing POS interface to improve the mobile experience while keeping the desktop layout intact. Focus on restructuring navigation, optimizing product card sizing, and adapting edit mode behavior specifically for mobile devices. Do not redesign the entire UI — only adjust behavior and layout where necessary for better responsiveness.
+
+---
+
+### 📱 MOBILE LAYOUT — NAVIGATION RESTRUCTURE
+
+On mobile screens, reposition the navigation system:
+
+* Move the sidebar navigation to the bottom of the screen
+* Place it just below the cart strip (cart strip remains above it)
+* Convert it into a horizontal bottom navigation bar
+
+Navigation layout:
+
+* Include main icons (Home, Analytics, Add Product, Settings, Notifications)
+* Place the **Add Product icon in the center**
+
+  * Make it slightly more prominent than other icons (size or visual weight)
+* Move the **notification/bell icon into this bottom navigation bar**
+
+Behavior:
+
+* Keep icons evenly spaced
+* Maintain clean touch-friendly spacing
+* Keep interactions simple and responsive
+
+---
+
+### 🔝 MOBILE TOP BAR SIMPLIFICATION
+
+On mobile screens:
+
+* Show only:
+
+  * Search bar
+  * Edit (pencil / edit-mode toggle) icon
+
+Remove other icons from the top bar on mobile to reduce clutter.
+
+---
+
+### 🛍️ PRODUCT GRID & CARD (MOBILE OPTIMIZATION)
+
+Adjust product card sizing specifically for mobile:
+
+* Cards should become smaller and more compact than desktop
+* Avoid large card widths like desktop
+* Ensure more products fit vertically for faster scanning
+
+Grid behavior:
+
+* Maintain responsive layout
+* Allow tighter card distribution on mobile
+
+Desktop reference:
+
+* Minimum width around 150px for product cards
+
+Mobile:
+
+* Allow cards to shrink smaller than desktop minimum
+* Maintain readability while increasing density
+
+---
+
+### 🖼️ EDIT MODE — IMAGE ICON (MOBILE SPECIFIC)
+
+In edit mode, adjust image editing behavior for mobile:
+
+* The “change image” (+ icon inside circle) should:
+
+  * Always be visible on mobile (no hover dependency)
+  * Be centered on the product image
+* On desktop:
+
+  * Keep it visible only on hover (as already implemented)
+
+This ensures usability on touch devices where hover is not available.
+
+---
+
+### ⚖️ RESPONSIVE CONSISTENCY
+
+Ensure all changes:
+
+* Apply conditionally based on screen size (mobile vs desktop)
+* Do not affect desktop layout negatively
+* Maintain the same design language across devices
+
+---
+
+### ⚡ INTERACTION PRINCIPLES
+
+* Keep all animations smooth and subtle
+* Ensure touch interactions feel responsive and natural
+* Avoid overcrowding UI on smaller screens
+
+---
+
+### 🧠 FLEXIBILITY NOTE
+
+While implementing, feel free to make small supportive adjustments if needed to improve usability or consistency, as long as:
+
+* The overall structure remains unchanged
+* The design system stays consistent
+* Performance and responsiveness improve
+
+---
+
+### 🎯 FINAL GOAL
+
+The mobile experience should feel:
+
+* Clean and uncluttered
+* Easy to navigate with thumb interaction
+* Optimized for fast product selection and editing
+* Consistent with desktop but adapted intelligently for smaller screens
