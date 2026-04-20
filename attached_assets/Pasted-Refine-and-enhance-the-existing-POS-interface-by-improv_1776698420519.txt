@@ -1,0 +1,93 @@
+Refine and enhance the existing POS interface by improving animation smoothness and extending edit mode capabilities, while keeping the overall layout, structure, and design system intact. Focus on making interactions feel calm, fluid, and professional rather than sharp or flashy.
+
+---
+
+### 🎬 ANIMATION REFINEMENT (GLOBAL)
+
+Improve all animations across the interface:
+
+* Replace any sharp, fast, or flashy animations with smoother, softer motion
+* Use gentle easing (ease-in-out style feel)
+* Reduce intensity of scale, glow, and pulse effects
+* Keep all animations short and subtle (micro-interactions)
+
+For popups/modals:
+
+* Use smooth fade + slight scale animation when opening and closing
+* Avoid sudden appearance or disappearance
+* Background dim/overlay should be soft, not harsh
+
+For general UI:
+
+* Hover effects should be minimal (small lift or soft highlight)
+* Click feedback should feel instant but not aggressive
+* Ensure consistency across all components
+
+The overall motion should feel premium, controlled, and comfortable for continuous POS usage.
+
+---
+
+### 🖼️ EDIT MODE — IMAGE UPDATE FEATURE
+
+Extend the edit mode so that product images can also be changed directly from the product card.
+
+In edit mode:
+
+* On each product card image, display a centered overlay control:
+
+  * A circular button with a plus (+) icon inside
+  * Positioned in the center of the image
+  * Visible only in edit mode
+  * Styled subtly so it does not block the image completely
+
+Behavior:
+
+* When the plus icon is clicked:
+
+  * Open the local device file picker (image upload)
+* After selecting an image:
+
+  * Immediately update the product card image preview
+  * Replace the existing image with the newly selected one
+* Ensure the image updates smoothly without layout shift
+
+Design:
+
+* The plus icon should be clear but minimal
+* Use a soft semi-transparent background for the circle so it remains visible on all images
+* Add a slight hover effect to indicate interactivity
+
+---
+
+### 🧠 EDIT MODE CONSISTENCY
+
+Ensure the image editing feature integrates seamlessly with existing edit mode behavior:
+
+* Works alongside other editable fields (name, price, stock, profit)
+* Does not break card layout
+* Maintains compact card structure
+
+---
+
+### ⚡ SMART IMPROVEMENTS (AUTO ENHANCEMENT)
+
+While implementing these changes, identify and fix any small UX or interaction gaps if they exist. Improve consistency where needed, but do not redesign the interface.
+
+Focus on:
+
+* Smoother transitions between states
+* Better visual feedback clarity
+* Maintaining fast and responsive interactions
+
+---
+
+### 🎯 FINAL GOAL
+
+The interface should feel:
+
+* Smooth and refined (no flashy or harsh animations)
+* Easy to edit (including product images)
+* Fast and responsive for real-world POS usage
+* Visually clean and professionally polished
+
+All enhancements should blend naturally into the existing system without disrupting the current design.

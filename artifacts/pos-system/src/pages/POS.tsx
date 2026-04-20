@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
   Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
-  ShoppingCart, Trash2, Minus, Check, ChevronDown 
+  ShoppingCart, Trash2, Minus, Check, ChevronDown, Camera
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,12 +64,16 @@ export default function POS() {
   const [cartFlash, setCartFlash] = useState(false);
 
   // Edit mode
-  type EditDraft = { name: string; price: string; stock: string; code: string; profit: string };
+  type EditDraft = { name: string; price: string; stock: string; code: string; profit: string; image?: string };
   const [isEditMode, setIsEditMode] = useState(false);
   const [editDrafts, setEditDrafts] = useState<Record<string, EditDraft>>({});
   const [savedProducts, setSavedProducts] = useState<Product[]>([]);
   const [savedCategories, setSavedCategories] = useState<Category[]>([]);
   const [categoryDrafts, setCategoryDrafts] = useState<Record<string, string>>({});
+
+  // Image upload ref — one hidden input, targeted per product
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadTargetId = useRef<string | null>(null);
 
   // Delete confirmation
   type DeleteConfirm = { open: boolean; message: string; onConfirm: () => void };
@@ -129,7 +133,7 @@ export default function POS() {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         setCartFlash(true);
-        setTimeout(() => setCartFlash(false), 540);
+        setTimeout(() => setCartFlash(false), 700);
       });
     });
   };
@@ -139,7 +143,7 @@ export default function POS() {
     setSavedCategories(categories);
     const drafts: Record<string, EditDraft> = {};
     products.forEach(p => {
-      drafts[p.id] = { name: p.name, price: String(p.price), stock: String(p.stock), code: p.code, profit: '0' };
+      drafts[p.id] = { name: p.name, price: String(p.price), stock: String(p.stock), code: p.code, profit: '0', image: p.image };
     });
     const catDrafts: Record<string, string> = {};
     categories.forEach(c => { catDrafts[c] = c; });
@@ -169,6 +173,7 @@ export default function POS() {
         stock: parseInt(d.stock, 10) >= 0 ? parseInt(d.stock, 10) : p.stock,
         code: d.code.trim() || p.code,
         category: renamedMap[p.category] || p.category,
+        image: d.image,
       };
     }));
     setIsEditMode(false);
@@ -283,6 +288,23 @@ export default function POS() {
     setIsAddCategoryModalOpen(false);
   };
 
+  // Image upload handlers
+  const triggerImageUpload = (productId: string) => {
+    uploadTargetId.current = productId;
+    fileInputRef.current?.click();
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const id = uploadTargetId.current;
+    if (!file || !id) return;
+    const url = URL.createObjectURL(file);
+    setEditDrafts(prev => ({ ...prev, [id]: { ...prev[id], image: url } }));
+    // reset so the same file can be re-selected
+    e.target.value = '';
+    uploadTargetId.current = null;
+  };
+
   // Render Helpers
   const renderInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
@@ -290,6 +312,15 @@ export default function POS() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground dark">
+      {/* Hidden file input for image uploads */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageFileChange}
+      />
+
       {/* LEFT SIDEBAR */}
       <aside className="w-[60px] shrink-0 border-r border-border bg-sidebar flex flex-col items-center py-4 z-20">
         <div className="flex flex-col gap-6">
@@ -305,10 +336,10 @@ export default function POS() {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col min-w-0 transition-all duration-200" style={{ marginRight: isCartOpen ? '380px' : '0' }}>
+      <main className="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out" style={{ marginRight: isCartOpen ? '380px' : '0' }}>
         
         {/* TOP BAR */}
-        <header className={`h-16 border-b flex items-center justify-between px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-colors duration-300 ${isEditMode ? 'border-primary/25 bg-primary/5' : 'border-border bg-background/80'}`}>
+        <header className={`h-16 border-b flex items-center justify-between px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-colors duration-400 ${isEditMode ? 'border-primary/25 bg-primary/5' : 'border-border bg-background/80'}`}>
           <div className="relative w-full max-w-xl group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" style={{ width: 'clamp(13px, 1.1vw, 17px)', height: 'clamp(13px, 1.1vw, 17px)' }} />
             <input
@@ -316,14 +347,14 @@ export default function POS() {
               placeholder="Search products or enter #code..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-10 pr-10 outline-none transition-all placeholder:text-muted-foreground"
+              className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-10 pr-10 outline-none transition-all duration-250 placeholder:text-muted-foreground"
               style={{ fontSize: 'clamp(12px, 1.1vw, 14px)' }}
               data-testid="input-search"
             />
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -332,12 +363,12 @@ export default function POS() {
 
           <div className="flex items-center gap-2 ml-4">
             {/* Edit mode indicator badge */}
-            <div className={`overflow-hidden transition-all duration-200 ${isEditMode ? 'max-w-[100px] opacity-100 mr-2' : 'max-w-0 opacity-0'}`}>
+            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isEditMode ? 'max-w-[100px] opacity-100 mr-2' : 'max-w-0 opacity-0'}`}>
               <span className="text-primary font-semibold tracking-widest uppercase whitespace-nowrap" style={{ fontSize: '10px', letterSpacing: '0.1em' }}>● Editing</span>
             </div>
 
             {/* Normal mode: Pencil + Bell — fades out in edit mode */}
-            <div className={`flex items-center gap-2 transition-all duration-200 ${isEditMode ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}>
+            <div className={`flex items-center gap-2 transition-all duration-300 ease-in-out ${isEditMode ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}>
               <TooltipProvider delayDuration={100}>
                 <TooltipItem
                   icon={<Pencil className="text-muted-foreground" style={{ width: 'clamp(13px, 1.1vw, 17px)', height: 'clamp(13px, 1.1vw, 17px)' }} />}
@@ -350,8 +381,8 @@ export default function POS() {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <PopoverTrigger asChild>
-                        <button className="relative p-2 rounded-full hover:bg-secondary transition-colors" data-testid="btn-notifications">
-                          <Bell className="text-muted-foreground hover:text-foreground transition-colors" style={{ width: 'clamp(14px, 1.2vw, 19px)', height: 'clamp(14px, 1.2vw, 19px)' }} />
+                        <button className="relative p-2 rounded-full hover:bg-secondary transition-colors duration-200" data-testid="btn-notifications">
+                          <Bell className="text-muted-foreground hover:text-foreground transition-colors duration-200" style={{ width: 'clamp(14px, 1.2vw, 19px)', height: 'clamp(14px, 1.2vw, 19px)' }} />
                           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border border-background"></span>
                         </button>
                       </PopoverTrigger>
@@ -366,11 +397,11 @@ export default function POS() {
                     <h4 className="font-medium text-sm">Notifications</h4>
                   </div>
                   <div className="divide-y divide-border/50">
-                    <div className="p-4 text-sm hover:bg-secondary/50 transition-colors cursor-pointer">
+                    <div className="p-4 text-sm hover:bg-secondary/50 transition-colors duration-200 cursor-pointer">
                       <p className="font-medium">Low stock alert</p>
                       <p className="text-muted-foreground text-xs mt-1">Salad Bowl (#1013) is running low (15 remaining).</p>
                     </div>
-                    <div className="p-4 text-sm hover:bg-secondary/50 transition-colors cursor-pointer">
+                    <div className="p-4 text-sm hover:bg-secondary/50 transition-colors duration-200 cursor-pointer">
                       <p className="font-medium">System Update</p>
                       <p className="text-muted-foreground text-xs mt-1">POS system successfully updated to v2.4.1.</p>
                     </div>
@@ -380,13 +411,13 @@ export default function POS() {
             </div>
 
             {/* Edit mode: Check (save) + X (discard) — fades in during edit mode */}
-            <div className={`flex items-center gap-2 transition-all duration-200 ${isEditMode ? 'opacity-100' : 'opacity-0 pointer-events-none absolute'}`}>
+            <div className={`flex items-center gap-2 transition-all duration-300 ease-in-out ${isEditMode ? 'opacity-100' : 'opacity-0 pointer-events-none absolute'}`}>
               <TooltipProvider delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
                       onClick={saveEditMode}
-                      className="p-2 rounded-full bg-primary/15 hover:bg-primary/25 text-primary transition-colors"
+                      className="p-2 rounded-full bg-primary/15 hover:bg-primary/25 text-primary transition-colors duration-200"
                       data-testid="btn-save-edit"
                     >
                       <Check style={{ width: 'clamp(14px, 1.2vw, 18px)', height: 'clamp(14px, 1.2vw, 18px)' }} />
@@ -402,7 +433,7 @@ export default function POS() {
                   <TooltipTrigger asChild>
                     <button
                       onClick={cancelEditMode}
-                      className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                      className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors duration-200"
                       data-testid="btn-cancel-edit"
                     >
                       <X style={{ width: 'clamp(14px, 1.2vw, 18px)', height: 'clamp(14px, 1.2vw, 18px)' }} />
@@ -418,19 +449,19 @@ export default function POS() {
         </header>
 
         {/* CATEGORY BAR */}
-        <div className={`border-b bg-background shrink-0 overflow-hidden transition-colors duration-300 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
+        <div className={`border-b bg-background shrink-0 overflow-hidden transition-colors duration-400 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
           <div className="flex items-center px-4 py-3 gap-2 overflow-x-auto scrollbar-none">
             {isEditMode ? (
               <>
                 {/* "All" — not editable/deletable */}
                 <button
                   onClick={() => setSelectedCategory('All')}
-                  className={`shrink-0 px-3 py-1.5 rounded-full font-medium transition-all duration-200 ${selectedCategory === 'All' ? 'text-primary-foreground bg-primary' : 'text-muted-foreground bg-secondary/50'}`}
+                  className={`shrink-0 px-3 py-1.5 rounded-full font-medium transition-all duration-250 ${selectedCategory === 'All' ? 'text-primary-foreground bg-primary' : 'text-muted-foreground bg-secondary/50'}`}
                   style={{ fontSize: 'clamp(11px, 1vw, 14px)' }}
                 >All</button>
                 {/* Editable category pills */}
                 {categories.filter(c => c !== 'All').map(cat => (
-                  <div key={cat} className={`shrink-0 flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full border transition-all duration-200 ${selectedCategory === cat ? 'bg-primary/10 border-primary/30' : 'bg-secondary/50 border-border/40'}`}>
+                  <div key={cat} className={`shrink-0 flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full border transition-all duration-250 ${selectedCategory === cat ? 'bg-primary/10 border-primary/30' : 'bg-secondary/50 border-border/40'}`}>
                     <input
                       type="text"
                       value={categoryDrafts[cat] ?? cat}
@@ -441,7 +472,7 @@ export default function POS() {
                     />
                     <button
                       onClick={() => confirmAction(`Delete category "${cat}"? Products in this category will not be deleted.`, () => deleteCategory(cat))}
-                      className="flex items-center justify-center rounded-full bg-muted/80 hover:bg-destructive/20 hover:text-destructive text-muted-foreground transition-colors shrink-0"
+                      className="flex items-center justify-center rounded-full bg-muted/80 hover:bg-destructive/20 hover:text-destructive text-muted-foreground transition-colors duration-200 shrink-0"
                       style={{ width: '16px', height: '16px' }}
                       title="Delete category"
                     >
@@ -457,7 +488,7 @@ export default function POS() {
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
                     data-testid={`btn-category-${cat}`}
-                    className={`shrink-0 px-4 py-1.5 rounded-full font-medium transition-all duration-200 ${
+                    className={`shrink-0 px-4 py-1.5 rounded-full font-medium transition-all duration-250 ${
                       selectedCategory === cat
                         ? 'text-primary-foreground bg-primary shadow-sm'
                         : 'text-muted-foreground/60 hover:bg-secondary hover:text-foreground/90'
@@ -469,7 +500,7 @@ export default function POS() {
                 ))}
                 <button
                   onClick={() => setIsAddCategoryModalOpen(true)}
-                  className="shrink-0 px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground/50 border border-dashed border-border hover:border-primary hover:text-primary transition-colors ml-2 flex items-center gap-1"
+                  className="shrink-0 px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground/50 border border-dashed border-border hover:border-primary hover:text-primary transition-colors duration-250 ml-2 flex items-center gap-1"
                   data-testid="btn-add-category"
                 >
                   <Plus className="w-4 h-4" />
@@ -482,150 +513,169 @@ export default function POS() {
         {/* PRODUCT GRID */}
         <ScrollArea className="flex-1 pb-20">
           <div className="p-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(130px, 11vw, 170px), 1fr))', gap: '8px' }}>
-            {filteredProducts.map(product => (
-              <div 
-                key={product.id} 
-                className={`group relative bg-card rounded-xl overflow-hidden transition-all duration-200 flex flex-col ${isEditMode ? 'border border-primary/20 cursor-default' : 'border border-card-border hover:-translate-y-0.5 hover:shadow-sm cursor-pointer'}`}
-                data-testid={`card-product-${product.id}`}
-              >
-                {/* Image with code overlay */}
-                <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1/1' }}>
-                  {product.image ? (
-                    <img 
-                      src={product.image} 
-                      alt={product.name} 
-                      className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-secondary flex items-center justify-center text-2xl font-bold text-muted-foreground/30">
-                      {renderInitials(product.name)}
-                    </div>
-                  )}
-                  {/* Code badge — static # prefix, editable suffix in edit mode */}
-                  <div
-                    className="absolute top-1.5 left-1.5 flex items-center font-mono font-semibold leading-none text-white rounded-md"
-                    style={{ background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', boxShadow: '0 1px 4px rgba(0,0,0,0.6)', padding: '2px 6px' }}
-                  >
-                    <span style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}>#</span>
-                    {isEditMode ? (
-                      <input
-                        type="text"
-                        value={(editDrafts[product.id]?.code ?? product.code).replace(/^#/, '')}
-                        onChange={(e) => updateDraft(product.id, 'code', '#' + e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="bg-transparent focus:outline-none text-white font-mono font-semibold leading-none"
-                        style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', width: '3rem' }}
+            {filteredProducts.map(product => {
+              const currentImage = isEditMode ? (editDrafts[product.id]?.image ?? product.image) : product.image;
+              return (
+                <div 
+                  key={product.id} 
+                  className={`group relative bg-card rounded-xl overflow-hidden transition-all duration-250 ease-in-out flex flex-col ${isEditMode ? 'border border-primary/20 cursor-default' : 'border border-card-border hover:-translate-y-0.5 hover:shadow-md cursor-pointer'}`}
+                  data-testid={`card-product-${product.id}`}
+                >
+                  {/* Image with code overlay */}
+                  <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1/1' }}>
+                    {currentImage ? (
+                      <img 
+                        src={currentImage} 
+                        alt={product.name} 
+                        className="w-full h-full object-cover transition-transform duration-400 ease-in-out group-hover:scale-[1.015]"
                       />
                     ) : (
-                      <span style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}>
-                        {product.code.replace(/^#/, '')}
-                      </span>
+                      <div className="w-full h-full bg-secondary flex items-center justify-center text-2xl font-bold text-muted-foreground/30">
+                        {renderInitials(product.name)}
+                      </div>
+                    )}
+
+                    {/* Image upload overlay — edit mode only */}
+                    {isEditMode && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          triggerImageUpload(product.id);
+                        }}
+                        className="image-upload-btn absolute inset-0 flex items-center justify-center transition-all duration-250"
+                        title="Change image"
+                        aria-label="Change product image"
+                      >
+                        <span className="image-upload-circle flex items-center justify-center rounded-full transition-all duration-250"
+                          style={{ width: '36px', height: '36px', background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(4px)' }}>
+                          <Plus style={{ width: '16px', height: '16px', color: 'rgba(255,255,255,0.92)' }} />
+                        </span>
+                      </button>
+                    )}
+
+                    {/* Code badge */}
+                    <div
+                      className="absolute top-1.5 left-1.5 flex items-center font-mono font-semibold leading-none text-white rounded-md"
+                      style={{ background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', boxShadow: '0 1px 4px rgba(0,0,0,0.6)', padding: '2px 6px' }}
+                    >
+                      <span style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}>#</span>
+                      {isEditMode ? (
+                        <input
+                          type="text"
+                          value={(editDrafts[product.id]?.code ?? product.code).replace(/^#/, '')}
+                          onChange={(e) => updateDraft(product.id, 'code', '#' + e.target.value)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="bg-transparent focus:outline-none text-white font-mono font-semibold leading-none"
+                          style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', width: '3rem' }}
+                        />
+                      ) : (
+                        <span style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}>
+                          {product.code.replace(/^#/, '')}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Delete button (edit mode only) — top-right */}
+                    {isEditMode && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          confirmAction(`Delete "${product.name}"? This cannot be undone.`, () => deleteProduct(product.id));
+                        }}
+                        className="absolute top-1.5 right-1.5 flex items-center justify-center rounded-full text-muted-foreground hover:text-white hover:bg-destructive/80 transition-colors duration-200 backdrop-blur-sm"
+                        style={{ width: '22px', height: '22px', background: 'rgba(0,0,0,0.55)' }}
+                        data-testid={`btn-delete-${product.id}`}
+                      >
+                        <Trash2 style={{ width: '11px', height: '11px' }} />
+                      </button>
+                    )}
+                    {product.stock <= 0 && (
+                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+                        <span className="text-xs font-medium text-muted-foreground">Out of Stock</span>
+                      </div>
                     )}
                   </div>
 
-                  {/* Delete button (edit mode only) — top-right */}
-                  {isEditMode && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        confirmAction(`Delete "${product.name}"? This cannot be undone.`, () => deleteProduct(product.id));
-                      }}
-                      className="absolute top-1.5 right-1.5 flex items-center justify-center rounded-full text-muted-foreground hover:text-white hover:bg-destructive/80 transition-colors backdrop-blur-sm"
-                      style={{ width: '22px', height: '22px', background: 'rgba(0,0,0,0.55)' }}
-                      data-testid={`btn-delete-${product.id}`}
-                    >
-                      <Trash2 style={{ width: '11px', height: '11px' }} />
-                    </button>
-                  )}
-                  {product.stock <= 0 && (
-                    <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                      <span className="text-xs font-medium text-muted-foreground">Out of Stock</span>
+                  {/* Card info */}
+                  {isEditMode ? (
+                    <div className="p-2 flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+                      {/* Price + Profit row */}
+                      <div className="flex gap-1">
+                        <div className="flex-1 min-w-0">
+                          <label className="text-muted-foreground uppercase tracking-wide block mb-0.5" style={{ fontSize: '8px' }}>Price</label>
+                          <div className="relative">
+                            <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-primary font-bold" style={{ fontSize: '10px' }}>$</span>
+                            <input
+                              type="number"
+                              value={editDrafts[product.id]?.price ?? ''}
+                              onChange={(e) => updateDraft(product.id, 'price', e.target.value)}
+                              className="w-full bg-secondary/60 border border-border/40 rounded pl-4 pr-1 py-0.5 text-primary font-bold focus:border-primary/50 focus:outline-none no-spinners transition-colors duration-200"
+                              style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
+                              step="0.01" min="0"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <label className="text-muted-foreground uppercase tracking-wide block mb-0.5" style={{ fontSize: '8px' }}>Profit</label>
+                          <div className="relative">
+                            <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold" style={{ fontSize: '10px' }}>$</span>
+                            <input
+                              type="number"
+                              value={editDrafts[product.id]?.profit ?? ''}
+                              onChange={(e) => updateDraft(product.id, 'profit', e.target.value)}
+                              className="w-full bg-secondary/60 border border-border/40 rounded pl-4 pr-1 py-0.5 focus:border-primary/50 focus:outline-none no-spinners transition-colors duration-200"
+                              style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
+                              step="0.01" min="0"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      {/* Name */}
+                      <input
+                        type="text"
+                        value={editDrafts[product.id]?.name ?? ''}
+                        onChange={(e) => updateDraft(product.id, 'name', e.target.value)}
+                        className="w-full bg-secondary/60 border border-border/40 rounded px-1.5 py-0.5 font-semibold text-foreground focus:border-primary/50 focus:outline-none transition-colors duration-200"
+                        style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
+                        placeholder="Product name"
+                      />
+                      {/* Stock */}
+                      <div>
+                        <label className="text-muted-foreground uppercase tracking-wide block mb-0.5" style={{ fontSize: '8px' }}>Stock</label>
+                        <input
+                          type="number"
+                          value={editDrafts[product.id]?.stock ?? ''}
+                          onChange={(e) => updateDraft(product.id, 'stock', e.target.value)}
+                          className="w-full bg-secondary/60 border border-border/40 rounded px-1.5 py-0.5 focus:border-primary/50 focus:outline-none no-spinners transition-colors duration-200"
+                          style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
+                          min="0"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-2 flex flex-col gap-0.5">
+                      <p className="font-bold text-primary leading-none" style={{ fontSize: 'clamp(13px, 1.15vw, 17px)' }}>${product.price.toFixed(2)}</p>
+                      <p className="font-semibold truncate leading-snug text-foreground" style={{ fontSize: 'clamp(11px, 0.95vw, 14px)' }}>{product.name}</p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-muted-foreground leading-none" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)' }}>Stock: {product.stock}</span>
+                        <button
+                          disabled={product.stock <= 0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(product);
+                          }}
+                          className="rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-110 active:scale-[0.93] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                          style={{ width: 'clamp(30px, 2.4vw, 38px)', height: 'clamp(30px, 2.4vw, 38px)' }}
+                          data-testid={`btn-add-${product.id}`}
+                        >
+                          <ShoppingCart style={{ width: 'clamp(15px, 1.3vw, 20px)', height: 'clamp(15px, 1.3vw, 20px)' }} />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
-
-                {/* Card info */}
-                {isEditMode ? (
-                  <div className="p-2 flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    {/* Price + Profit row */}
-                    <div className="flex gap-1">
-                      <div className="flex-1 min-w-0">
-                        <label className="text-muted-foreground uppercase tracking-wide block mb-0.5" style={{ fontSize: '8px' }}>Price</label>
-                        <div className="relative">
-                          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-primary font-bold" style={{ fontSize: '10px' }}>$</span>
-                          <input
-                            type="number"
-                            value={editDrafts[product.id]?.price ?? ''}
-                            onChange={(e) => updateDraft(product.id, 'price', e.target.value)}
-                            className="w-full bg-secondary/60 border border-border/40 rounded pl-4 pr-1 py-0.5 text-primary font-bold focus:border-primary/50 focus:outline-none no-spinners"
-                            style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
-                            step="0.01" min="0"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <label className="text-muted-foreground uppercase tracking-wide block mb-0.5" style={{ fontSize: '8px' }}>Profit</label>
-                        <div className="relative">
-                          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold" style={{ fontSize: '10px' }}>$</span>
-                          <input
-                            type="number"
-                            value={editDrafts[product.id]?.profit ?? ''}
-                            onChange={(e) => updateDraft(product.id, 'profit', e.target.value)}
-                            className="w-full bg-secondary/60 border border-border/40 rounded pl-4 pr-1 py-0.5 focus:border-primary/50 focus:outline-none no-spinners"
-                            style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
-                            step="0.01" min="0"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    {/* Name */}
-                    <input
-                      type="text"
-                      value={editDrafts[product.id]?.name ?? ''}
-                      onChange={(e) => updateDraft(product.id, 'name', e.target.value)}
-                      className="w-full bg-secondary/60 border border-border/40 rounded px-1.5 py-0.5 font-semibold text-foreground focus:border-primary/50 focus:outline-none"
-                      style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
-                      placeholder="Product name"
-                    />
-                    {/* Stock */}
-                    <div>
-                      <label className="text-muted-foreground uppercase tracking-wide block mb-0.5" style={{ fontSize: '8px' }}>Stock</label>
-                      <input
-                        type="number"
-                        value={editDrafts[product.id]?.stock ?? ''}
-                        onChange={(e) => updateDraft(product.id, 'stock', e.target.value)}
-                        className="w-full bg-secondary/60 border border-border/40 rounded px-1.5 py-0.5 focus:border-primary/50 focus:outline-none no-spinners"
-                        style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
-                        min="0"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-2 flex flex-col gap-0.5">
-                    <p className="font-bold text-primary leading-none" style={{ fontSize: 'clamp(13px, 1.15vw, 17px)' }}>${product.price.toFixed(2)}</p>
-                    <p className="font-semibold truncate leading-snug text-foreground" style={{ fontSize: 'clamp(11px, 0.95vw, 14px)' }}>{product.name}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-muted-foreground leading-none" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)' }}>Stock: {product.stock}</span>
-                      <button
-                        disabled={product.stock <= 0}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const btn = e.currentTarget;
-                          btn.classList.add("btn-pulse");
-                          setTimeout(() => btn.classList.remove("btn-pulse"), 300);
-                          addToCart(product);
-                        }}
-                        className="rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-105 active:scale-95 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                        style={{ width: 'clamp(30px, 2.4vw, 38px)', height: 'clamp(30px, 2.4vw, 38px)' }}
-                        data-testid={`btn-add-${product.id}`}
-                      >
-                        <ShoppingCart style={{ width: 'clamp(15px, 1.3vw, 20px)', height: 'clamp(15px, 1.3vw, 20px)' }} />
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+              );
+            })}
             {filteredProducts.length === 0 && (
               <div className="py-20 flex flex-col items-center justify-center text-muted-foreground" style={{ gridColumn: '1 / -1' }}>
                 <Search className="w-12 h-12 mb-4 opacity-20" />
@@ -638,8 +688,8 @@ export default function POS() {
         {/* BOTTOM CART STRIP */}
         <div 
           onClick={() => setIsCartOpen(!isCartOpen)}
-          className={`fixed bottom-0 right-0 left-[60px] h-16 glass-panel border-t flex items-center justify-between px-6 cursor-pointer hover:bg-background/80 transition-colors z-20${cartFlash ? ' cart-flash' : ''}`}
-          style={{ right: isCartOpen ? '380px' : '0', transition: 'right 200ms ease' }}
+          className={`fixed bottom-0 right-0 left-[60px] h-16 glass-panel border-t flex items-center justify-between px-6 cursor-pointer hover:bg-background/70 transition-colors duration-250 z-20${cartFlash ? ' cart-flash' : ''}`}
+          style={{ right: isCartOpen ? '380px' : '0', transition: 'right 300ms cubic-bezier(0.4, 0, 0.2, 1)' }}
           data-testid="cart-strip"
         >
           <div className="flex items-center gap-4">
@@ -663,7 +713,7 @@ export default function POS() {
 
       {/* RIGHT SLIDE-IN CART PANEL */}
       <aside 
-        className={`fixed top-0 bottom-0 right-0 w-full sm:w-[380px] bg-background border-l border-border shadow-2xl z-30 flex flex-col transition-transform duration-200 ease-out`}
+        className={`fixed top-0 bottom-0 right-0 w-full sm:w-[380px] bg-background border-l border-border shadow-2xl z-30 flex flex-col transition-transform duration-300 ease-in-out`}
         style={{ transform: isCartOpen ? 'translateX(0)' : 'translateX(100%)' }}
         data-testid="cart-sidebar"
       >
@@ -686,7 +736,7 @@ export default function POS() {
               </div>
             ) : (
               cartItems.map((item) => (
-                <div key={item.product.id} className="flex gap-3 bg-secondary/30 p-3 rounded-xl border border-border/50 group" data-testid={`cart-item-${item.product.id}`}>
+                <div key={item.product.id} className="flex gap-3 bg-secondary/30 p-3 rounded-xl border border-border/50 group transition-colors duration-200" data-testid={`cart-item-${item.product.id}`}>
                   <div className="w-12 h-12 rounded-lg bg-secondary overflow-hidden shrink-0 flex items-center justify-center">
                     {item.product.image ? (
                       <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
@@ -704,7 +754,7 @@ export default function POS() {
                       <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
                         <button 
                           onClick={() => updateCartQty(item.product.id, item.quantity - 1)}
-                          className="px-2 h-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                          className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground"
                           data-testid={`btn-qty-minus-${item.product.id}`}
                         >
                           <Minus className="w-3 h-3" />
@@ -717,7 +767,7 @@ export default function POS() {
                         />
                         <button 
                           onClick={() => updateCartQty(item.product.id, item.quantity + 1)}
-                          className="px-2 h-full hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground"
+                          className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground"
                           data-testid={`btn-qty-plus-${item.product.id}`}
                         >
                           <Plus className="w-3 h-3" />
@@ -727,7 +777,7 @@ export default function POS() {
                   </div>
                   <button 
                     onClick={() => removeFromCart(item.product.id)}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive self-center p-2"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive self-center p-2"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -743,7 +793,7 @@ export default function POS() {
             <span className="text-primary">${cartTotal.toFixed(2)}</span>
           </div>
           <Button 
-            className="w-full h-14 text-lg font-bold rounded-xl"
+            className="w-full h-14 text-lg font-bold rounded-xl transition-all duration-200"
             disabled={cartItems.length === 0}
             onClick={checkout}
             data-testid="btn-checkout"
@@ -820,13 +870,11 @@ export default function POS() {
       {/* DELETE CONFIRMATION MODAL */}
       {deleteConfirm.open && (
         <div
-          className="fixed inset-0 flex items-center justify-center z-[200]"
-          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+          className="fixed inset-0 flex items-center justify-center z-[200] modal-backdrop"
           onClick={() => setDeleteConfirm(d => ({ ...d, open: false }))}
         >
           <div
-            className="bg-card border border-border rounded-2xl p-6 w-80 shadow-2xl"
-            style={{ animation: 'modal-in 150ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+            className="bg-card border border-border rounded-2xl p-6 w-80 shadow-2xl modal-content"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-3">
@@ -860,20 +908,6 @@ export default function POS() {
       )}
 
       <style>{`
-        /* Ripple effect CSS */
-        .ripple {
-          position: absolute;
-          border-radius: 50%;
-          transform: scale(0);
-          animation: ripple 600ms linear;
-          background-color: rgba(255, 255, 255, 0.3);
-        }
-        @keyframes ripple {
-          to {
-            transform: scale(4);
-            opacity: 0;
-          }
-        }
         /* Hide number input spinners */
         .no-spinners::-webkit-outer-spin-button,
         .no-spinners::-webkit-inner-spin-button {
@@ -882,6 +916,69 @@ export default function POS() {
         }
         .no-spinners {
           -moz-appearance: textfield;
+        }
+
+        /* Smooth modal backdrop */
+        .modal-backdrop {
+          animation: backdrop-in 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+          background: rgba(0,0,0,0.48);
+          backdrop-filter: blur(3px);
+        }
+
+        @keyframes backdrop-in {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+
+        /* Modal content entrance */
+        .modal-content {
+          animation: modal-in 240ms cubic-bezier(0.34, 1.2, 0.64, 1) both;
+        }
+
+        @keyframes modal-in {
+          from {
+            opacity: 0;
+            transform: scale(0.96) translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        /* Soft cart flash */
+        @keyframes cart-flash-anim {
+          0%   { background-color: transparent; }
+          25%  { background-color: rgba(var(--primary-rgb, 99,102,241), 0.08); }
+          100% { background-color: transparent; }
+        }
+        .cart-flash {
+          animation: cart-flash-anim 700ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Image upload overlay */
+        .image-upload-btn {
+          opacity: 0;
+          background: rgba(0,0,0,0);
+        }
+        .image-upload-btn:hover {
+          opacity: 1;
+          background: rgba(0,0,0,0.18);
+        }
+        .image-upload-btn:hover .image-upload-circle {
+          background: rgba(0,0,0,0.60) !important;
+          transform: scale(1.08);
+        }
+        .image-upload-circle {
+          transition: background 220ms ease, transform 200ms ease;
+        }
+
+        /* Radix Dialog smooth animation overrides */
+        [data-radix-dialog-overlay] {
+          animation: backdrop-in 200ms ease both !important;
+        }
+        [data-radix-dialog-content] {
+          animation: modal-in 220ms cubic-bezier(0.34, 1.1, 0.64, 1) both !important;
         }
       `}</style>
     </div>
@@ -895,7 +992,7 @@ function TooltipItem({ icon, label, active = false, onClick }: { icon: React.Rea
       <TooltipTrigger asChild>
         <button 
           onClick={onClick}
-          className={`relative p-3 rounded-xl transition-all duration-200 group ${
+          className={`relative p-3 rounded-xl transition-all duration-250 ease-in-out group ${
             active ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
           }`}
         >
@@ -903,7 +1000,7 @@ function TooltipItem({ icon, label, active = false, onClick }: { icon: React.Rea
           {active && (
             <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-md" />
           )}
-          <div className="absolute inset-0 rounded-xl bg-primary/0 group-hover:bg-primary/5 transition-colors" />
+          <div className="absolute inset-0 rounded-xl bg-primary/0 group-hover:bg-primary/5 transition-colors duration-250" />
         </button>
       </TooltipTrigger>
       <TooltipContent side="right" className="ml-2 font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: 'clamp(10px, 0.85vw, 13px)' }}>
