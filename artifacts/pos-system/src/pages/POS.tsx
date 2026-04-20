@@ -573,10 +573,10 @@ export default function POS() {
                           disabled={product.stock <= 0}
                           onClick={e => { e.stopPropagation(); addToCart(product); }}
                           className="rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-110 active:scale-[0.93] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                          style={{ width: 'clamp(26px, 2.2vw, 36px)', height: 'clamp(26px, 2.2vw, 36px)' }}
+                          style={{ width: 'clamp(26px, 2.8vw, 40px)', height: 'clamp(26px, 2.8vw, 40px)' }}
                           data-testid={`btn-add-${product.id}`}
                         >
-                          <ShoppingCart style={{ width: 'clamp(12px, 1.1vw, 18px)', height: 'clamp(12px, 1.1vw, 18px)' }} />
+                          <ShoppingCart style={{ width: 'clamp(12px, 1.8vw, 24px)', height: 'clamp(12px, 1.8vw, 24px)' }} />
                         </button>
                       </div>
                     </div>
