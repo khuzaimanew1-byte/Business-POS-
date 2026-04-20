@@ -321,7 +321,7 @@ export default function POS() {
             {filteredProducts.map(product => (
               <div 
                 key={product.id} 
-                className="group relative bg-card border border-card-border rounded-xl overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 flex flex-col cursor-pointer"
+                className="group relative bg-card border border-card-border rounded-xl overflow-hidden hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 flex flex-col cursor-pointer"
                 data-testid={`card-product-${product.id}`}
               >
                 {/* Image with code overlay */}
@@ -330,7 +330,7 @@ export default function POS() {
                     <img 
                       src={product.image} 
                       alt={product.name} 
-                      className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-200"
+                      className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-300"
                     />
                   ) : (
                     <div className="w-full h-full bg-secondary flex items-center justify-center text-2xl font-bold text-muted-foreground/30">
@@ -365,7 +365,7 @@ export default function POS() {
                         setTimeout(() => btn.classList.remove("btn-pulse"), 300);
                         addToCart(product);
                       }}
-                      className="rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-110 active:scale-90 transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                      className="rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-105 active:scale-95 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                       style={{ width: 'clamp(30px, 2.4vw, 38px)', height: 'clamp(30px, 2.4vw, 38px)' }}
                       data-testid={`btn-add-${product.id}`}
                     >
