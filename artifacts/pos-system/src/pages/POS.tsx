@@ -280,8 +280,8 @@ export default function POS() {
 
           {/* Right controls */}
           <div className="flex items-center gap-1.5 ml-3">
-            {/* Editing indicator */}
-            <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isEditMode ? 'max-w-[90px] opacity-100 mr-1' : 'max-w-0 opacity-0'}`}>
+            {/* Editing indicator — desktop only, hidden on mobile to keep top bar clean */}
+            <div className={`hidden sm:block overflow-hidden transition-all duration-300 ease-in-out ${isEditMode ? 'max-w-[90px] opacity-100 mr-1' : 'max-w-0 opacity-0'}`}>
               <span className="text-primary font-semibold tracking-widest uppercase whitespace-nowrap" style={{ fontSize: '10px' }}>● Editing</span>
             </div>
 
@@ -832,8 +832,15 @@ export default function POS() {
         .img-upload-circle {
           transition: background 220ms ease, transform 200ms ease;
         }
-        /* On touch/mobile: always show, no hover needed */
+        /* On touch devices: always show (no hover available) */
         @media (hover: none) {
+          .img-upload-btn {
+            opacity: 1;
+            background: rgba(0,0,0,0.12);
+          }
+        }
+        /* On mobile breakpoint: always show, regardless of hover capability */
+        @media (max-width: 639px) {
           .img-upload-btn {
             opacity: 1;
             background: rgba(0,0,0,0.12);
