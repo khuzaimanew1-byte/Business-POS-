@@ -554,8 +554,8 @@ export default function POS() {
                     </div>
                   ) : (
                     <div className="p-1.5 sm:p-2 flex flex-col gap-0.5">
-                      <p className="font-semibold truncate leading-snug text-foreground text-[14px] sm:text-[18px]">{product.name}</p>
-                      <p className="font-bold text-primary leading-none text-[15px] sm:text-[19px]">${product.price.toFixed(2)}</p>
+                      <p className="font-semibold truncate leading-snug text-foreground text-[14px] sm:text-[17px]">{product.name}</p>
+                      <p className="font-bold text-primary leading-none text-[13px] sm:text-[16px]">${product.price.toFixed(2)}</p>
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-muted-foreground text-[11px] sm:text-[14px] leading-none">Stock: {product.stock}</span>
                         <button
