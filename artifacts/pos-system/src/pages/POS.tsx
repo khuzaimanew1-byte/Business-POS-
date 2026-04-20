@@ -61,6 +61,7 @@ export default function POS() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
+  const [cartFlash, setCartFlash] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -112,13 +113,13 @@ export default function POS() {
       return [...prev, { product, quantity: 1 }];
     });
 
-    // Optional: trigger some visual pulse here
-    const el = document.getElementById("cart-strip-count");
-    if (el) {
-      el.classList.remove("animate-pulse-slow");
-      void el.offsetWidth; // trigger reflow
-      el.classList.add("animate-pulse-slow");
-    }
+    setCartFlash(false);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setCartFlash(true);
+        setTimeout(() => setCartFlash(false), 540);
+      });
+    });
   };
 
   const updateCartQty = (productId: string, newQty: number) => {
@@ -287,33 +288,31 @@ export default function POS() {
         </header>
 
         {/* CATEGORY BAR */}
-        <div className="border-b border-border bg-background shrink-0">
-          <ScrollArea className="w-full whitespace-nowrap">
-            <div className="flex items-center p-4 gap-2">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  data-testid={`btn-category-${cat}`}
-                  className={`px-4 py-1.5 rounded-full font-medium transition-all duration-200 relative ${
-                    selectedCategory === cat 
-                      ? "text-primary-foreground bg-primary shadow-sm" 
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  }`}
-                  style={{ fontSize: 'clamp(11px, 1vw, 14px)' }}
-                >
-                  {cat}
-                </button>
-              ))}
-              <button 
-                onClick={() => setIsAddCategoryModalOpen(true)}
-                className="px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground border border-dashed border-border hover:border-primary hover:text-primary transition-colors ml-2 flex items-center gap-1"
-                data-testid="btn-add-category"
+        <div className="border-b border-border bg-background shrink-0 overflow-hidden">
+          <div className="flex items-center p-4 gap-2 overflow-x-auto scrollbar-none">
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                data-testid={`btn-category-${cat}`}
+                className={`shrink-0 px-4 py-1.5 rounded-full font-medium transition-all duration-200 relative ${
+                  selectedCategory === cat 
+                    ? "text-primary-foreground bg-primary shadow-sm" 
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+                style={{ fontSize: 'clamp(11px, 1vw, 14px)' }}
               >
-                <Plus className="w-4 h-4" />
+                {cat}
               </button>
-            </div>
-          </ScrollArea>
+            ))}
+            <button 
+              onClick={() => setIsAddCategoryModalOpen(true)}
+              className="shrink-0 px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground border border-dashed border-border hover:border-primary hover:text-primary transition-colors ml-2 flex items-center gap-1"
+              data-testid="btn-add-category"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+          </div>
         </div>
 
         {/* PRODUCT GRID */}
@@ -340,7 +339,7 @@ export default function POS() {
                   )}
                   <span
                     className="absolute top-1.5 left-1.5 font-mono font-semibold leading-none text-white px-1.5 py-0.5 rounded-md"
-                    style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', boxShadow: '0 1px 4px rgba(0,0,0,0.6)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}
+                    style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', boxShadow: '0 1px 4px rgba(0,0,0,0.6)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}
                   >
                     {product.code}
                   </span>
@@ -388,7 +387,7 @@ export default function POS() {
         {/* BOTTOM CART STRIP */}
         <div 
           onClick={() => setIsCartOpen(!isCartOpen)}
-          className="fixed bottom-0 right-0 left-[60px] h-16 glass-panel border-t flex items-center justify-between px-6 cursor-pointer hover:bg-background/80 transition-colors z-20"
+          className={`fixed bottom-0 right-0 left-[60px] h-16 glass-panel border-t flex items-center justify-between px-6 cursor-pointer hover:bg-background/80 transition-colors z-20${cartFlash ? ' cart-flash' : ''}`}
           style={{ right: isCartOpen ? '380px' : '0', transition: 'right 200ms ease' }}
           data-testid="cart-strip"
         >
@@ -397,14 +396,14 @@ export default function POS() {
               <ShoppingCart className="w-5 h-5" />
             </div>
             <div>
-              <p className="font-semibold" style={{ fontSize: 'clamp(11px, 1vw, 14px)' }}>Current Order</p>
-              <p className="text-muted-foreground flex items-center gap-1" style={{ fontSize: 'clamp(10px, 0.85vw, 12px)' }}>
-                <span id="cart-strip-count" className="font-mono">{cartCount}</span> items
+              <p className="font-semibold" style={{ fontSize: 'clamp(13px, 1.1vw, 16px)' }}>Current Order</p>
+              <p className="text-muted-foreground flex items-center gap-1" style={{ fontSize: 'clamp(11px, 0.95vw, 14px)' }}>
+                <span className="font-mono font-semibold text-foreground">{cartCount}</span> items
               </p>
             </div>
           </div>
           <div className="flex items-center gap-6">
-            <div className="font-bold text-primary tracking-tight" style={{ fontSize: 'clamp(16px, 1.5vw, 22px)' }}>
+            <div className="font-bold text-primary tracking-tight" style={{ fontSize: 'clamp(18px, 1.7vw, 24px)' }}>
               ${cartTotal.toFixed(2)}
             </div>
           </div>
@@ -488,14 +487,6 @@ export default function POS() {
         </ScrollArea>
 
         <div className="p-4 border-t border-border bg-background shrink-0 pb-safe">
-          <div className="flex justify-between text-sm mb-2 text-muted-foreground">
-            <span>Subtotal</span>
-            <span>${cartTotal.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-sm mb-4 text-muted-foreground">
-            <span>Tax (0%)</span>
-            <span>$0.00</span>
-          </div>
           <div className="flex justify-between font-bold text-lg mb-6 text-foreground">
             <span>Total</span>
             <span className="text-primary">${cartTotal.toFixed(2)}</span>

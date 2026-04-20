@@ -1,0 +1,21 @@
+Update the existing POS interface with improvements focused on feedback clarity, cart visibility, and layout usability. Keep the overall design, structure, and components unchanged — only enhance specific interactions and visual hierarchy.
+
+First, improve the cart interaction feedback system. When a product is added to the cart, create a strong but still smooth attention-grabbing micro animation around the cart strip area. The goal is to make the user instantly aware that an item has been added without needing to look at the product card again.
+
+This feedback should be centered around the cart strip and can include subtle effects such as:
+
+* A quick pulse or glow ripple on the cart strip
+* A soft bounce or lift effect of the cart indicator area
+* A brief highlight sweep or light flash across the cart strip
+
+Ensure the animation is fast, smooth, and non-intrusive, but clearly noticeable in peripheral vision. It should feel like a confirmation signal that an item has been successfully added.
+
+Next, increase the font size of the cart strip content to improve readability and visibility. The cart strip should feel slightly more prominent than before, making key information easier to read at a glance, especially total items and total price. Do not change its layout or structure — only adjust typography scale.
+
+Refine the product card quick code label (the code displayed on top of product image). Increase its font size slightly so it is more readable even on smaller screens and busy images. Ensure it still remains compact and does not overpower the product image. Maintain strong contrast so it is always clearly visible regardless of background.
+
+Simplify the cart strip information by removing non-essential financial breakdown details such as subtotal and tax. The cart strip should remain minimal and focused only on the most important indicators, such as total items and total price, to keep the interface fast and clean.
+
+Finally, update the category bar to become horizontally scrollable. Instead of wrapping or compressing categories, allow smooth horizontal scrolling so users can browse categories naturally. Ensure scrolling feels smooth and responsive, with no layout breaking or overflow issues. Keep the category bar visually compact and aligned with the existing design system.
+
+Overall, these changes should make the POS system feel faster, clearer, and more responsive, with stronger cart feedback, improved readability, and a more fluid category browsing experience.
