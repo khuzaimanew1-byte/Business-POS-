@@ -1,0 +1,13 @@
+Update the existing POS UI with subtle interaction and icon sizing improvements while keeping the overall design, layout, and structure unchanged. Focus only on refining interaction behavior, animation feel, and cart icon visibility.
+
+First, adjust the add-to-cart icon inside the product card. Increase its visual size significantly so it feels more like a primary action button. The icon should be approximately 1.8x to 2x larger than its current size, making it clearly visible and easier to tap quickly in a POS environment. The icon should stand out slightly more than other small UI elements while still staying compact and aligned with the card design.
+
+Next, refine the interaction behavior when a product is added to the cart. Remove any active card animations, scaling effects, or visual transformations applied to the entire product card on click. The card itself should remain visually stable without shifting, scaling, or animating.
+
+Instead of animating the full card, only the cart icon should respond to the action. When clicked, the cart icon should show a small, smooth micro-feedback animation such as a quick pulse, subtle scale bounce, or soft glow. This feedback should be minimal, fast, and non-intrusive, giving a clear indication that the item has been added without distracting the user.
+
+Ensure all animations across the system remain micro, fast, and smooth. Avoid any heavy transitions or long effects. Every interaction should feel instant, responsive, and fluid, suitable for a fast POS workflow where speed is more important than visual decoration.
+
+Maintain consistency in animation timing so that all micro-interactions (hover, click, icon feedback) feel unified and fast, typically within a very short duration. The goal is a highly responsive system where feedback is immediate but visually subtle.
+
+Overall, the update should make the cart action more prominent and usable, remove unnecessary card-level animations, and ensure all UI interactions feel fast, smooth, and professionally optimized for real-time retail usage.

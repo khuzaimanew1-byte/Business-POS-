@@ -322,7 +322,7 @@ export default function POS() {
             {filteredProducts.map(product => (
               <div 
                 key={product.id} 
-                className="group relative bg-card border border-card-border rounded-xl overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 active:scale-[0.98] flex flex-col cursor-pointer"
+                className="group relative bg-card border border-card-border rounded-xl overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 flex flex-col cursor-pointer"
                 data-testid={`card-product-${product.id}`}
               >
                 {/* Image with code overlay */}
@@ -367,10 +367,10 @@ export default function POS() {
                         addToCart(product);
                       }}
                       className="rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-110 active:scale-90 transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                      style={{ width: 'clamp(22px, 1.8vw, 28px)', height: 'clamp(22px, 1.8vw, 28px)' }}
+                      style={{ width: 'clamp(30px, 2.4vw, 38px)', height: 'clamp(30px, 2.4vw, 38px)' }}
                       data-testid={`btn-add-${product.id}`}
                     >
-                      <ShoppingCart style={{ width: 'clamp(10px, 0.82vw, 13px)', height: 'clamp(10px, 0.82vw, 13px)' }} />
+                      <ShoppingCart style={{ width: 'clamp(15px, 1.3vw, 20px)', height: 'clamp(15px, 1.3vw, 20px)' }} />
                     </button>
                   </div>
                 </div>
