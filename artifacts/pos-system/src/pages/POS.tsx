@@ -683,9 +683,9 @@ export default function POS() {
             ) : (
               cartItems.map(item => (
                 <div key={item.product.id} className="flex gap-3 bg-secondary/30 p-3 rounded-xl border border-border/50 group transition-colors duration-200" data-testid={`cart-item-${item.product.id}`}>
-                  <div className="w-11 h-11 rounded-lg bg-secondary overflow-hidden shrink-0 flex items-center justify-center">
+                  <div className="w-14 h-14 bg-secondary overflow-hidden shrink-0 rounded-lg flex items-center justify-center">
                     {item.product.image
-                      ? <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                      ? <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover block" />
                       : <span className="text-xs font-bold text-muted-foreground">{renderInitials(item.product.name)}</span>}
                   </div>
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
@@ -808,7 +808,7 @@ export default function POS() {
 
         /* ── Product grid columns ── */
         .product-grid {
-          grid-template-columns: repeat(auto-fill, minmax(clamp(130px, 11vw, 170px), 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 11vw, 200px), 1fr));
         }
         @media (max-width: 639px) {
           .product-grid {
