@@ -554,7 +554,18 @@ export default function POS() {
                     </div>
                   ) : (
                     <div className="p-1.5 sm:p-2 flex flex-col gap-0.5">
-                      <p className="font-semibold truncate leading-snug text-foreground text-[14px] sm:text-[17px]">{product.name}</p>
+                      <Tooltip delayDuration={300}>
+                        <TooltipTrigger asChild>
+                          <p className="font-semibold truncate leading-snug text-foreground text-[14px] sm:text-[17px] cursor-default">{product.name}</p>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          sideOffset={6}
+                          className="bg-zinc-900/90 text-white border border-zinc-700/60 text-xs rounded-lg px-2.5 py-1.5 max-w-[200px] whitespace-normal backdrop-blur-sm"
+                        >
+                          {product.name}
+                        </TooltipContent>
+                      </Tooltip>
                       <p className="font-bold text-primary leading-none text-[13px] sm:text-[16px]">${product.price.toFixed(2)}</p>
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-muted-foreground text-[11px] sm:text-[14px] leading-none">Stock: {product.stock}</span>
