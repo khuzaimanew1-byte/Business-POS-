@@ -1,0 +1,140 @@
+Update the existing POS interface by extending the edit mode into a more complete and practical editing environment. Keep the current layout and structure intact, but enhance interactivity, editing capabilities, and deletion flows with clean, professional behavior. You may refine visuals where needed, but stay aligned with the existing design system.
+
+---
+
+### 🧠 EDIT MODE (ENVIRONMENT REFINEMENT)
+
+When entering edit mode via the pencil icon:
+
+* The UI should clearly feel like an editing environment
+* Product cards switch into editable state smoothly
+* Keep transitions subtle and fast
+
+For product cards in edit mode:
+
+* Convert fields like name, price, and stock into input fields
+* Keep the layout stable (no shifting or breaking)
+
+Important:
+
+* The quick code should remain visible as a label on the image
+* The “#” (hashtag) must remain static and not part of the editable input
+* Only the numeric/code value can be editable (if editing is allowed), but the “#” stays visually fixed
+
+---
+
+### 🗑️ PRODUCT DELETE FEATURE
+
+Add a delete icon on each product card:
+
+* Position: top-right corner of the card (overlay style, clean and minimal)
+* Icon should be small but clearly clickable
+
+Behavior:
+
+* On click, trigger a confirmation popup before deleting
+* If confirmed:
+
+  * Remove product from UI
+  * Also delete from database (or backend state)
+* If canceled:
+
+  * No changes occur
+
+The delete action should feel safe and intentional, not accidental.
+
+---
+
+### 🏷️ CATEGORY BAR IMPROVEMENTS
+
+In normal (non-edit) mode:
+
+* Categories should have a slightly muted greyish appearance
+* On hover, they should become brighter or more prominent
+* Active category remains clearly highlighted
+
+---
+
+### ✏️ CATEGORY EDITING (EDIT MODE)
+
+When edit mode is active:
+
+* Category names should become editable (inline input or editable text)
+* Maintain the same pill layout
+
+Add a delete option for categories:
+
+* Include a small “minus” icon inside a circle (–) within each category pill
+* Position it subtly (e.g., right side of the pill)
+* Keep it minimal and not visually heavy
+
+Behavior:
+
+* Clicking the delete icon triggers a confirmation popup
+* On confirm:
+
+  * Category is removed from UI and data
+* On cancel:
+
+  * No change
+
+---
+
+### ⚠️ DELETE CONFIRMATION SYSTEM (GLOBAL)
+
+For both products and categories:
+
+Whenever a delete action is triggered:
+
+* Show a confirmation popup/modal
+
+Popup behavior:
+
+* Clear message like: “Are you sure you want to delete this?”
+* Two actions:
+
+  * Confirm (Delete)
+  * Cancel
+
+Design:
+
+* Simple, centered modal
+* Slight background dim
+* Smooth fade/scale animation (fast and subtle)
+
+This ensures:
+
+* No accidental deletions
+* Better user confidence
+
+---
+
+### 🎨 OPTIONAL DESIGN ENHANCEMENTS (ALLOWED)
+
+You may slightly enhance visuals to improve clarity:
+
+* Add subtle hover states to delete icons
+* Use soft contrast backgrounds for overlays (like quick code or delete button)
+* Improve input field styling in edit mode for better usability
+
+Keep everything minimal, clean, and fast — no heavy UI changes.
+
+---
+
+### ⚡ INTERACTION PRINCIPLES
+
+* All actions should feel instant and responsive
+* No layout breaking during edit mode transitions
+* Animations should remain smooth and micro (not flashy)
+* Maintain consistency across all components
+
+---
+
+### 🎯 FINAL GOAL
+
+The system should evolve into a complete POS editing environment where:
+
+* Products and categories can be edited inline
+* Deletion is safe and confirmed
+* UI remains fast, clean, and professional
+* The interface supports future expansion without redesign

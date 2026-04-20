@@ -68,6 +68,12 @@ export default function POS() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editDrafts, setEditDrafts] = useState<Record<string, EditDraft>>({});
   const [savedProducts, setSavedProducts] = useState<Product[]>([]);
+  const [savedCategories, setSavedCategories] = useState<Category[]>([]);
+  const [categoryDrafts, setCategoryDrafts] = useState<Record<string, string>>({});
+
+  // Delete confirmation
+  type DeleteConfirm = { open: boolean; message: string; onConfirm: () => void };
+  const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm>({ open: false, message: '', onConfirm: () => {} });
 
   // Debounce search
   useEffect(() => {
@@ -130,24 +136,39 @@ export default function POS() {
 
   const enterEditMode = () => {
     setSavedProducts(products);
+    setSavedCategories(categories);
     const drafts: Record<string, EditDraft> = {};
     products.forEach(p => {
       drafts[p.id] = { name: p.name, price: String(p.price), stock: String(p.stock), code: p.code, profit: '0' };
     });
+    const catDrafts: Record<string, string> = {};
+    categories.forEach(c => { catDrafts[c] = c; });
     setEditDrafts(drafts);
+    setCategoryDrafts(catDrafts);
     setIsEditMode(true);
   };
 
   const saveEditMode = () => {
+    // Apply category renames
+    const renamedMap: Record<string, string> = {};
+    categories.forEach(cat => {
+      const newName = (categoryDrafts[cat] ?? cat).trim() || cat;
+      renamedMap[cat] = newName;
+    });
+    setCategories(prev => prev.map(c => renamedMap[c] || c));
+    if (selectedCategory !== 'All') setSelectedCategory(renamedMap[selectedCategory] || selectedCategory);
+
+    // Apply product edits (also update category reference if renamed)
     setProducts(prev => prev.map(p => {
       const d = editDrafts[p.id];
-      if (!d) return p;
+      if (!d) return { ...p, category: renamedMap[p.category] || p.category };
       return {
         ...p,
         name: d.name.trim() || p.name,
         price: parseFloat(d.price) || p.price,
         stock: parseInt(d.stock, 10) >= 0 ? parseInt(d.stock, 10) : p.stock,
         code: d.code.trim() || p.code,
+        category: renamedMap[p.category] || p.category,
       };
     }));
     setIsEditMode(false);
@@ -156,12 +177,31 @@ export default function POS() {
 
   const cancelEditMode = () => {
     setProducts(savedProducts);
+    setCategories(savedCategories);
     setIsEditMode(false);
     toast.info('Changes discarded');
   };
 
   const updateDraft = (id: string, field: keyof EditDraft, value: string) => {
     setEditDrafts(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+  };
+
+  const confirmAction = (message: string, onConfirm: () => void) => {
+    setDeleteConfirm({ open: true, message, onConfirm });
+  };
+
+  const deleteProduct = (id: string) => {
+    setProducts(prev => prev.filter(p => p.id !== id));
+    setCartItems(prev => prev.filter(i => i.product.id !== id));
+    toast.success('Product deleted');
+  };
+
+  const deleteCategory = (cat: string) => {
+    if (cat === 'All') return;
+    setCategories(prev => prev.filter(c => c !== cat));
+    setCategoryDrafts(prev => { const n = { ...prev }; delete n[cat]; return n; });
+    if (selectedCategory === cat) setSelectedCategory('All');
+    toast.success(`"${cat}" deleted`);
   };
 
   const updateCartQty = (productId: string, newQty: number) => {
@@ -378,30 +418,64 @@ export default function POS() {
         </header>
 
         {/* CATEGORY BAR */}
-        <div className="border-b border-border bg-background shrink-0 overflow-hidden">
-          <div className="flex items-center p-4 gap-2 overflow-x-auto scrollbar-none">
-            {categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                data-testid={`btn-category-${cat}`}
-                className={`shrink-0 px-4 py-1.5 rounded-full font-medium transition-all duration-200 relative ${
-                  selectedCategory === cat 
-                    ? "text-primary-foreground bg-primary shadow-sm" 
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-                }`}
-                style={{ fontSize: 'clamp(11px, 1vw, 14px)' }}
-              >
-                {cat}
-              </button>
-            ))}
-            <button 
-              onClick={() => setIsAddCategoryModalOpen(true)}
-              className="shrink-0 px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground border border-dashed border-border hover:border-primary hover:text-primary transition-colors ml-2 flex items-center gap-1"
-              data-testid="btn-add-category"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
+        <div className={`border-b bg-background shrink-0 overflow-hidden transition-colors duration-300 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
+          <div className="flex items-center px-4 py-3 gap-2 overflow-x-auto scrollbar-none">
+            {isEditMode ? (
+              <>
+                {/* "All" — not editable/deletable */}
+                <button
+                  onClick={() => setSelectedCategory('All')}
+                  className={`shrink-0 px-3 py-1.5 rounded-full font-medium transition-all duration-200 ${selectedCategory === 'All' ? 'text-primary-foreground bg-primary' : 'text-muted-foreground bg-secondary/50'}`}
+                  style={{ fontSize: 'clamp(11px, 1vw, 14px)' }}
+                >All</button>
+                {/* Editable category pills */}
+                {categories.filter(c => c !== 'All').map(cat => (
+                  <div key={cat} className={`shrink-0 flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full border transition-all duration-200 ${selectedCategory === cat ? 'bg-primary/10 border-primary/30' : 'bg-secondary/50 border-border/40'}`}>
+                    <input
+                      type="text"
+                      value={categoryDrafts[cat] ?? cat}
+                      onChange={(e) => setCategoryDrafts(prev => ({ ...prev, [cat]: e.target.value }))}
+                      onClick={() => setSelectedCategory(cat)}
+                      className="bg-transparent focus:outline-none font-medium text-foreground min-w-0"
+                      style={{ fontSize: 'clamp(11px, 1vw, 14px)', width: `${Math.max((categoryDrafts[cat] ?? cat).length, 3)}ch` }}
+                    />
+                    <button
+                      onClick={() => confirmAction(`Delete category "${cat}"? Products in this category will not be deleted.`, () => deleteCategory(cat))}
+                      className="flex items-center justify-center rounded-full bg-muted/80 hover:bg-destructive/20 hover:text-destructive text-muted-foreground transition-colors shrink-0"
+                      style={{ width: '16px', height: '16px' }}
+                      title="Delete category"
+                    >
+                      <Minus style={{ width: '8px', height: '8px' }} />
+                    </button>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <>
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    data-testid={`btn-category-${cat}`}
+                    className={`shrink-0 px-4 py-1.5 rounded-full font-medium transition-all duration-200 ${
+                      selectedCategory === cat
+                        ? 'text-primary-foreground bg-primary shadow-sm'
+                        : 'text-muted-foreground/60 hover:bg-secondary hover:text-foreground/90'
+                    }`}
+                    style={{ fontSize: 'clamp(11px, 1vw, 14px)' }}
+                  >
+                    {cat}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setIsAddCategoryModalOpen(true)}
+                  className="shrink-0 px-3 py-1.5 rounded-full text-sm font-medium text-muted-foreground/50 border border-dashed border-border hover:border-primary hover:text-primary transition-colors ml-2 flex items-center gap-1"
+                  data-testid="btn-add-category"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -427,22 +501,41 @@ export default function POS() {
                       {renderInitials(product.name)}
                     </div>
                   )}
-                  {isEditMode ? (
-                    <input
-                      type="text"
-                      value={editDrafts[product.id]?.code ?? product.code}
-                      onChange={(e) => updateDraft(product.id, 'code', e.target.value)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="absolute top-1.5 left-1.5 font-mono font-semibold leading-none text-white rounded-md focus:outline-none focus:ring-1 focus:ring-primary/60 no-spinners"
-                      style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)', padding: '2px 6px', width: '5rem' }}
-                    />
-                  ) : (
-                    <span
-                      className="absolute top-1.5 left-1.5 font-mono font-semibold leading-none text-white px-1.5 py-0.5 rounded-md"
-                      style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', boxShadow: '0 1px 4px rgba(0,0,0,0.6)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}
+                  {/* Code badge — static # prefix, editable suffix in edit mode */}
+                  <div
+                    className="absolute top-1.5 left-1.5 flex items-center font-mono font-semibold leading-none text-white rounded-md"
+                    style={{ background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', boxShadow: '0 1px 4px rgba(0,0,0,0.6)', padding: '2px 6px' }}
+                  >
+                    <span style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}>#</span>
+                    {isEditMode ? (
+                      <input
+                        type="text"
+                        value={(editDrafts[product.id]?.code ?? product.code).replace(/^#/, '')}
+                        onChange={(e) => updateDraft(product.id, 'code', '#' + e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-transparent focus:outline-none text-white font-mono font-semibold leading-none"
+                        style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', width: '3rem' }}
+                      />
+                    ) : (
+                      <span style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}>
+                        {product.code.replace(/^#/, '')}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Delete button (edit mode only) — top-right */}
+                  {isEditMode && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        confirmAction(`Delete "${product.name}"? This cannot be undone.`, () => deleteProduct(product.id));
+                      }}
+                      className="absolute top-1.5 right-1.5 flex items-center justify-center rounded-full text-muted-foreground hover:text-white hover:bg-destructive/80 transition-colors backdrop-blur-sm"
+                      style={{ width: '22px', height: '22px', background: 'rgba(0,0,0,0.55)' }}
+                      data-testid={`btn-delete-${product.id}`}
                     >
-                      {product.code}
-                    </span>
+                      <Trash2 style={{ width: '11px', height: '11px' }} />
+                    </button>
                   )}
                   {product.stock <= 0 && (
                     <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
@@ -723,6 +816,48 @@ export default function POS() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteConfirm.open && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-[200]"
+          style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)' }}
+          onClick={() => setDeleteConfirm(d => ({ ...d, open: false }))}
+        >
+          <div
+            className="bg-card border border-border rounded-2xl p-6 w-80 shadow-2xl"
+            style={{ animation: 'modal-in 150ms cubic-bezier(0.22, 1, 0.36, 1)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-9 h-9 rounded-full bg-destructive/15 flex items-center justify-center shrink-0">
+                <Trash2 className="w-4 h-4 text-destructive" />
+              </div>
+              <h3 className="font-semibold text-foreground">Are you sure?</h3>
+            </div>
+            <p className="text-muted-foreground text-sm mb-6 leading-relaxed">{deleteConfirm.message}</p>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                className="flex-1"
+                onClick={() => setDeleteConfirm(d => ({ ...d, open: false }))}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={() => {
+                  deleteConfirm.onConfirm();
+                  setDeleteConfirm(d => ({ ...d, open: false }));
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         /* Ripple effect CSS */
