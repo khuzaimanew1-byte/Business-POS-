@@ -268,7 +268,7 @@ export default function POS() {
               placeholder="Search products or #code…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-9 pr-9 outline-none transition-all duration-250 placeholder:text-muted-foreground text-sm"
+              className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-9 pr-9 outline-none transition-all duration-250 placeholder:text-muted-foreground text-[14px] sm:text-[16px]"
               data-testid="input-search"
             />
             {searchQuery && (
@@ -360,7 +360,7 @@ export default function POS() {
               <>
                 <button
                   onClick={() => setSelectedCategory('All')}
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-250 ${selectedCategory === 'All' ? 'text-primary-foreground bg-primary' : 'text-muted-foreground bg-secondary/50'}`}
+                  className={`shrink-0 px-3 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 ${selectedCategory === 'All' ? 'text-primary-foreground bg-primary' : 'text-muted-foreground bg-secondary/50'}`}
                 >All</button>
                 {categories.filter(c => c !== 'All').map(cat => (
                   <div key={cat} className={`shrink-0 flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full border transition-all duration-250 ${selectedCategory === cat ? 'bg-primary/10 border-primary/30' : 'bg-secondary/50 border-border/40'}`}>
@@ -389,7 +389,7 @@ export default function POS() {
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
                     data-testid={`btn-category-${cat}`}
-                    className={`shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-250 ${
+                    className={`shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 ${
                       selectedCategory === cat
                         ? 'text-primary-foreground bg-primary shadow-sm'
                         : 'text-muted-foreground/60 hover:bg-secondary hover:text-foreground/90'
@@ -469,18 +469,18 @@ export default function POS() {
                       className="absolute top-1.5 left-1.5 flex items-center font-mono font-semibold leading-none text-white rounded-md"
                       style={{ background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', padding: '2px 5px' }}
                     >
-                      <span className="text-[10px] leading-none">#</span>
+                      <span className="text-[11px] sm:text-[13px] leading-none">#</span>
                       {isEditMode ? (
                         <input
                           type="text"
                           value={(editDrafts[product.id]?.code ?? product.code).replace(/^#/, '')}
                           onChange={e => updateDraft(product.id, 'code', '#' + e.target.value)}
                           onClick={e => e.stopPropagation()}
-                          className="bg-transparent focus:outline-none text-white font-mono font-semibold text-[10px] leading-none"
+                          className="bg-transparent focus:outline-none text-white font-mono font-semibold text-[11px] leading-none"
                           style={{ width: '2.8rem' }}
                         />
                       ) : (
-                        <span className="text-[10px] leading-none">{product.code.replace(/^#/, '')}</span>
+                        <span className="text-[11px] sm:text-[13px] leading-none">{product.code.replace(/^#/, '')}</span>
                       )}
                     </div>
 
@@ -554,10 +554,10 @@ export default function POS() {
                     </div>
                   ) : (
                     <div className="p-1.5 sm:p-2 flex flex-col gap-0.5">
-                      <p className="font-bold text-primary leading-none text-sm sm:text-base">${product.price.toFixed(2)}</p>
-                      <p className="font-semibold truncate leading-snug text-foreground text-xs sm:text-sm">{product.name}</p>
+                      <p className="font-semibold truncate leading-snug text-foreground text-[14px] sm:text-[18px]">{product.name}</p>
+                      <p className="font-bold text-primary leading-none text-[15px] sm:text-[19px]">${product.price.toFixed(2)}</p>
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-muted-foreground text-[9px] sm:text-[11px] leading-none">Stock: {product.stock}</span>
+                        <span className="text-muted-foreground text-[11px] sm:text-[14px] leading-none">Stock: {product.stock}</span>
                         <button
                           disabled={product.stock <= 0}
                           onClick={e => { e.stopPropagation(); addToCart(product); }}
@@ -599,8 +599,8 @@ export default function POS() {
               <ShoppingCart className="w-4 h-4" />
             </div>
             <div>
-              <p className="font-semibold text-sm sm:text-base">Current Order</p>
-              <p className="text-muted-foreground text-xs sm:text-sm">
+              <p className="font-semibold text-[14px] sm:text-[16px]">Current Order</p>
+              <p className="text-muted-foreground text-[12px] sm:text-[14px]">
                 <span className="font-mono font-semibold text-foreground">{cartCount}</span> items
               </p>
             </div>
