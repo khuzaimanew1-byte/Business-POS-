@@ -1,0 +1,70 @@
+Enhance the existing POS interface by refining the edit mode system into a clearer, more structured “editing environment” while keeping the current layout and components intact. The goal is to make editing feel like a distinct mode of the application, but still fast, minimal, and non-disruptive.
+
+First, update the top bar interaction logic for edit mode.
+
+When the pencil (edit) icon is clicked, the entire interface should smoothly transition into an “Edit Environment Mode”. This mode is not just a small toggle — it should feel like a contextual state where the system is clearly in editing context.
+
+In this mode:
+
+* The edit (pencil) icon should be replaced with a tick (✓) icon on the right side
+* The bell (notification) icon should be replaced with a cross (✕) icon on the far right side
+* Tick (✓) represents saving all changes made in edit mode
+* Cross (✕) represents exiting edit mode without saving changes
+
+Keep the icon transitions smooth and subtle, without any harsh or flashy animation. The switch between icons should feel like a state change rather than a UI disruption.
+
+---
+
+### 🧠 EDIT MODE BEHAVIOR (ENVIRONMENT STATE)
+
+When edit mode is active, the interface should behave like a dedicated editing environment:
+
+* Product cards switch into editable state (inputs replace static text)
+* Fields like product name, price, stock, and quick code become editable inputs
+* A profit input field should be visible inside each product card during edit mode
+
+  * This profit field is linked to pricing logic
+  * It should appear alongside price in a clean, structured layout
+
+The edit mode should feel like a separate “layer of interaction” rather than a simple toggle.
+
+---
+
+### 🎨 STRUCTURE & UI BEHAVIOR
+
+* Maintain the same grid and card structure
+* Do not break layout when switching modes
+* Inputs should align naturally within existing card design
+* Transitions between view mode and edit mode should be smooth and fast
+
+---
+
+### ⚡ FREEDOM / EXTENSIBILITY GUIDELINE
+
+Design the system in a way that allows future enhancements without breaking structure. The edit environment should be flexible enough so that additional fields, controls, or product attributes can be added later without redesigning the UI.
+
+For example:
+
+* Future fields like discount, cost price, or tax can be added into edit mode cards
+* Additional top bar controls or bulk edit features can be integrated later
+* The system should support scaling into advanced admin functionality
+
+---
+
+### 🚀 INTERACTION PRINCIPLE
+
+* Tick (✓): Save all changes and exit edit mode
+* Cross (✕): Cancel all changes and restore previous state
+* No page reloads or heavy transitions
+* Everything should update instantly and smoothly
+
+---
+
+### 🎯 FINAL EXPERIENCE GOAL
+
+The updated system should feel like a professional POS editing environment where:
+
+* Switching into edit mode is intentional and clearly visible
+* Editing is fast, inline, and intuitive
+* Exiting or saving is immediate and predictable
+* The system remains extendable for future features without structural changes

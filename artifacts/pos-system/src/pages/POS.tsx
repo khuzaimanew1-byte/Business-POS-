@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { 
-  Home, BarChart2, Plus, Settings, Search, X, Bell, 
+  Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
   ShoppingCart, Trash2, Minus, Check, ChevronDown 
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -63,6 +63,12 @@ export default function POS() {
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [cartFlash, setCartFlash] = useState(false);
 
+  // Edit mode
+  type EditDraft = { name: string; price: string; stock: string; code: string; profit: string };
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editDrafts, setEditDrafts] = useState<Record<string, EditDraft>>({});
+  const [savedProducts, setSavedProducts] = useState<Product[]>([]);
+
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -120,6 +126,42 @@ export default function POS() {
         setTimeout(() => setCartFlash(false), 540);
       });
     });
+  };
+
+  const enterEditMode = () => {
+    setSavedProducts(products);
+    const drafts: Record<string, EditDraft> = {};
+    products.forEach(p => {
+      drafts[p.id] = { name: p.name, price: String(p.price), stock: String(p.stock), code: p.code, profit: '0' };
+    });
+    setEditDrafts(drafts);
+    setIsEditMode(true);
+  };
+
+  const saveEditMode = () => {
+    setProducts(prev => prev.map(p => {
+      const d = editDrafts[p.id];
+      if (!d) return p;
+      return {
+        ...p,
+        name: d.name.trim() || p.name,
+        price: parseFloat(d.price) || p.price,
+        stock: parseInt(d.stock, 10) >= 0 ? parseInt(d.stock, 10) : p.stock,
+        code: d.code.trim() || p.code,
+      };
+    }));
+    setIsEditMode(false);
+    toast.success('Changes saved');
+  };
+
+  const cancelEditMode = () => {
+    setProducts(savedProducts);
+    setIsEditMode(false);
+    toast.info('Changes discarded');
+  };
+
+  const updateDraft = (id: string, field: keyof EditDraft, value: string) => {
+    setEditDrafts(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
   };
 
   const updateCartQty = (productId: string, newQty: number) => {
@@ -226,7 +268,7 @@ export default function POS() {
       <main className="flex-1 flex flex-col min-w-0 transition-all duration-200" style={{ marginRight: isCartOpen ? '380px' : '0' }}>
         
         {/* TOP BAR */}
-        <header className="h-16 border-b border-border flex items-center justify-between px-6 shrink-0 bg-background/80 backdrop-blur-sm z-10 sticky top-0">
+        <header className={`h-16 border-b flex items-center justify-between px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-colors duration-300 ${isEditMode ? 'border-primary/25 bg-primary/5' : 'border-border bg-background/80'}`}>
           <div className="relative w-full max-w-xl group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" style={{ width: 'clamp(13px, 1.1vw, 17px)', height: 'clamp(13px, 1.1vw, 17px)' }} />
             <input
@@ -248,42 +290,90 @@ export default function POS() {
             )}
           </div>
 
-          <div className="flex items-center gap-4 ml-4">
-            <TooltipProvider delayDuration={100}>
-              <TooltipItem icon={<Settings className="text-muted-foreground" style={{ width: 'clamp(14px, 1.2vw, 19px)', height: 'clamp(14px, 1.2vw, 19px)' }} />} label="Edit Mode" />
-            </TooltipProvider>
-            <Popover>
+          <div className="flex items-center gap-2 ml-4">
+            {/* Edit mode indicator badge */}
+            <div className={`overflow-hidden transition-all duration-200 ${isEditMode ? 'max-w-[100px] opacity-100 mr-2' : 'max-w-0 opacity-0'}`}>
+              <span className="text-primary font-semibold tracking-widest uppercase whitespace-nowrap" style={{ fontSize: '10px', letterSpacing: '0.1em' }}>● Editing</span>
+            </div>
+
+            {/* Normal mode: Pencil + Bell — fades out in edit mode */}
+            <div className={`flex items-center gap-2 transition-all duration-200 ${isEditMode ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}>
+              <TooltipProvider delayDuration={100}>
+                <TooltipItem
+                  icon={<Pencil className="text-muted-foreground" style={{ width: 'clamp(13px, 1.1vw, 17px)', height: 'clamp(13px, 1.1vw, 17px)' }} />}
+                  label="Edit Products"
+                  onClick={enterEditMode}
+                />
+              </TooltipProvider>
+              <Popover>
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <PopoverTrigger asChild>
+                        <button className="relative p-2 rounded-full hover:bg-secondary transition-colors" data-testid="btn-notifications">
+                          <Bell className="text-muted-foreground hover:text-foreground transition-colors" style={{ width: 'clamp(14px, 1.2vw, 19px)', height: 'clamp(14px, 1.2vw, 19px)' }} />
+                          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border border-background"></span>
+                        </button>
+                      </PopoverTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: 'clamp(10px, 0.85vw, 13px)' }}>
+                      Notifications
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <PopoverContent className="w-80 p-0 mr-4 mt-2 border-border shadow-xl rounded-xl overflow-hidden glass-panel" align="end">
+                  <div className="p-4 border-b border-border/50">
+                    <h4 className="font-medium text-sm">Notifications</h4>
+                  </div>
+                  <div className="divide-y divide-border/50">
+                    <div className="p-4 text-sm hover:bg-secondary/50 transition-colors cursor-pointer">
+                      <p className="font-medium">Low stock alert</p>
+                      <p className="text-muted-foreground text-xs mt-1">Salad Bowl (#1013) is running low (15 remaining).</p>
+                    </div>
+                    <div className="p-4 text-sm hover:bg-secondary/50 transition-colors cursor-pointer">
+                      <p className="font-medium">System Update</p>
+                      <p className="text-muted-foreground text-xs mt-1">POS system successfully updated to v2.4.1.</p>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Edit mode: Check (save) + X (discard) — fades in during edit mode */}
+            <div className={`flex items-center gap-2 transition-all duration-200 ${isEditMode ? 'opacity-100' : 'opacity-0 pointer-events-none absolute'}`}>
               <TooltipProvider delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <PopoverTrigger asChild>
-                      <button className="relative p-2 rounded-full hover:bg-secondary transition-colors" data-testid="btn-notifications">
-                        <Bell className="text-muted-foreground hover:text-foreground transition-colors" style={{ width: 'clamp(14px, 1.2vw, 19px)', height: 'clamp(14px, 1.2vw, 19px)' }} />
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border border-background"></span>
-                      </button>
-                    </PopoverTrigger>
+                    <button
+                      onClick={saveEditMode}
+                      className="p-2 rounded-full bg-primary/15 hover:bg-primary/25 text-primary transition-colors"
+                      data-testid="btn-save-edit"
+                    >
+                      <Check style={{ width: 'clamp(14px, 1.2vw, 18px)', height: 'clamp(14px, 1.2vw, 18px)' }} />
+                    </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: 'clamp(10px, 0.85vw, 13px)' }}>
-                    Notifications
+                    Save changes
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <PopoverContent className="w-80 p-0 mr-4 mt-2 border-border shadow-xl rounded-xl overflow-hidden glass-panel" align="end">
-                <div className="p-4 border-b border-border/50">
-                  <h4 className="font-medium text-sm">Notifications</h4>
-                </div>
-                <div className="divide-y divide-border/50">
-                  <div className="p-4 text-sm hover:bg-secondary/50 transition-colors cursor-pointer">
-                    <p className="font-medium">Low stock alert</p>
-                    <p className="text-muted-foreground text-xs mt-1">Salad Bowl (#1013) is running low (15 remaining).</p>
-                  </div>
-                  <div className="p-4 text-sm hover:bg-secondary/50 transition-colors cursor-pointer">
-                    <p className="font-medium">System Update</p>
-                    <p className="text-muted-foreground text-xs mt-1">POS system successfully updated to v2.4.1.</p>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+              <TooltipProvider delayDuration={100}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={cancelEditMode}
+                      className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                      data-testid="btn-cancel-edit"
+                    >
+                      <X style={{ width: 'clamp(14px, 1.2vw, 18px)', height: 'clamp(14px, 1.2vw, 18px)' }} />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: 'clamp(10px, 0.85vw, 13px)' }}>
+                    Discard changes
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
         </header>
 
@@ -321,7 +411,7 @@ export default function POS() {
             {filteredProducts.map(product => (
               <div 
                 key={product.id} 
-                className="group relative bg-card border border-card-border rounded-xl overflow-hidden hover:-translate-y-0.5 hover:shadow-sm transition-all duration-200 flex flex-col cursor-pointer"
+                className={`group relative bg-card rounded-xl overflow-hidden transition-all duration-200 flex flex-col ${isEditMode ? 'border border-primary/20 cursor-default' : 'border border-card-border hover:-translate-y-0.5 hover:shadow-sm cursor-pointer'}`}
                 data-testid={`card-product-${product.id}`}
               >
                 {/* Image with code overlay */}
@@ -337,12 +427,23 @@ export default function POS() {
                       {renderInitials(product.name)}
                     </div>
                   )}
-                  <span
-                    className="absolute top-1.5 left-1.5 font-mono font-semibold leading-none text-white px-1.5 py-0.5 rounded-md"
-                    style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', boxShadow: '0 1px 4px rgba(0,0,0,0.6)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}
-                  >
-                    {product.code}
-                  </span>
+                  {isEditMode ? (
+                    <input
+                      type="text"
+                      value={editDrafts[product.id]?.code ?? product.code}
+                      onChange={(e) => updateDraft(product.id, 'code', e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute top-1.5 left-1.5 font-mono font-semibold leading-none text-white rounded-md focus:outline-none focus:ring-1 focus:ring-primary/60 no-spinners"
+                      style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)', padding: '2px 6px', width: '5rem' }}
+                    />
+                  ) : (
+                    <span
+                      className="absolute top-1.5 left-1.5 font-mono font-semibold leading-none text-white px-1.5 py-0.5 rounded-md"
+                      style={{ fontSize: 'clamp(10px, 0.82vw, 12px)', background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', boxShadow: '0 1px 4px rgba(0,0,0,0.6)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}
+                    >
+                      {product.code}
+                    </span>
+                  )}
                   {product.stock <= 0 && (
                     <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
                       <span className="text-xs font-medium text-muted-foreground">Out of Stock</span>
@@ -351,28 +452,85 @@ export default function POS() {
                 </div>
 
                 {/* Card info */}
-                <div className="p-2 flex flex-col gap-0.5">
-                  <p className="font-bold text-primary leading-none" style={{ fontSize: 'clamp(13px, 1.15vw, 17px)' }}>${product.price.toFixed(2)}</p>
-                  <p className="font-semibold truncate leading-snug text-foreground" style={{ fontSize: 'clamp(11px, 0.95vw, 14px)' }}>{product.name}</p>
-                  <div className="flex items-center justify-between mt-1">
-                    <span className="text-muted-foreground leading-none" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)' }}>Stock: {product.stock}</span>
-                    <button
-                      disabled={product.stock <= 0}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const btn = e.currentTarget;
-                        btn.classList.add("btn-pulse");
-                        setTimeout(() => btn.classList.remove("btn-pulse"), 300);
-                        addToCart(product);
-                      }}
-                      className="rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-105 active:scale-95 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                      style={{ width: 'clamp(30px, 2.4vw, 38px)', height: 'clamp(30px, 2.4vw, 38px)' }}
-                      data-testid={`btn-add-${product.id}`}
-                    >
-                      <ShoppingCart style={{ width: 'clamp(15px, 1.3vw, 20px)', height: 'clamp(15px, 1.3vw, 20px)' }} />
-                    </button>
+                {isEditMode ? (
+                  <div className="p-2 flex flex-col gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    {/* Price + Profit row */}
+                    <div className="flex gap-1">
+                      <div className="flex-1 min-w-0">
+                        <label className="text-muted-foreground uppercase tracking-wide block mb-0.5" style={{ fontSize: '8px' }}>Price</label>
+                        <div className="relative">
+                          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-primary font-bold" style={{ fontSize: '10px' }}>$</span>
+                          <input
+                            type="number"
+                            value={editDrafts[product.id]?.price ?? ''}
+                            onChange={(e) => updateDraft(product.id, 'price', e.target.value)}
+                            className="w-full bg-secondary/60 border border-border/40 rounded pl-4 pr-1 py-0.5 text-primary font-bold focus:border-primary/50 focus:outline-none no-spinners"
+                            style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
+                            step="0.01" min="0"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <label className="text-muted-foreground uppercase tracking-wide block mb-0.5" style={{ fontSize: '8px' }}>Profit</label>
+                        <div className="relative">
+                          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold" style={{ fontSize: '10px' }}>$</span>
+                          <input
+                            type="number"
+                            value={editDrafts[product.id]?.profit ?? ''}
+                            onChange={(e) => updateDraft(product.id, 'profit', e.target.value)}
+                            className="w-full bg-secondary/60 border border-border/40 rounded pl-4 pr-1 py-0.5 focus:border-primary/50 focus:outline-none no-spinners"
+                            style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
+                            step="0.01" min="0"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    {/* Name */}
+                    <input
+                      type="text"
+                      value={editDrafts[product.id]?.name ?? ''}
+                      onChange={(e) => updateDraft(product.id, 'name', e.target.value)}
+                      className="w-full bg-secondary/60 border border-border/40 rounded px-1.5 py-0.5 font-semibold text-foreground focus:border-primary/50 focus:outline-none"
+                      style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
+                      placeholder="Product name"
+                    />
+                    {/* Stock */}
+                    <div>
+                      <label className="text-muted-foreground uppercase tracking-wide block mb-0.5" style={{ fontSize: '8px' }}>Stock</label>
+                      <input
+                        type="number"
+                        value={editDrafts[product.id]?.stock ?? ''}
+                        onChange={(e) => updateDraft(product.id, 'stock', e.target.value)}
+                        className="w-full bg-secondary/60 border border-border/40 rounded px-1.5 py-0.5 focus:border-primary/50 focus:outline-none no-spinners"
+                        style={{ fontSize: 'clamp(11px, 0.95vw, 13px)' }}
+                        min="0"
+                      />
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="p-2 flex flex-col gap-0.5">
+                    <p className="font-bold text-primary leading-none" style={{ fontSize: 'clamp(13px, 1.15vw, 17px)' }}>${product.price.toFixed(2)}</p>
+                    <p className="font-semibold truncate leading-snug text-foreground" style={{ fontSize: 'clamp(11px, 0.95vw, 14px)' }}>{product.name}</p>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-muted-foreground leading-none" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)' }}>Stock: {product.stock}</span>
+                      <button
+                        disabled={product.stock <= 0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const btn = e.currentTarget;
+                          btn.classList.add("btn-pulse");
+                          setTimeout(() => btn.classList.remove("btn-pulse"), 300);
+                          addToCart(product);
+                        }}
+                        className="rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-105 active:scale-95 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                        style={{ width: 'clamp(30px, 2.4vw, 38px)', height: 'clamp(30px, 2.4vw, 38px)' }}
+                        data-testid={`btn-add-${product.id}`}
+                      >
+                        <ShoppingCart style={{ width: 'clamp(15px, 1.3vw, 20px)', height: 'clamp(15px, 1.3vw, 20px)' }} />
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             {filteredProducts.length === 0 && (
@@ -596,11 +754,12 @@ export default function POS() {
 }
 
 // Tooltip Helper Component
-function TooltipItem({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
+function TooltipItem({ icon, label, active = false, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick?: () => void }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button 
+          onClick={onClick}
           className={`relative p-3 rounded-xl transition-all duration-200 group ${
             active ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
           }`}
