@@ -1,0 +1,31 @@
+Update the existing product grid and product card system with a stronger responsive layout and improved typography hierarchy. Keep all existing components, structure, and styling intact — only refine layout behavior, font scaling, and grid sizing rules.
+
+First, adjust the product grid behavior so it becomes fully fluid and evenly distributed. Use a grid system where each column automatically takes equal available space, ensuring a balanced layout across all screen sizes. Each product card should expand and shrink naturally within the grid.
+
+Ensure that the grid uses a flexible structure where each card occupies equal fractional space (1fr), so all cards maintain consistent width distribution. This allows the grid to automatically adapt to screen size without breaking alignment or creating uneven spacing.
+
+At the same time, control the maximum usable width of each product card so that even on large screens the cards remain compact and do not stretch too wide. The layout should feel dense, structured, and optimized for fast product scanning.
+
+Next, refine typography using a clear visual hierarchy system based on importance:
+
+* Product price and add-to-cart actions should have the highest visual priority, slightly larger and more prominent.
+* Product name should be slightly smaller than price but still clearly readable and bold enough for fast scanning.
+* Category text should remain smaller and more subtle as supporting information.
+* Stock and quick code should be the smallest text elements, used only for reference.
+
+Instead of fixed font sizes, allow typography to scale smoothly with screen size so readability remains consistent across desktop, laptop, and mobile devices. Text should feel proportional to the card size and overall layout.
+
+For icon usage:
+
+* Navigation icons should remain clearly visible and slightly larger than secondary icons.
+* Add-to-cart icon should be compact but easily tappable, acting as a primary action trigger.
+* All icons should scale slightly based on screen size to maintain usability.
+
+Ensure that quick code displayed on product images remains readable on any background by using strong contrast styling or a subtle background layer. It should always stay visible without affecting image clarity.
+
+Overall, the goal is to create a highly responsive, dense, and professional POS interface where:
+
+* The grid adapts fluidly using equal 1fr distribution
+* Product cards remain compact and consistent in width
+* Typography follows a clear hierarchy based on importance
+* The entire layout feels fast, structured, and optimized for real-world retail usage

@@ -318,12 +318,11 @@ export default function POS() {
 
         {/* PRODUCT GRID */}
         <ScrollArea className="flex-1 pb-20">
-          <div className="p-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 170px))', gap: '8px' }}>
+          <div className="p-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(130px, 11vw, 170px), 1fr))', gap: '8px' }}>
             {filteredProducts.map(product => (
               <div 
                 key={product.id} 
                 className="group relative bg-card border border-card-border rounded-xl overflow-hidden hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 active:scale-[0.98] flex flex-col cursor-pointer"
-                style={{ containerType: 'inline-size' }}
                 data-testid={`card-product-${product.id}`}
               >
                 {/* Image with code overlay */}
@@ -339,7 +338,10 @@ export default function POS() {
                       {renderInitials(product.name)}
                     </div>
                   )}
-                  <span className="absolute top-1.5 left-1.5 text-white text-[10px] font-mono px-1.5 py-0.5 rounded-md leading-none" style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+                  <span
+                    className="absolute top-1.5 left-1.5 font-mono font-semibold leading-none text-white px-1.5 py-0.5 rounded-md"
+                    style={{ fontSize: 'clamp(9px, 0.72vw, 11px)', background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', boxShadow: '0 1px 4px rgba(0,0,0,0.6)', textShadow: '0 1px 2px rgba(0,0,0,1)' }}
+                  >
                     {product.code}
                   </span>
                   {product.stock <= 0 && (
@@ -350,11 +352,11 @@ export default function POS() {
                 </div>
 
                 {/* Card info */}
-                <div className="p-2 flex flex-col gap-1">
-                  <p className="font-semibold truncate leading-snug" style={{ fontSize: 'clamp(12px, 1.05vw, 15px)' }}>{product.name}</p>
-                  <p className="font-bold text-primary leading-none" style={{ fontSize: 'clamp(12px, 1.15vw, 16px)' }}>${product.price.toFixed(2)}</p>
-                  <div className="flex items-center justify-between mt-0.5">
-                    <span className="text-muted-foreground leading-none" style={{ fontSize: 'clamp(9px, 0.82vw, 12px)' }}>Stock: {product.stock}</span>
+                <div className="p-2 flex flex-col gap-0.5">
+                  <p className="font-bold text-primary leading-none" style={{ fontSize: 'clamp(13px, 1.15vw, 17px)' }}>${product.price.toFixed(2)}</p>
+                  <p className="font-semibold truncate leading-snug text-foreground" style={{ fontSize: 'clamp(11px, 0.95vw, 14px)' }}>{product.name}</p>
+                  <div className="flex items-center justify-between mt-1">
+                    <span className="text-muted-foreground leading-none" style={{ fontSize: 'clamp(9px, 0.72vw, 11px)' }}>Stock: {product.stock}</span>
                     <button
                       disabled={product.stock <= 0}
                       onClick={(e) => {
@@ -364,10 +366,11 @@ export default function POS() {
                         setTimeout(() => btn.classList.remove("btn-pulse"), 300);
                         addToCart(product);
                       }}
-                      className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-110 active:scale-90 transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                      className="rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-110 active:scale-90 transition-all duration-100 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                      style={{ width: 'clamp(22px, 1.8vw, 28px)', height: 'clamp(22px, 1.8vw, 28px)' }}
                       data-testid={`btn-add-${product.id}`}
                     >
-                      <ShoppingCart style={{ width: 'clamp(10px, 0.85vw, 13px)', height: 'clamp(10px, 0.85vw, 13px)' }} />
+                      <ShoppingCart style={{ width: 'clamp(10px, 0.82vw, 13px)', height: 'clamp(10px, 0.82vw, 13px)' }} />
                     </button>
                   </div>
                 </div>
