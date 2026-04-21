@@ -1,0 +1,96 @@
+Update the analytics page with improved and more accurate data visualization logic for the line graph, bar graph, and overall behavior. Keep the layout and structure unchanged, only refine data behavior and visualization accuracy.
+
+---
+
+### 📈 LINE GRAPH — ACCURATE TIME-BASED POINT SYSTEM (IMPORTANT FIX)
+
+Ensure the line graph correctly represents real activity timing.
+
+#### 🕒 DAILY MODE (CRITICAL BEHAVIOR)
+
+* The graph must show **exact time-based points**
+* Each point should represent the **exact time when a sale or profit activity happened**
+* If multiple sales happen at different times in a day, each should appear as a separate point at its correct timestamp
+
+✔ Example behavior:
+
+* Sale at 10:15 AM → point appears at 10:15
+* Sale at 3:40 PM → point appears at 3:40
+* No artificial spacing or fixed intervals
+
+If no sale happens at a specific time:
+
+* No point should be shown for that time
+* Only real activity points exist
+
+---
+
+#### 📅 WEEKLY / MONTHLY / YEARLY MODE
+
+* Show points only for days where activity actually occurred
+* If no sales or profit occurred on a day:
+
+  * That day must NOT appear in the graph
+* Graph should represent **real transaction days only**
+
+---
+
+### 💰 PROFIT LOGIC (IMPORTANT)
+
+* Profit is based on individual product-level profit defined during product edit mode
+* Each sale contributes its product-specific profit value
+* Total profit = sum of all product profits in selected time range
+
+---
+
+### 📊 LINE GRAPH VISUAL BEHAVIOR
+
+* Points should appear exactly where data exists
+* Area under graph remains lightly filled with low opacity
+* Tooltip shows:
+
+  * Exact time (daily mode)
+  * Date (weekly/monthly/yearly)
+  * Value (sales count or profit amount)
+
+---
+
+### 📊 BAR GRAPH IMPROVEMENTS
+
+* Each product bar should have a distinct visual color
+* Bars should animate smoothly on load or refresh
+* Maintain product image at bottom of each bar
+
+---
+
+### 🔄 DATA ACCURACY RULE
+
+* Never generate or assume fake intervals
+* Only render data points where real activity exists
+* No forced 7-part or evenly distributed structure
+
+---
+
+### ⚡ INTERACTION & PERFORMANCE
+
+* Keep animations smooth and subtle
+* Ensure fast rendering for frequent updates
+* Avoid flashy or distracting motion
+
+---
+
+### 🎯 FINAL GOAL
+
+* Line graph becomes fully event-based (not artificially divided)
+* Daily view shows exact transaction timestamps
+* No fake or empty data points are displayed
+* Visualization feels like real analytics system (Google-style accuracy)
+* Bar graph remains visually attractive and stable on refresh
+
+---
+
+At the end of all changes, ensure that no other parts of the application outside this analytics page are affected or modified.
+
+You are free to improve design, interaction, and structure where needed within this page to make the experience better, cleaner, and more professional. Do not restrict yourself only to the explicitly mentioned points — you may enhance usability and visual quality if it aligns with the existing system.
+
+However, all changes must remain strictly scoped to this analytics page. Do not alter, redesign, or impact any other pages, components, or global styles outside of this context.
