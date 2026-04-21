@@ -1,0 +1,381 @@
+Create a new Analytics page for the POS system that opens when the analytics navigation icon is clicked. Focus on building a clean, structured, and interactive data visualization interface inspired by modern analytics dashboards.
+
+---
+
+### 🧠 PAGE STRUCTURE
+
+The page should include:
+
+* A top control bar with time filters (Daily, Weekly, Monthly, Yearly, Custom)
+* A fixed Sales / Profit toggle on the right side (vertically centered)
+* A main line graph section
+* A bar graph section below it
+* A top products list section at the bottom
+
+---
+
+### 📊 LINE GRAPH (PRIMARY)
+
+Create a smooth line chart that displays overall performance.
+
+Behavior:
+
+* The graph should switch between Sales and Profit based on the toggle
+* The graph should update based on selected time filter
+
+Time segmentation:
+
+* Daily → hourly data points
+* Weekly → 7 days
+* Monthly → full month
+* Yearly → 12 months
+
+Interaction:
+
+* On hover, show a point on the line
+* Display tooltip with:
+
+  * Date or time
+  * Value (sales number or profit price)
+
+Animation:
+
+* On load or data change:
+
+  * Animate line drawing from left to right
+  * Smooth and subtle motion (no flashy effects)
+
+---
+
+### 🔘 SALES / PROFIT TOGGLE
+
+* Positioned on the right side, vertically centered
+* Fixed position
+* Clearly highlight active state
+* Changes all graphs and data on the page
+
+---
+
+### 📅 TIME FILTERS
+
+* Place at the top
+* Include: Daily, Weekly, Monthly, Yearly, Custom
+* Custom allows selecting a date range
+* Changes all analytics data globally
+
+---
+
+### 📊 BAR GRAPH (TOP 5 PRODUCTS)
+
+* Place below the line graph
+* Show top 5 products as vertical bars
+
+Each bar:
+
+* Height represents value
+* Product image displayed at bottom
+
+Features:
+
+* Allow replacing any of the 5 products with a custom selection
+* Custom selections should persist and not reset on refresh
+
+Animation:
+
+* Bars grow smoothly from bottom on load/update
+
+---
+
+### 📋 TOP 10 PRODUCTS LIST
+
+Below the bar graph:
+
+Each item should include:
+
+* Product image
+* Product name
+* Horizontal performance bar
+* Value at the end
+
+Behavior:
+
+* Sorted by performance
+* Sales → show numbers
+* Profit → show price
+
+---
+
+### 🎨 DESIGN & INTERACTION
+
+* Keep design clean, minimal, and modern
+* Inspired by Google-style analytics
+* Use smooth micro animations only
+* Avoid flashy transitions
+
+---
+
+### ⚡ FLEXIBILITY
+
+If any part can be improved for better usability, clarity, or performance, adjust intelligently without breaking structure.
+
+---
+
+### 🎯 FINAL GOAL
+
+A professional analytics dashboard that:
+
+* Feels fast and smooth
+* Clearly visualizes data
+* Allows flexible interaction
+* Maintains clean and premium UI
+
+PROMPTS
+🔝 1. TOP CONTROL BAR (TIME FILTERS)
+Writing
+
+Create a top control bar for the analytics page that allows users to filter data based on time ranges.
+
+Include the following options:
+
+Daily
+Weekly
+Monthly
+Yearly
+Custom
+
+The control should:
+
+Be placed at the top of the page
+Stay fixed or clearly visible
+Highlight the active selection
+
+Behavior:
+
+When a user selects any option, it should update all analytics data on the page (line graph, bar graph, and product list)
+The Custom option should allow selecting a custom date range
+
+Design:
+
+Keep it clean and minimal
+Options should feel clickable and responsive
+Active state should be visually clear but not overly styled
+
+Ensure smooth interaction without heavy animation.
+
+🔘 2. SALES / PROFIT TOGGLE (RIGHT SIDE)
+Writing
+
+Create a fixed toggle control for switching between Sales and Profit views.
+
+Placement:
+
+Right side of the screen
+Vertically centered
+Fixed position
+
+Behavior:
+
+Toggle between two states:
+Sales
+Profit
+Active state should be clearly highlighted
+
+Function:
+
+This toggle should update all analytics components:
+Line graph
+Bar graph
+Top products list
+
+Design:
+
+Keep it minimal and clean
+Ensure it is easily accessible but not intrusive
+
+Interaction:
+
+Smooth transition between states
+No flashy animations
+📈 3. LINE GRAPH (MAIN ANALYTICS)
+Writing
+
+Create a primary line graph for the analytics page to display overall sales or profit trends.
+
+Behavior:
+
+Graph should update based on:
+Selected time filter (daily, weekly, monthly, yearly, custom)
+Selected mode (sales or profit)
+
+Data segmentation:
+
+Daily → show hourly data
+Weekly → show 7 days
+Monthly → show full month
+Yearly → show 12 months
+
+Interaction:
+
+On hover:
+Show a point on the graph line
+Display tooltip with:
+Date or time
+Value (sales number or profit price)
+
+Animation:
+
+When graph loads or updates:
+Animate line drawing from left to right
+Smooth and subtle motion
+
+Design:
+
+Clean and minimal (inspired by modern analytics dashboards)
+Avoid clutter and heavy grid lines
+
+Ensure performance is smooth and interaction is responsive.
+
+📊 4. BAR GRAPH (TOP 5 PRODUCTS)
+Writing
+
+Create a vertical bar graph below the line graph to display top 5 products.
+
+Structure:
+
+Each bar represents one product
+Bar height represents performance (sales or profit)
+Product image should appear at the bottom of each bar
+
+Behavior:
+
+Default: show top 5 products automatically
+Allow user to replace any product with a custom selection
+
+Important:
+
+Custom selected products should persist and not reset on refresh
+
+Interaction:
+
+Bars should animate smoothly when data loads or changes
+Avoid flashy or bouncing animations
+
+Design:
+
+Keep layout clean and aligned
+Maintain consistent spacing between bars
+
+Ensure the graph updates when switching between sales and profit.
+
+🔄 5. BAR GRAPH CUSTOM REPLACEMENT SYSTEM
+Writing
+
+Enhance the bar graph by allowing users to replace any of the top 5 products with a custom product.
+
+Behavior:
+
+Each bar should have a subtle control or interaction to replace the product
+On interaction:
+Allow selecting a different product
+Replace the current bar data with the selected product
+
+Persistence:
+
+Custom selections should remain even after page refresh or data reload
+
+Design:
+
+Keep controls minimal and non-intrusive
+Do not disturb the graph layout
+
+Ensure smooth update when product is replaced.
+
+📋 6. TOP 10 PRODUCTS LIST
+Writing
+
+Create a list of top 10 products below the bar graph.
+
+Each list item should include:
+
+Product image
+Product name
+Horizontal performance bar
+Value at the end
+
+Behavior:
+
+Products should be sorted by performance (descending)
+Performance bar should visually represent relative value
+
+Value display:
+
+Sales mode → show numeric value
+Profit mode → show price
+
+Design:
+
+Clean row layout
+Consistent spacing and alignment
+Horizontal bar should be smooth and visually clear
+
+Interaction:
+
+Smooth updates when data changes
+No heavy animations
+
+Ensure readability and fast scanning.
+
+🧠 7. GLOBAL STATE CONNECTION
+Writing
+
+Ensure all analytics components are connected to a shared state system.
+
+This includes:
+
+Time filter (daily, weekly, monthly, yearly, custom)
+Sales / Profit toggle
+
+Behavior:
+
+Any change in these controls should update:
+Line graph
+Bar graph
+Top products list
+
+Ensure:
+
+Data updates are instant and smooth
+No unnecessary re-renders
+No UI lag
+
+Design the system in a scalable way so more analytics features can be added later.
+
+🎨 8. ANIMATION SYSTEM (GLOBAL)
+Writing
+
+Refine all animations in the analytics page to follow a smooth and minimal motion system.
+
+Rules:
+
+Use micro-interactions only
+Avoid flashy, sharp, or aggressive animations
+
+For graphs:
+
+Smooth data transitions
+Gentle drawing and updating effects
+
+For UI elements:
+
+Soft hover effects
+Subtle state transitions
+
+Ensure consistency across the entire page.
+
+The goal is a calm, professional, and premium analytics experience.
+
+At the end of all changes, ensure that no other parts of the application outside this analytics page are affected or modified.
+
+You are free to improve design, interaction, and structure where needed within this page to make the experience better, cleaner, and more professional. Do not restrict yourself only to the explicitly mentioned points — you may enhance usability and visual quality if it aligns with the existing system.
+
+However, all changes must remain strictly scoped to this analytics page. Do not alter, redesign, or impact any other pages, components, or global styles outside of this context.

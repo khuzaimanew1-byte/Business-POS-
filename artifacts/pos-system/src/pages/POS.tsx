@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import { 
   Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
   ShoppingCart, Trash2, Minus, Check, Camera
@@ -50,6 +51,8 @@ const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export default function POS() {
+  const [, setLocation] = useLocation();
+  const goAnalytics = () => setLocation("/analytics");
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [selectedCategory, setSelectedCategory] = useState<Category>("All");
@@ -243,7 +246,7 @@ export default function POS() {
         <div className="flex flex-col gap-6">
           <TooltipProvider delayDuration={100}>
             <TooltipItem icon={<Home size={20} />} label="Home" active />
-            <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" />
+            <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" onClick={goAnalytics} />
             <div onClick={() => setIsAddProductModalOpen(true)}>
               <TooltipItem icon={<Plus size={20} />} label="Add Product" />
             </div>
@@ -623,7 +626,7 @@ export default function POS() {
         <MobileNavBtn icon={<Home size={20} />} label="Home" active />
 
         {/* Analytics */}
-        <MobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" />
+        <MobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" onClick={goAnalytics} />
 
         {/* Add Product — center, prominent */}
         <button

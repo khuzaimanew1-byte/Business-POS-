@@ -219,3 +219,30 @@
     100% { opacity: 1; transform: scale(1) translateY(0); }
   }
 }
+/* ── Analytics page (scoped) ────────────────────────────────────────── */
+.analytics-root .range-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--secondary) / 0.55);
+  border: 1px solid hsl(var(--border) / 0.6);
+  transition: color 220ms ease, background-color 220ms ease, border-color 220ms ease;
+}
+.analytics-root .range-pill:hover { color: hsl(var(--foreground)); background: hsl(var(--secondary) / 0.85); }
+.analytics-root .range-pill-active {
+  color: hsl(43 90% 55%);
+  background: hsl(43 90% 55% / 0.14);
+  border-color: hsl(43 90% 55% / 0.45);
+}
+.analytics-root .bar-fill {
+  transition: height 700ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  will-change: height;
+}
+.analytics-root .perf-bar {
+  transition: width 700ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
