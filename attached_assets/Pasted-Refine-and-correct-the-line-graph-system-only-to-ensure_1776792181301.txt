@@ -1,0 +1,149 @@
+Refine and correct the **line graph system only** to ensure accurate tooltip behavior, stable interaction, and proper separation between Sales and Profit modes. Do not modify other analytics components.
+
+---
+
+# 📈 LINE GRAPH — TOOLTIP + MODE FIX (FINAL BEHAVIOR)
+
+---
+
+## 🎯 1. SALES vs PROFIT — STRICT SEPARATION (CRITICAL FIX)
+
+Ensure both modes behave independently:
+
+### 🟢 SALES MODE
+
+* Graph represents: **number of items sold**
+* Y-axis = quantity (numeric count)
+* Tooltip shows:
+
+  * Time / date
+  * Total items sold at that point
+
+### 💰 PROFIT MODE
+
+* Graph represents: **total profit amount**
+* Y-axis = price values
+* Tooltip shows:
+
+  * Time / date
+  * Total profit at that point
+
+✔ Do NOT mix these values
+✔ Switching mode must fully change dataset and graph scale
+
+---
+
+## 🧠 2. TOOLTIP POSITIONING SYSTEM (STABLE & NON-DISTURBING)
+
+Fix tooltip movement behavior so it does NOT jump continuously.
+
+### ❌ Problem:
+
+* Tooltip moves too frequently → causes distraction
+
+### ✅ Solution (Stable Anchoring Strategy):
+
+Instead of following cursor exactly:
+
+* Tooltip should snap to **nearest valid data point**
+* Once locked, it should remain stable until user moves significantly
+
+---
+
+## 📍 POSITION LOGIC (SMART PLACEMENT)
+
+Place tooltip based on point position in graph:
+
+* If point is in lower area (~0–40% height):
+  → Tooltip appears **above the point**
+
+* If point is in middle (~40–70%):
+  → Tooltip appears slightly above center
+
+* If point is in upper area (~70–100%):
+  → Tooltip appears **below the point**
+
+✔ This prevents clipping and improves readability
+✔ Avoid strict fixed % rules — use adaptive positioning if needed
+
+---
+
+## 🎯 3. POINT VISIBILITY (HOVER ONLY)
+
+* Points should NOT be visible by default
+* On hover:
+
+  * Show a **clear sharp point marker**
+  * Point must align exactly with graph line
+
+---
+
+## 📏 4. TOOLTIP + POINT ALIGNMENT
+
+Ensure visual clarity:
+
+* Tooltip must always clearly relate to a specific point
+* When tooltip appears:
+
+  * Highlight that exact point
+  * Optionally slightly emphasize that segment of line
+
+---
+
+## 📍 5. VERTICAL GUIDE LINE (GOOGLE STYLE)
+
+* Add a **light vertical dotted line**
+* It follows cursor movement inside graph
+* Helps user track position smoothly
+
+Rules:
+
+* Very light opacity
+* Not visually dominant
+* Smooth movement
+
+---
+
+## 📊 6. LINE + AREA VISUAL (REINFORCEMENT)
+
+Ensure:
+
+* Line is smooth and continuous
+* Area under line is:
+
+  * Light colored
+  * Very low opacity
+  * Follows curve exactly
+
+---
+
+## ⚡ 7. INTERACTION BEHAVIOR
+
+* Tooltip should:
+
+  * Appear smoothly (no sudden jump)
+  * Not flicker
+  * Not constantly reposition
+
+* Cursor movement:
+
+  * Smooth tracking
+  * No jitter
+
+---
+
+## 🧠 FINAL UX RESULT
+
+* Tooltip feels stable and easy to read
+* User clearly understands which data point is active
+* No distraction from constant movement
+* Clean separation between Sales and Profit
+* Graph behaves like professional analytics tools
+
+---
+
+At the end of all changes, ensure that no other parts of the application outside this analytics page are affected or modified.
+
+You are free to improve design, interaction, and structure where needed within this page to make the experience better, cleaner, and more professional. Do not restrict yourself only to the explicitly mentioned points — you may enhance usability and visual quality if it aligns with the existing system.
+
+However, all changes must remain strictly scoped to this analytics page. Do not alter, redesign, or impact any other pages, components, or global styles outside of this context.

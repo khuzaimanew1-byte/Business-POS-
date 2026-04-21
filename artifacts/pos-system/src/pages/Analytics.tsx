@@ -196,6 +196,7 @@ function LineGraph({
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 320 });
   const [hover, setHover] = useState<{ x: number; idx: number | null } | null>(null);
+  const lastIdxRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!wrapRef.current) return;
@@ -308,12 +309,16 @@ function LineGraph({
   const yTicks = 4;
   const yTickVals = Array.from({ length: yTicks + 1 }, (_, i) => (maxVal * i) / yTicks);
 
-  // Hover: find nearest real point by x
+  // Hover: find nearest real point by x, with hysteresis so tooltip doesn't
+  // jump on every pixel of cursor movement.
   const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left + padL; // adjust because rect is inner
     if (sortedPts.length === 0) {
-      setHover({ x, idx: null });
+      if (lastIdxRef.current !== null || hover?.x !== x) {
+        lastIdxRef.current = null;
+        setHover({ x, idx: null });
+      }
       return;
     }
     let nearest = 0;
@@ -326,10 +331,28 @@ function LineGraph({
         nearest = i;
       }
     }
-    setHover({ x, idx: nearest });
+    // Hysteresis: only switch anchored point if cursor is meaningfully closer
+    // to a different point than the currently anchored one. This keeps the
+    // tooltip stable instead of swapping on every pixel near a midpoint.
+    const STICKY_PX = 14;
+    let chosen = nearest;
+    const prev = lastIdxRef.current;
+    if (prev !== null && prev !== nearest && prev >= 0 && prev < sortedPts.length) {
+      const dPrev = Math.abs(xFor(sortedPts[prev].ts) - x);
+      if (dPrev - best < STICKY_PX) {
+        chosen = prev;
+      }
+    }
+    if (lastIdxRef.current !== chosen || hover?.x !== x) {
+      lastIdxRef.current = chosen;
+      setHover({ x, idx: chosen });
+    }
   };
 
-  const handleLeave = () => setHover(null);
+  const handleLeave = () => {
+    lastIdxRef.current = null;
+    setHover(null);
+  };
 
   const hoverPoint = hover && hover.idx !== null ? sortedPts[hover.idx] : null;
 
@@ -364,7 +387,7 @@ function LineGraph({
                 fill="hsl(240 5% 55%)"
                 textAnchor="end"
               >
-                {metric === "sales" || metric === "profit" ? `$${v.toFixed(0)}` : v.toFixed(0)}
+                {metric === "profit" ? `$${v.toFixed(0)}` : v.toFixed(0)}
               </text>
             </g>
           );
@@ -449,30 +472,52 @@ function LineGraph({
         />
       </svg>
 
-      {/* Tooltip */}
-      {hoverPoint && (
-        <div
-          className="pointer-events-none absolute z-10 px-2.5 py-1.5 rounded-lg border border-border bg-popover/95 backdrop-blur-sm shadow-xl text-xs"
-          style={{
-            left: Math.min(
-              size.w - 160,
-              Math.max(padL, xFor(hoverPoint.ts) - 70)
-            ),
-            top: Math.max(8, yFor(hoverPoint.value) - 56),
-            minWidth: 140,
-          }}
-        >
-          <div className="text-muted-foreground text-[10px] mb-0.5">
-            {formatTooltipTs(hoverPoint.ts, mode)}
+      {/* Tooltip — adaptive vertical placement keeps it on-canvas and unobtrusive */}
+      {hoverPoint && (() => {
+        const TT_W = 150;
+        const TT_H = 60;
+        const GAP = 14;
+        const px = xFor(hoverPoint.ts);
+        const py = yFor(hoverPoint.value);
+        // Vertical zone of the point within the inner plot area (0 = top, 1 = bottom)
+        const zone = (py - padT) / Math.max(1, innerH);
+        // Lower 0–40% of value range (point is high on screen, near top): place below
+        // Mid 40–70%: place slightly above
+        // Upper 70–100% (point is low on screen, near baseline): place above
+        // The zone above is about screen position; invert so we describe value height.
+        const valueHeightPct = 1 - zone; // 1 = high value, 0 = low value
+        let top: number;
+        if (valueHeightPct < 0.4) {
+          top = py - TT_H - GAP; // low value -> tooltip above
+        } else if (valueHeightPct < 0.7) {
+          top = py - TT_H - GAP * 0.6; // mid -> slightly above
+        } else {
+          top = py + GAP; // high value -> below the point
+        }
+        // Clamp inside the chart vertically
+        top = Math.max(6, Math.min(size.h - TT_H - 6, top));
+        const left = Math.min(
+          size.w - TT_W - 6,
+          Math.max(padL, px - TT_W / 2)
+        );
+        const isProfit = metric === "profit";
+        const valueLabel = isProfit
+          ? `$${hoverPoint.value.toFixed(2)}`
+          : `${Math.round(hoverPoint.value)} item${Math.round(hoverPoint.value) === 1 ? "" : "s"}`;
+        const detailLabel = isProfit ? "Total profit" : "Total items sold";
+        return (
+          <div
+            className="pointer-events-none absolute z-10 px-2.5 py-1.5 rounded-lg border border-border bg-popover/95 backdrop-blur-sm shadow-xl text-xs transition-[left,top] duration-150 ease-out"
+            style={{ left, top, width: TT_W }}
+          >
+            <div className="text-muted-foreground text-[10px] mb-0.5">
+              {formatTooltipTs(hoverPoint.ts, mode)}
+            </div>
+            <div className="font-semibold text-foreground">{valueLabel}</div>
+            <div className="text-[10px] text-muted-foreground mt-0.5">{detailLabel}</div>
           </div>
-          <div className="font-semibold text-foreground">
-            {formatValue(hoverPoint.value, metric)}
-          </div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">
-            {hoverPoint.event.items.length} item{hoverPoint.event.items.length !== 1 ? "s" : ""}
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Empty state */}
       {points.length === 0 && (
@@ -732,11 +777,16 @@ export default function Analytics() {
   );
 
   // Line points: per-event metric value
+  // SALES mode: number of items sold at that event (quantity count)
+  // PROFIT mode: total profit amount (currency)
   const linePoints: LinePoint[] = useMemo(
     () =>
       inWindow.map((ev) => ({
         ts: ev.ts,
-        value: metric === "sales" ? ev.total : ev.totalProfit,
+        value:
+          metric === "sales"
+            ? ev.items.reduce((s, it) => s + it.qty, 0)
+            : ev.totalProfit,
         event: ev,
       })),
     [inWindow, metric]
