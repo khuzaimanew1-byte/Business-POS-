@@ -1,6 +1,4 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
-import { useLocation } from "wouter";
-import { recordSale } from "@/lib/analytics-store";
 import { 
   Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
   ShoppingCart, Trash2, Minus, Check, Camera
@@ -52,8 +50,6 @@ const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export default function POS() {
-  const [, setLocation] = useLocation();
-  const goAnalytics = () => setLocation("/analytics");
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [selectedCategory, setSelectedCategory] = useState<Category>("All");
@@ -192,24 +188,6 @@ export default function POS() {
 
   const checkout = () => {
     if (cartItems.length === 0) return;
-    // Record the sale into the analytics store. Profit per unit comes from
-    // the product's edited profit value (set in edit mode) when available;
-    // otherwise we fall back to a 32% margin of the unit price.
-    recordSale(
-      cartItems.map(i => {
-        const editedProfit = parseFloat(editDrafts[i.product.id]?.profit ?? "");
-        const unitProfit = Number.isFinite(editedProfit) && editedProfit > 0
-          ? editedProfit
-          : +(i.product.price * 0.32).toFixed(2);
-        return {
-          productId: i.product.id,
-          productName: i.product.name,
-          qty: i.quantity,
-          unitPrice: i.product.price,
-          unitProfit,
-        };
-      })
-    );
     setCartItems([]);
     setIsCartOpen(false);
     toast.success("Checkout successful!", { icon: <Check className="text-green-500" /> });
@@ -265,7 +243,7 @@ export default function POS() {
         <div className="flex flex-col gap-6">
           <TooltipProvider delayDuration={100}>
             <TooltipItem icon={<Home size={20} />} label="Home" active />
-            <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" onClick={goAnalytics} />
+            <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" />
             <div onClick={() => setIsAddProductModalOpen(true)}>
               <TooltipItem icon={<Plus size={20} />} label="Add Product" />
             </div>
@@ -645,7 +623,7 @@ export default function POS() {
         <MobileNavBtn icon={<Home size={20} />} label="Home" active />
 
         {/* Analytics */}
-        <MobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" onClick={goAnalytics} />
+        <MobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" />
 
         {/* Add Product — center, prominent */}
         <button
