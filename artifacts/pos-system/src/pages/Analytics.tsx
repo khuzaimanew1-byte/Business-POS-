@@ -193,7 +193,7 @@ function LineGraph({
   metric: Metric;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ w: 800, h: 320 });
+  const [container, setContainer] = useState({ w: 800, h: 320 });
   const [hover, setHover] = useState<{ x: number; idx: number | null } | null>(null);
   const lastIdxRef = useRef<number | null>(null);
 
@@ -201,7 +201,10 @@ function LineGraph({
     if (!wrapRef.current) return;
     const ro = new ResizeObserver((entries) => {
       for (const e of entries) {
-        setSize({ w: Math.max(280, e.contentRect.width), h: Math.max(220, e.contentRect.height) });
+        setContainer({
+          w: Math.max(280, e.contentRect.width),
+          h: Math.max(220, e.contentRect.height),
+        });
       }
     });
     ro.observe(wrapRef.current);
@@ -212,6 +215,17 @@ function LineGraph({
     padR = 16,
     padT = 16,
     padB = 28;
+
+  // Adaptive width: ensure ≥ MIN_PX_PER_POINT between points so dense datasets
+  // remain readable on mobile via horizontal scroll, while small datasets fit.
+  const MIN_PX_PER_POINT = 22;
+  const minNeededW =
+    points.length > 1
+      ? padL + padR + (points.length - 1) * MIN_PX_PER_POINT
+      : container.w;
+  const svgW = Math.max(container.w, minNeededW);
+  const isScrollable = svgW > container.w + 1;
+  const size = { w: svgW, h: container.h };
   const innerW = size.w - padL - padR;
   const innerH = size.h - padT - padB;
 
@@ -357,6 +371,14 @@ function LineGraph({
 
   return (
     <div ref={wrapRef} className="relative w-full" style={{ height: 320 }}>
+      <div
+        className={
+          isScrollable
+            ? "absolute inset-0 overflow-x-auto overflow-y-hidden overscroll-x-contain"
+            : "absolute inset-0"
+        }
+        style={{ WebkitOverflowScrolling: "touch" }}
+      >
       <svg width={size.w} height={size.h} className="block">
         <defs>
           <linearGradient id="lineFill" x1="0" y1="0" x2="0" y2="1">
@@ -547,6 +569,14 @@ function LineGraph({
           </>
         );
       })()}
+      </div>
+
+      {/* Subtle scroll hint when chart overflows */}
+      {isScrollable && (
+        <div className="pointer-events-none absolute right-1 bottom-1 text-[9px] uppercase tracking-wider text-muted-foreground/60">
+          scroll →
+        </div>
+      )}
 
       {/* Empty state */}
       {points.length === 0 && (
@@ -805,9 +835,13 @@ export default function Analytics() {
     [events, win.start, win.end]
   );
 
-  // Line points
-  // DAILY mode: per-event point (preserves intra-day time granularity).
-  // WEEKLY / MONTHLY / YEARLY / CUSTOM: aggregated per-day totals.
+  // Line points — Google-style adaptive density.
+  // The bucket size is chosen by the window span so the graph stays readable
+  // and accurate at any scale (1 day → 5+ years), without ever discarding data.
+  //   span ≤ 2 days   → per-event (or hourly) — preserves intra-day detail
+  //   span ≤ 60 days  → daily buckets
+  //   span ≤ 400 days → weekly buckets
+  //   span > 400 days → monthly buckets
   // SALES = number of items sold; PROFIT = total profit amount.
   const linePoints: LinePoint[] = useMemo(() => {
     const valueOf = (ev: typeof inWindow[number]) =>
@@ -815,20 +849,60 @@ export default function Analytics() {
         ? ev.items.reduce((s, it) => s + it.qty, 0)
         : ev.totalProfit;
 
+    const spanMs = Math.max(1, win.end - win.start);
+    const dayMs = 24 * 60 * 60 * 1000;
+    const spanDays = spanMs / dayMs;
+
+    type Bucket = "event" | "hour" | "day" | "week" | "month";
+    let bucket: Bucket;
     if (mode === "daily") {
+      bucket = "event"; // intra-day events keep their precise time
+    } else if (spanDays <= 2) {
+      bucket = "hour";
+    } else if (spanDays <= 60) {
+      bucket = "day";
+    } else if (spanDays <= 400) {
+      bucket = "week";
+    } else {
+      bucket = "month";
+    }
+
+    if (bucket === "event") {
       return inWindow.map((ev) => ({ ts: ev.ts, value: valueOf(ev) }));
     }
 
-    const byDay = new Map<number, number>();
+    const keyFor = (ts: number): number => {
+      const d = new Date(ts);
+      if (bucket === "hour") {
+        return new Date(
+          d.getFullYear(),
+          d.getMonth(),
+          d.getDate(),
+          d.getHours()
+        ).getTime();
+      }
+      if (bucket === "day") {
+        return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      }
+      if (bucket === "week") {
+        // Week start = Monday, anchored at local midnight
+        const day = (d.getDay() + 6) % 7; // 0..6 with Mon=0
+        const ws = new Date(d.getFullYear(), d.getMonth(), d.getDate() - day);
+        return ws.getTime();
+      }
+      // month
+      return new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+    };
+
+    const byBucket = new Map<number, number>();
     for (const ev of inWindow) {
-      const d = new Date(ev.ts);
-      const dayTs = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-      byDay.set(dayTs, (byDay.get(dayTs) ?? 0) + valueOf(ev));
+      const k = keyFor(ev.ts);
+      byBucket.set(k, (byBucket.get(k) ?? 0) + valueOf(ev));
     }
-    return Array.from(byDay.entries())
+    return Array.from(byBucket.entries())
       .sort((a, b) => a[0] - b[0])
       .map(([ts, value]) => ({ ts, value }));
-  }, [inWindow, metric, mode]);
+  }, [inWindow, metric, mode, win.start, win.end]);
 
   // Per-product aggregation for bars + top list
   const productAgg = useMemo(() => {
