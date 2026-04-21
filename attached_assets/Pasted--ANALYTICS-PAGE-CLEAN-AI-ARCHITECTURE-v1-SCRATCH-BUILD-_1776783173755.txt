@@ -1,0 +1,440 @@
+🧠📊 ANALYTICS PAGE — CLEAN AI ARCHITECTURE (v1 — SCRATCH BUILD)
+🎯 CORE RULE
+
+Open from: Analytics nav icon
+Must be built from scratch (replace old logic)
+Inspired by Google Analytics graph behavior
+Fully event-driven POS system
+🧭 1. PAGE STRUCTURE (FINAL)
+Analytics Page
+│
+├── Top Bar
+│   ├── Time Filters (Daily / Weekly / Monthly / Yearly / Custom)
+│
+├── Right Fixed Toggle
+│   ├── Sales
+│   ├── Profit
+│
+├── LINE GRAPH (Primary)
+│
+├── BAR GRAPH (Top 5 Products)
+│
+└── TOP 10 PRODUCTS LIST
+📈 2. LINE GRAPH — FINAL GOOGLE-STYLE SYSTEM
+🧠 CORE RULE (MOST IMPORTANT)
+Graph ALWAYS starts from left edge (0 baseline visual flow)
+Line is continuous even if no activity
+BUT:
+❌ NO data points on empty time
+❌ NO fake interpolation points
+
+👉 Line passes through timeline smoothly, but only real events generate points.
+
+📊 TIME DIVISION LOGIC (FIXED)
+
+Instead of fixed 7 parts:
+
+✔ Dynamic grid system:
+Mode	Division
+Daily	24 hours
+Weekly	7 days
+Monthly	calendar days
+Yearly	12 months
+
+✔ Grid always evenly spaced
+✔ BUT data points only appear on real activity
+
+🟢 DATA POINT RULE
+Point ONLY exists when:
+Sale happens (cart submit)
+Profit recorded
+
+✔ No activity = NO POINT
+
+👁️ VISIBILITY RULE (FIXED)
+Default:
+❌ NO visible dots
+On hover:
+✔ Show point marker
+✔ Show tooltip
+🖱️ GOOGLE-STYLE CURSOR BEHAVIOR
+Cursor movement inside graph:
+Vertical dotted guide line follows cursor
+Light opacity (subtle)
+Tooltip moves dynamically along nearest real data point
+📦 TOOLTIP DATA
+Daily:
+Exact time (HH:MM)
+Value (sales/profit)
+Weekly/Monthly/Yearly:
+Date or month
+Value
+🌊 AREA UNDER LINE (FIXED)
+Add light gradient fill under line
+Very low opacity
+Smooth curve fill
+Must follow line exactly
+💰 PROFIT RULE (IMPORTANT)
+Profit comes from product-level edit mode value
+Each product has fixed profit per unit
+Total profit = sum of all sold items
+📊 3. BAR GRAPH — TOP 5 PRODUCTS (FIXED + IMPROVED)
+🧱 STRUCTURE FIX
+
+Each bar must be:
+
+Product Image (bottom aligned)
+Bar (vertical)
+Value
+Name (ONLY ONCE)
+
+✔ NO duplicate names
+✔ Image must align directly under bar
+✔ Clean vertical stack
+
+🎨 COLOR SYSTEM (FIXED DARK MODE ISSUE)
+Remove bright neon colors
+Use:
+Muted dark-friendly palette
+Soft contrast tones
+
+✔ Auto color assignment:
+
+Each new product gets auto-safe color
+No clash with nearby bars
+Persistent across refresh
+⚡ ZERO STATE IMPROVEMENT
+Even empty bars show:
+faint baseline bar (low opacity)
+Avoid empty visual gaps
+🎬 ANIMATION
+On refresh:
+Bars grow upward smoothly
+No bounce
+No flashy effects
+📋 4. TOP 10 PRODUCT LIST
+
+Each row:
+
+Image | Name | Horizontal Bar | Value
+
+✔ Clean alignment
+✔ Single name only
+✔ Value depends on mode:
+
+Sales → number
+Profit → price
+🧾 5. SALE TRIGGER LOGIC (CRITICAL SYSTEM FLOW)
+🛒 EVENT SOURCE
+
+👉 Sale happens ONLY when:
+
+User clicks Submit button in cart sheet
+🔄 AFTER SUBMIT:
+
+System must:
+
+Create line graph data point
+Assign timestamp
+Assign product profit
+Update bar graph
+Update top list
+🧪 6. DEMO + REAL DATA FLOW
+Phase 1 (CURRENT):
+Demo dataset for UI testing
+Phase 2 (REAL):
+Cart-based live transactions
+Product-level profit system
+Real-time analytics update
+⚡ 7. PERFORMANCE RULES
+No fake data interpolation
+No unnecessary re-renders
+Smooth transitions only
+Graph updates instantly on submit
+🎯 FINAL GOALS (CRITICAL)
+
+This analytics page MUST behave like:
+
+✔ Google Analytics style graph system
+✔ Event-driven real POS tracking system
+✔ No fake points or artificial distribution
+✔ Smooth hover + cursor interaction
+✔ Clean dark-mode friendly visuals
+✔ Fully responsive scalable design
+
+🚫 GLOBAL SAFETY RULE
+
+At the end of implementation:
+
+👉 Do NOT modify anything outside this analytics page
+👉 All improvements must remain scoped ONLY to this page
+👉 Free improvements allowed ONLY within this module
+
+🧠📊 ANALYTICS PAGE — COMPONENT PROMPTS (FINAL CLEAN SYSTEM)
+🔝 1. TOP BAR (TIME FILTER SYSTEM)
+Writing
+
+Create the top control bar for a fully responsive analytics page that controls all data visualization.
+
+Include:
+
+Daily
+Weekly
+Monthly
+Yearly
+Custom date range
+
+Behavior:
+
+This bar controls ALL analytics components (line graph, bar graph, top list)
+Active filter must be clearly highlighted
+Custom option should allow selecting a date range manually
+
+Design:
+
+Clean, minimal, Google-style analytics header
+Horizontally aligned
+Smooth state transitions (no flashy animations)
+
+Important:
+
+Must remain globally connected to analytics state system
+🔘 2. SALES / PROFIT TOGGLE (RIGHT FIXED)
+Writing
+
+Create a fixed vertical toggle on the right side of the analytics page.
+
+Options:
+
+Sales
+Profit
+
+Behavior:
+
+Toggles entire analytics dataset
+Updates line graph, bar graph, and product list together
+
+Design:
+
+Fixed vertically centered position
+Minimal UI
+Active state clearly highlighted
+Smooth switching animation only
+
+Important:
+
+Must remain visible while scrolling
+📈 3. LINE GRAPH (GOOGLE-STYLE CORE GRAPH)
+Writing
+
+Create a primary interactive line graph for analytics data visualization.
+
+Core Rules:
+
+Graph always starts from left baseline
+Line is continuous but points ONLY appear where real activity exists
+
+Data Logic:
+
+Points represent ONLY real sales or profit events
+No fake or interpolated points
+No empty-time markers
+
+Time Behavior:
+
+Daily → hourly data (24 segments)
+Weekly → 7 days
+Monthly → calendar days
+Yearly → 12 months
+
+Hover Interaction:
+
+Show vertical dotted guideline following cursor
+Tooltip appears dynamically near nearest real data point
+Tooltip shows:
+Time/date
+Value (sales or profit)
+
+Visibility Rules:
+
+Points are hidden by default
+Points appear ONLY on hover
+
+Visual:
+
+Light gradient fill under the line (low opacity)
+Smooth curve like Google Analytics
+Subtle grid background lines for readability
+
+Animation:
+
+Line draws smoothly on load or update
+No flashy or bouncing effects
+📊 4. BAR GRAPH (TOP 5 PRODUCTS)
+Writing
+
+Create a vertical bar graph showing top 5 performing products.
+
+Structure:
+
+Each bar represents a product
+Product image at the bottom of each bar
+Bar height represents performance value
+
+Layout Rules:
+
+Product name must appear only once (no duplication)
+Image must align directly under bar properly
+
+Visual Design:
+
+Dark-mode friendly muted color palette
+Avoid bright or neon colors
+Each product bar gets auto-assigned a unique color
+
+Behavior:
+
+On refresh, bars animate from bottom to top smoothly
+No bounce or flashy motion
+
+Zero State:
+
+Empty bars show faint baseline instead of blank space
+
+Interaction:
+
+Bars update when Sales/Profit toggle changes
+🔄 5. BAR GRAPH — CUSTOM PRODUCT REPLACEMENT SYSTEM
+Writing
+
+Enhance the bar graph by allowing users to replace any of the top 5 products dynamically.
+
+Behavior:
+
+Each bar can be replaced with another product selection
+Replacement updates bar instantly
+
+Persistence:
+
+Custom selections must persist on refresh
+Default top 5 auto data reloads if no custom selection exists
+
+Rules:
+
+No layout shift during replacement
+Smooth update animation only
+
+Important:
+
+Must remain synced with analytics data system
+📋 6. TOP 10 PRODUCTS LIST
+Writing
+
+Create a clean top 10 product ranking list below the bar graph.
+
+Structure per row:
+
+Product image
+Product name
+Horizontal progress bar
+Value at the end
+
+Behavior:
+
+Sorted by performance (descending order)
+Updates based on Sales/Profit mode
+
+Value Rules:
+
+Sales mode → show number
+Profit mode → show price
+
+Design:
+
+Clean horizontal alignment
+No duplicate names
+Minimal and readable UI
+Smooth update transitions
+🛒 7. SALE EVENT SYSTEM (CRITICAL LOGIC)
+Writing
+
+Create the core event system that drives analytics updates.
+
+Trigger:
+
+A sale is ONLY recorded when the user clicks the "Submit" button in the cart sheet
+
+On Submit:
+
+Capture timestamp
+Capture product details
+Capture quantity
+Calculate profit per product
+Push data into analytics system
+
+Effects:
+
+Line graph point is created at exact time of sale
+Bar graph updates top products
+Top 10 list updates dynamically
+
+Rules:
+
+No manual or fake data generation allowed
+Only real cart submissions generate analytics events
+🧪 8. DEMO DATA SYSTEM (TEMPORARY ONLY)
+Writing
+
+Create a temporary demo dataset for analytics visualization.
+
+Purpose:
+
+UI testing before real data integration
+
+Requirements:
+
+Include sample sales across different times and days
+Include variation in quantity and profit values
+Include some days with no activity
+
+Rules:
+
+Data must feel realistic, not random
+Must follow same structure as real event system
+Will be replaced later with live cart-based data
+
+Important:
+
+Must not interfere with real data system later
+🎨 9. GLOBAL ANIMATION SYSTEM
+Writing
+
+Standardize all animations across analytics page.
+
+Rules:
+
+Smooth, minimal, non-flashy animations only
+No bounce effects
+No aggressive transitions
+
+Graphs:
+
+Smooth line drawing
+Soft bar growth animation
+
+UI:
+
+Subtle hover effects only
+Clean transitions between states
+
+Goal:
+
+Google Analytics level smoothness and professionalism
+🧠 FINAL NOTE (GLOBAL SAFETY RULE)
+Writing
+
+At the end of all changes, ensure that no other parts of the application outside this analytics page are affected or modified.
+
+You are free to improve design, interaction, and structure where needed within this page to make the experience better, cleaner, and more professional. Do not restrict yourself only to the explicitly mentioned points — you may enhance usability and visual quality if it aligns with the existing system.
+
+However, all changes must remain strictly scoped to this analytics page. Do not alter, redesign, or impact any other pages, components, or global styles outside of this context.

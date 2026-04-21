@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useLocation } from "wouter";
 import { 
   Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
   ShoppingCart, Trash2, Minus, Check, Camera
@@ -11,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { recordSale, seedDemoEventsIfEmpty } from "@/lib/analytics-store";
 
 // Types
 type Category = string;
@@ -23,6 +25,7 @@ type Product = {
   category: Category;
   stock: number;
   image?: string;
+  profit?: number;
 };
 
 type CartItem = {
@@ -50,6 +53,7 @@ const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export default function POS() {
+  const [, setLocation] = useLocation();
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [selectedCategory, setSelectedCategory] = useState<Category>("All");
@@ -79,6 +83,23 @@ export default function POS() {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 150);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // Snapshot product list for analytics consumption
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "pos.products.snapshot.v1",
+        JSON.stringify(products.map(p => ({ id: p.id, name: p.name, image: p.image, price: p.price })))
+      );
+    } catch { /* noop */ }
+  }, [products]);
+
+  // Seed demo analytics data once
+  useEffect(() => {
+    seedDemoEventsIfEmpty(
+      INITIAL_PRODUCTS.map(p => ({ id: p.id, name: p.name, image: p.image, price: p.price, profit: Math.max(0.5, p.price * 0.3) }))
+    );
+  }, []);
 
   const filteredProducts = useMemo(() => products.filter(p => {
     const matchesCat = selectedCategory === "All" || p.category === selectedCategory;
@@ -111,7 +132,7 @@ export default function POS() {
     setSavedProducts(products);
     setSavedCategories(categories);
     const drafts: Record<string, EditDraft> = {};
-    products.forEach(p => { drafts[p.id] = { name: p.name, price: String(p.price), stock: String(p.stock), code: p.code, profit: '0', image: p.image }; });
+    products.forEach(p => { drafts[p.id] = { name: p.name, price: String(p.price), stock: String(p.stock), code: p.code, profit: String(p.profit ?? 0), image: p.image }; });
     const catDrafts: Record<string, string> = {};
     categories.forEach(c => { catDrafts[c] = c; });
     setEditDrafts(drafts);
@@ -135,6 +156,7 @@ export default function POS() {
         code: d.code.trim() || p.code,
         category: renamedMap[p.category] || p.category,
         image: d.image,
+        profit: parseFloat(d.profit) >= 0 ? parseFloat(d.profit) : (p.profit ?? 0),
       };
     }));
     setIsEditMode(false);
@@ -188,6 +210,14 @@ export default function POS() {
 
   const checkout = () => {
     if (cartItems.length === 0) return;
+    recordSale(cartItems.map(i => ({
+      productId: i.product.id,
+      name: i.product.name,
+      image: i.product.image,
+      qty: i.quantity,
+      price: i.product.price,
+      profit: i.product.profit ?? 0,
+    })));
     setCartItems([]);
     setIsCartOpen(false);
     toast.success("Checkout successful!", { icon: <Check className="text-green-500" /> });
@@ -243,7 +273,7 @@ export default function POS() {
         <div className="flex flex-col gap-6">
           <TooltipProvider delayDuration={100}>
             <TooltipItem icon={<Home size={20} />} label="Home" active />
-            <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" />
+            <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" onClick={() => setLocation("/analytics")} />
             <div onClick={() => setIsAddProductModalOpen(true)}>
               <TooltipItem icon={<Plus size={20} />} label="Add Product" />
             </div>
@@ -623,7 +653,7 @@ export default function POS() {
         <MobileNavBtn icon={<Home size={20} />} label="Home" active />
 
         {/* Analytics */}
-        <MobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" />
+        <MobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" onClick={() => setLocation("/analytics")} />
 
         {/* Add Product — center, prominent */}
         <button
