@@ -18,7 +18,6 @@ import {
   loadBarSlots,
   saveBarSlots,
   seedDemoEventsIfEmpty,
-  type SaleEvent,
 } from "@/lib/analytics-store";
 
 type Mode = "daily" | "weekly" | "monthly" | "yearly" | "custom";
@@ -180,7 +179,7 @@ function colorForProduct(productId: string, idx: number): string {
 // ──────────────────────────────────────────────────────────────────────────
 //  LINE GRAPH (Google-style, custom SVG)
 // ──────────────────────────────────────────────────────────────────────────
-type LinePoint = { ts: number; value: number; event: SaleEvent };
+type LinePoint = { ts: number; value: number };
 
 function LineGraph({
   points,
@@ -364,7 +363,32 @@ function LineGraph({
             <stop offset="0%" stopColor="hsl(43 90% 55%)" stopOpacity="0.22" />
             <stop offset="100%" stopColor="hsl(43 90% 55%)" stopOpacity="0" />
           </linearGradient>
+          {/* Micro-grid pattern for precision reading */}
+          <pattern
+            id="microGrid"
+            width="12"
+            height="12"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M 12 0 L 0 0 0 12"
+              fill="none"
+              stroke="hsl(240 6% 22%)"
+              strokeWidth="0.5"
+              opacity="0.35"
+            />
+          </pattern>
         </defs>
+
+        {/* Micro grid background — subtle, behind the chart */}
+        <rect
+          x={padL}
+          y={padT}
+          width={innerW}
+          height={innerH}
+          fill="url(#microGrid)"
+        />
+
 
         {/* Y grid + labels */}
         {yTickVals.map((v, i) => {
@@ -438,23 +462,23 @@ function LineGraph({
           />
         )}
 
-        {/* Hovered point marker */}
+        {/* Hovered point marker — slightly larger and sharper */}
         {hoverPoint && (
           <>
             <circle
               cx={xFor(hoverPoint.ts)}
               cy={yFor(hoverPoint.value)}
-              r={6}
+              r={9}
               fill="hsl(43 90% 55%)"
-              opacity={0.18}
+              opacity={0.16}
             />
             <circle
               cx={xFor(hoverPoint.ts)}
               cy={yFor(hoverPoint.value)}
-              r={3.5}
+              r={4.5}
               fill="hsl(43 90% 55%)"
               stroke="hsl(240 10% 8%)"
-              strokeWidth={1.5}
+              strokeWidth={2}
             />
           </>
         )}
@@ -472,50 +496,76 @@ function LineGraph({
         />
       </svg>
 
-      {/* Tooltip — adaptive vertical placement keeps it on-canvas and unobtrusive */}
+      {/* Compact tooltip + dotted connector — smart non-overlap placement */}
       {hoverPoint && (() => {
-        const TT_W = 150;
-        const TT_H = 60;
-        const GAP = 14;
+        const TT_H = 40; // approximate compact height
+        const GAP = 16; // breathing room from the point so we never overlap line
         const px = xFor(hoverPoint.ts);
         const py = yFor(hoverPoint.value);
-        // Vertical zone of the point within the inner plot area (0 = top, 1 = bottom)
-        const zone = (py - padT) / Math.max(1, innerH);
-        // Lower 0–40% of value range (point is high on screen, near top): place below
-        // Mid 40–70%: place slightly above
-        // Upper 70–100% (point is low on screen, near baseline): place above
-        // The zone above is about screen position; invert so we describe value height.
-        const valueHeightPct = 1 - zone; // 1 = high value, 0 = low value
-        let top: number;
-        if (valueHeightPct < 0.4) {
-          top = py - TT_H - GAP; // low value -> tooltip above
-        } else if (valueHeightPct < 0.7) {
-          top = py - TT_H - GAP * 0.6; // mid -> slightly above
-        } else {
-          top = py + GAP; // high value -> below the point
-        }
-        // Clamp inside the chart vertically
+        // Decide above vs below: high values (point near top) -> below; otherwise above
+        const valueHeightPct = 1 - (py - padT) / Math.max(1, innerH);
+        const placeBelow = valueHeightPct >= 0.65;
+        let top = placeBelow ? py + GAP : py - TT_H - GAP;
+        // Clamp vertically
         top = Math.max(6, Math.min(size.h - TT_H - 6, top));
-        const left = Math.min(
-          size.w - TT_W - 6,
-          Math.max(padL, px - TT_W / 2)
-        );
+
         const isProfit = metric === "profit";
         const valueLabel = isProfit
           ? `$${hoverPoint.value.toFixed(2)}`
-          : `${Math.round(hoverPoint.value)} item${Math.round(hoverPoint.value) === 1 ? "" : "s"}`;
-        const detailLabel = isProfit ? "Total profit" : "Total items sold";
+          : `${Math.round(hoverPoint.value)}`;
+        // Time label rules: daily -> HH:MM, others -> date only
+        const d = new Date(hoverPoint.ts);
+        const timeLabel =
+          mode === "daily"
+            ? d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+            : mode === "weekly"
+            ? d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
+            : mode === "yearly"
+            ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
+            : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+        // Connector line endpoints (between point edge and tooltip edge)
+        const pointEdgeY = placeBelow ? py + 6 : py - 6;
+        const ttEdgeY = placeBelow ? top : top + TT_H;
+
         return (
-          <div
-            className="pointer-events-none absolute z-10 px-2.5 py-1.5 rounded-lg border border-border bg-popover/95 backdrop-blur-sm shadow-xl text-xs transition-[left,top] duration-150 ease-out"
-            style={{ left, top, width: TT_W }}
-          >
-            <div className="text-muted-foreground text-[10px] mb-0.5">
-              {formatTooltipTs(hoverPoint.ts, mode)}
+          <>
+            {/* Dotted connector from point to tooltip */}
+            <svg
+              className="pointer-events-none absolute inset-0"
+              width={size.w}
+              height={size.h}
+              style={{ overflow: "visible" }}
+            >
+              <line
+                x1={px}
+                x2={px}
+                y1={pointEdgeY}
+                y2={ttEdgeY}
+                stroke="hsl(43 90% 55%)"
+                strokeWidth={1}
+                strokeDasharray="2 3"
+                opacity={0.7}
+              />
+            </svg>
+            {/* Compact tooltip */}
+            <div
+              className="pointer-events-none absolute z-10 px-2 py-1 rounded-md border border-border/80 bg-popover/95 backdrop-blur-sm shadow-lg text-[11px] leading-tight whitespace-nowrap transition-[left,top] duration-150 ease-out"
+              style={{
+                // Center horizontally on the point, then clamp inside the chart
+                left: 0,
+                top,
+                transform: `translateX(${Math.min(
+                  size.w - 6,
+                  Math.max(6, px)
+                )}px) translateX(-50%)`,
+              }}
+            >
+              <span className="text-muted-foreground">{timeLabel}</span>
+              <span className="mx-1.5 text-border">·</span>
+              <span className="font-semibold text-foreground tabular-nums">{valueLabel}</span>
             </div>
-            <div className="font-semibold text-foreground">{valueLabel}</div>
-            <div className="text-[10px] text-muted-foreground mt-0.5">{detailLabel}</div>
-          </div>
+          </>
         );
       })()}
 
@@ -776,21 +826,30 @@ export default function Analytics() {
     [events, win.start, win.end]
   );
 
-  // Line points: per-event metric value
-  // SALES mode: number of items sold at that event (quantity count)
-  // PROFIT mode: total profit amount (currency)
-  const linePoints: LinePoint[] = useMemo(
-    () =>
-      inWindow.map((ev) => ({
-        ts: ev.ts,
-        value:
-          metric === "sales"
-            ? ev.items.reduce((s, it) => s + it.qty, 0)
-            : ev.totalProfit,
-        event: ev,
-      })),
-    [inWindow, metric]
-  );
+  // Line points
+  // DAILY mode: per-event point (preserves intra-day time granularity).
+  // WEEKLY / MONTHLY / YEARLY / CUSTOM: aggregated per-day totals.
+  // SALES = number of items sold; PROFIT = total profit amount.
+  const linePoints: LinePoint[] = useMemo(() => {
+    const valueOf = (ev: typeof inWindow[number]) =>
+      metric === "sales"
+        ? ev.items.reduce((s, it) => s + it.qty, 0)
+        : ev.totalProfit;
+
+    if (mode === "daily") {
+      return inWindow.map((ev) => ({ ts: ev.ts, value: valueOf(ev) }));
+    }
+
+    const byDay = new Map<number, number>();
+    for (const ev of inWindow) {
+      const d = new Date(ev.ts);
+      const dayTs = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+      byDay.set(dayTs, (byDay.get(dayTs) ?? 0) + valueOf(ev));
+    }
+    return Array.from(byDay.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([ts, value]) => ({ ts, value }));
+  }, [inWindow, metric, mode]);
 
   // Per-product aggregation for bars + top list
   const productAgg = useMemo(() => {
