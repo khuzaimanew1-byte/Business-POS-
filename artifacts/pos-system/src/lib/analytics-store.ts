@@ -15,6 +15,7 @@ export type AnalyticsTxn = {
 };
 
 const STORAGE_KEY = "pos.analytics.txns.v1";
+const DEMO_FLAG_KEY = "pos.analytics.demoSeeded.v1";
 const MAX_TXNS = 5000;
 
 type Listener = () => void;
@@ -79,6 +80,26 @@ export function recordSale(items: {
 
 export function clearTransactions() {
   cache = [];
+  persist();
+  emit();
+}
+
+export function isDemoSeeded(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return window.localStorage.getItem(DEMO_FLAG_KEY) === "1"; } catch { return false; }
+}
+
+export function setDemoSeeded(v: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    if (v) window.localStorage.setItem(DEMO_FLAG_KEY, "1");
+    else window.localStorage.removeItem(DEMO_FLAG_KEY);
+  } catch { /* noop */ }
+}
+
+/** Replace the entire transaction log (used by the demo seeder). */
+export function setTransactions(txns: AnalyticsTxn[]) {
+  cache = txns.slice(-MAX_TXNS);
   persist();
   emit();
 }

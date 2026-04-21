@@ -1,0 +1,121 @@
+Update the analytics system by introducing a **temporary demo dataset** for development and visualization purposes. This is only for testing the UI/UX and graph behavior before real data integration.
+
+---
+
+# 🧪 DEMO DATA MODE (TEMPORARY SETUP)
+
+### 🎯 PURPOSE
+
+* Provide sample data for:
+
+  * Line graph
+  * Bar graph
+  * Top products list
+* This data is ONLY for UI testing and design validation
+* Later it will be replaced with real transaction data from cart submissions
+
+---
+
+# 📅 1. DEMO LINE GRAPH DATA
+
+### 🧠 STRUCTURE RULE
+
+Create realistic sample sales and profit activity using:
+
+* Dates
+* Times (for daily view)
+* Quantities
+* Profit values per product
+
+---
+
+### 📈 DEMO BEHAVIOR
+
+* Include multiple sample sales across different:
+
+  * Days
+  * Times (for daily mode)
+* Ensure gaps exist (some days with no sales)
+* Only show points where demo activity exists
+
+---
+
+### 💰 SAMPLE VALUES
+
+* Quantity per sale: random small realistic values (1–5 items)
+* Profit per product: predefined mock values per item
+* Sales value: derived from quantity × price
+
+---
+
+# 📊 2. DEMO BAR GRAPH DATA
+
+* Generate **top 5 demo products**
+* Each product should include:
+
+  * Name
+  * Image placeholder
+  * Random sales/profit value
+  * Assigned consistent color
+
+Behavior:
+
+* One product should clearly appear as highest performer
+* Others should be distributed realistically (not equal values)
+
+---
+
+# 📋 3. DEMO TOP 10 LIST
+
+* Generate 10 sample products
+* Include:
+
+  * Image
+  * Name
+  * Horizontal bar (relative performance)
+  * Value (sales or profit based on mode)
+
+---
+
+# 🧠 4. DEMO LOGIC RULES
+
+* Data must feel realistic, not random noise
+* Keep relationships logical:
+
+  * Higher quantity → higher profit
+  * Frequent sales → stronger graph presence
+* Include some days with **no activity**
+
+  * These should be completely absent from graph points
+
+---
+
+# 🔄 5. TRANSITION TO REAL DATA (IMPORTANT)
+
+* This demo system is temporary
+* Later replace with:
+
+  * Cart submission-based real-time data
+  * Product-level profit tracking
+  * Live sales records
+
+---
+
+# ⚡ INTERACTION BEHAVIOR
+
+* Graphs should still animate normally using demo data
+* Hover tooltips should work fully with:
+
+  * Date
+  * Time
+  * Quantity
+  * Profit value
+
+---
+
+# 🎯 FINAL GOAL
+
+* Provide realistic visual data for testing analytics UI
+* Ensure all graph behaviors (hover, animation, filtering) can be validated
+* Prepare system for smooth transition to real-time POS data later
+* Maintain clean, structured, and believable dataset behavior

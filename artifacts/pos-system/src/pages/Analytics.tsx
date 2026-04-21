@@ -14,8 +14,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import {
-  AnalyticsTxn, getTransactions, subscribe,
+  AnalyticsTxn, getTransactions, subscribe, isDemoSeeded, setDemoSeeded, clearTransactions,
 } from "@/lib/analytics-store";
+import { seedDemoData } from "@/lib/analytics-demo";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Mode = "sales" | "profit";
@@ -170,6 +171,16 @@ export default function Analytics() {
   const [customOpen, setCustomOpen] = useState(false);
 
   const allTxns = useTransactions();
+
+  // One-time demo data seeding for UI/UX validation. Real cart submissions
+  // continue to add to the same store.
+  const [demoActive, setDemoActive] = useState<boolean>(() => isDemoSeeded());
+  useEffect(() => {
+    if (allTxns.length === 0 && !isDemoSeeded()) {
+      seedDemoData();
+      setDemoActive(true);
+    }
+  }, [allTxns.length]);
 
   const [barSlots, setBarSlots] = useState<(string | null)[]>(() => {
     if (typeof window === "undefined") return [null, null, null, null, null];
@@ -382,6 +393,31 @@ export default function Analytics() {
                     Add items to your cart in the POS and tap <span className="font-medium text-foreground">Checkout</span> — each submission adds a real data point here.
                   </div>
                 </div>
+              </div>
+            )}
+
+            {demoActive && hasAnyTxns && (
+              <div className="mb-4 sm:mb-6 rounded-xl border border-border/60 bg-secondary/20 backdrop-blur-sm px-4 py-2.5 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 text-primary px-2 py-0.5 text-[10px] uppercase tracking-wider font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                    Demo data
+                  </span>
+                  <span className="text-muted-foreground truncate">
+                    Sample sales for UI testing. Real Checkouts are added on top.
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    clearTransactions();
+                    setDemoSeeded(false);
+                    setDemoActive(false);
+                  }}
+                  className="shrink-0 text-[11px] uppercase tracking-wide text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-secondary/60"
+                  data-testid="btn-clear-demo"
+                >
+                  Clear demo
+                </button>
               </div>
             )}
 
