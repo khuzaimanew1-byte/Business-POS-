@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { 
-  Home, Plus, Pencil, Settings, Search, X, Bell, 
+  Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
   ShoppingCart, Trash2, Minus, Check, Camera
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -247,6 +247,7 @@ export default function POS() {
         <div className="flex flex-col gap-6">
           <TooltipProvider delayDuration={100}>
             <TooltipItem icon={<Home size={20} />} label="Home" active />
+            <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" />
             <div onClick={() => setIsAddProductModalOpen(true)}>
               <TooltipItem icon={<Plus size={20} />} label="Add Product" />
             </div>
@@ -624,6 +625,9 @@ export default function POS() {
       <nav className="mobile-bottom-nav sm:hidden fixed bottom-0 left-0 right-0 h-[60px] bg-sidebar border-t border-border flex items-center justify-around px-2 z-30">
         {/* Home */}
         <MobileNavBtn icon={<Home size={20} />} label="Home" active />
+
+        {/* Analytics */}
+        <MobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" />
 
         {/* Add Product — center, prominent */}
         <button
