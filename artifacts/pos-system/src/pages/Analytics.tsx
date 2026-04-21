@@ -1,8 +1,8 @@
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect, useCallback, useSyncExternalStore } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Home, BarChart2, Plus, Settings, ArrowLeft, Calendar as CalendarIcon,
-  TrendingUp, DollarSign, Check,
+  TrendingUp, DollarSign, Check, Inbox,
 } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
@@ -13,44 +13,53 @@ import { Calendar } from "@/components/ui/calendar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
+import {
+  AnalyticsTxn, getTransactions, subscribe,
+} from "@/lib/analytics-store";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Mode = "sales" | "profit";
 type Range = "daily" | "weekly" | "monthly" | "yearly" | "custom";
 
-type Product = {
+type ProductMeta = {
   id: string;
   name: string;
   image?: string;
-  category: string;
-  price: number;
 };
 
-type Txn = {
-  t: number;          // unix ms
-  productId: string;
-  qty: number;
-  profit: number;     // dollars
-};
+// Mirror the POS catalog so we can show product images/avatars in the lists.
+// Analytics derives all values strictly from recorded transactions; this map is
+// only used for visual metadata (image, fallback name).
+const PRODUCT_META: Record<string, ProductMeta> = Object.fromEntries([
+  { id: "1",  name: "Espresso",         image: "/images/espresso.png" },
+  { id: "2",  name: "Latte",            image: "/images/latte.png" },
+  { id: "3",  name: "Cappuccino",       image: "/images/cappuccino.png" },
+  { id: "4",  name: "Trail Mix",        image: "/images/trail-mix.png" },
+  { id: "5",  name: "Granola Bar",      image: "/images/granola-bar.png" },
+  { id: "6",  name: "Chips Pack" },
+  { id: "7",  name: "Wireless Earbuds", image: "/images/earbuds.png" },
+  { id: "8",  name: "USB Cable",        image: "/images/usb-cable.png" },
+  { id: "9",  name: "Phone Stand",      image: "/images/phone-stand.png" },
+  { id: "10", name: "T-Shirt" },
+  { id: "11", name: "Cap" },
+  { id: "12", name: "Sandwich" },
+  { id: "13", name: "Salad Bowl" },
+].map(p => [p.id, p]));
 
-// Mirror the POS catalog so Analytics is self-contained.
-const PRODUCTS: Product[] = [
-  { id: "1",  name: "Espresso",        category: "Drinks",      price: 3.50,  image: "/images/espresso.png" },
-  { id: "2",  name: "Latte",           category: "Drinks",      price: 4.50,  image: "/images/latte.png" },
-  { id: "3",  name: "Cappuccino",      category: "Drinks",      price: 4.00,  image: "/images/cappuccino.png" },
-  { id: "4",  name: "Trail Mix",       category: "Snacks",      price: 2.99,  image: "/images/trail-mix.png" },
-  { id: "5",  name: "Granola Bar",     category: "Snacks",      price: 1.99,  image: "/images/granola-bar.png" },
-  { id: "6",  name: "Chips Pack",      category: "Snacks",      price: 1.49 },
-  { id: "7",  name: "Wireless Earbuds",category: "Electronics", price: 29.99, image: "/images/earbuds.png" },
-  { id: "8",  name: "USB Cable",       category: "Electronics", price: 9.99,  image: "/images/usb-cable.png" },
-  { id: "9",  name: "Phone Stand",     category: "Electronics", price: 14.99, image: "/images/phone-stand.png" },
-  { id: "10", name: "T-Shirt",         category: "Clothing",    price: 19.99 },
-  { id: "11", name: "Cap",             category: "Clothing",    price: 12.99 },
-  { id: "12", name: "Sandwich",        category: "Food",        price: 6.99 },
-  { id: "13", name: "Salad Bowl",      category: "Food",        price: 8.99 },
+// ── Muted, dark-mode-friendly color palette ───────────────────────────────────
+const BAR_PALETTE = [
+  "#D9A441", // warm gold
+  "#7AA9C7", // dusty blue
+  "#8FB587", // sage
+  "#C58CA6", // muted rose
+  "#C2895E", // terracotta
+  "#9B8DC4", // lavender
+  "#5FA8A1", // teal
+  "#B8B07A", // olive
+  "#B97A6E", // brick
+  "#7FA0B8", // slate
 ];
 
-// ── Deterministic pseudo-random helpers ───────────────────────────────────────
 function hash(str: string): number {
   let h = 2166136261;
   for (let i = 0; i < str.length; i++) {
@@ -59,28 +68,28 @@ function hash(str: string): number {
   }
   return (h >>> 0);
 }
-function rand(seed: string): number {
-  return (hash(seed) % 100000) / 100000;
+
+// Deterministic color assignment with adjacent-clash avoidance done at render time.
+function baseColorFor(productId: string): string {
+  return BAR_PALETTE[hash(`c-${productId}`) % BAR_PALETTE.length];
 }
 
-// Per-product profit-per-unit (mirrors a value that would be set in product edit).
-const PROFIT_PER_UNIT: Record<string, number> = (() => {
-  const map: Record<string, number> = {};
-  for (const p of PRODUCTS) {
-    const margin = 0.24 + rand(`pm-${p.id}`) * 0.22; // 24%–46%
-    map[p.id] = +(p.price * margin).toFixed(2);
+// Given an ordered list of product ids, return colors that minimise adjacency clashes.
+function colorsForOrdered(ids: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < ids.length; i++) {
+    let c = baseColorFor(ids[i]);
+    if (i > 0 && out[i - 1] === c) {
+      // shift to next palette entry that differs
+      const startIdx = BAR_PALETTE.indexOf(c);
+      for (let k = 1; k < BAR_PALETTE.length; k++) {
+        const cand = BAR_PALETTE[(startIdx + k) % BAR_PALETTE.length];
+        if (cand !== out[i - 1]) { c = cand; break; }
+      }
+    }
+    out.push(c);
   }
-  return map;
-})();
-
-// Distinct color per product for bar graph.
-const BAR_PALETTE = [
-  "#F5B642", "#5DA5FF", "#7AD992", "#E47CC8", "#FF8366",
-  "#9C7BFF", "#3FC9C7", "#FFD166", "#A0D14F", "#F0596B",
-  "#5BC0DE", "#C29CFF", "#FFA34D",
-];
-function colorFor(productId: string): string {
-  return BAR_PALETTE[hash(`c-${productId}`) % BAR_PALETTE.length];
+  return out;
 }
 
 // ── Range → time window ──────────────────────────────────────────────────────
@@ -92,15 +101,9 @@ function endOfDay(d: Date): Date {
 }
 function rangeWindow(range: Range, custom: { from?: Date; to?: Date }): { from: number; to: number } | null {
   const today = startOfDay(new Date());
-  if (range === "daily") {
-    return { from: +today, to: +today + 86_400_000 - 1 };
-  }
-  if (range === "weekly") {
-    return { from: +today - 6 * 86_400_000, to: +endOfDay(new Date()) };
-  }
-  if (range === "monthly") {
-    return { from: +today - 29 * 86_400_000, to: +endOfDay(new Date()) };
-  }
+  if (range === "daily") return { from: +today, to: +today + 86_400_000 - 1 };
+  if (range === "weekly") return { from: +today - 6 * 86_400_000, to: +endOfDay(new Date()) };
+  if (range === "monthly") return { from: +today - 29 * 86_400_000, to: +endOfDay(new Date()) };
   if (range === "yearly") {
     const start = new Date(today);
     start.setMonth(start.getMonth() - 11, 1);
@@ -113,68 +116,16 @@ function rangeWindow(range: Range, custom: { from?: Date; to?: Date }): { from: 
   return null;
 }
 
-// ── Event-log generator (deterministic) ──────────────────────────────────────
-// Produces real, individually-timestamped transactions across the window.
-// Some days/months may have ZERO transactions — those are intentionally absent.
-function makeEvents(range: Range, custom: { from?: Date; to?: Date }): Txn[] {
-  const win = rangeWindow(range, custom);
-  if (!win) return [];
-
-  const events: Txn[] = [];
-  const dayMs = 86_400_000;
-  const dayCount = Math.max(1, Math.ceil((win.to - win.from + 1) / dayMs));
-
-  for (let i = 0; i < dayCount; i++) {
-    const dayStart = startOfDay(new Date(win.from + i * dayMs));
-    if (+dayStart > win.to) break;
-    const dayKey = format(dayStart, "yyyy-MM-dd");
-
-    // Skip some days entirely — only "daily" guarantees today has activity.
-    const skipChance =
-      range === "daily" ? 0 :
-      range === "yearly" ? 0.06 :
-      range === "monthly" ? 0.18 :
-      range === "weekly" ? 0.10 : 0.12;
-    if (range !== "daily" && rand(`skip-${dayKey}`) < skipChance) continue;
-
-    // Number of transactions this day
-    const baseN =
-      range === "daily" ? 14 + Math.floor(rand(`nt-${dayKey}`) * 14) : // 14–27 today
-                          6  + Math.floor(rand(`nt-${dayKey}`) * 14);  // 6–19 per day
-    for (let j = 0; j < baseN; j++) {
-      const seed = `${dayKey}-${j}`;
-      // Active hours 7:00–22:00, biased toward lunch + evening
-      const r = rand(`h-${seed}`);
-      let hour = 7 + r * 15;
-      // Bias: pull a few toward 12 and 19
-      const bias = rand(`b-${seed}`);
-      if (bias < 0.25) hour = 11.5 + rand(`bl-${seed}`) * 2;
-      else if (bias < 0.5) hour = 18 + rand(`be-${seed}`) * 2.5;
-      const minute = Math.floor(rand(`m-${seed}`) * 60);
-      const t = +dayStart + Math.floor(hour * 3_600_000) + minute * 60_000;
-      if (t > win.to) continue;
-
-      const p = PRODUCTS[Math.floor(rand(`p-${seed}`) * PRODUCTS.length)];
-      const qty = 1 + Math.floor(rand(`q-${seed}`) * 3); // 1–3
-      const profit = +(qty * PROFIT_PER_UNIT[p.id]).toFixed(2);
-      events.push({ t, productId: p.id, qty, profit });
-    }
-  }
-
-  events.sort((a, b) => a.t - b.t);
-  return events;
-}
-
-// ── Series builders ──────────────────────────────────────────────────────────
+// ── Series builders (purely from real transactions) ──────────────────────────
 type Pt = { t: number; sales: number; profit: number };
 
-// Daily: every transaction is its own point at its exact timestamp.
-function buildDailySeries(events: Txn[]): Pt[] {
+// Daily: one point per real transaction at its exact timestamp.
+function buildDailySeries(events: AnalyticsTxn[]): Pt[] {
   return events.map(e => ({ t: e.t, sales: e.qty, profit: e.profit }));
 }
 
 // Aggregate by calendar day — only days with at least one event.
-function buildDailyAggregateSeries(events: Txn[]): Pt[] {
+function buildDailyAggregateSeries(events: AnalyticsTxn[]): Pt[] {
   const buckets = new Map<number, Pt>();
   for (const e of events) {
     const d = startOfDay(new Date(e.t));
@@ -188,7 +139,7 @@ function buildDailyAggregateSeries(events: Txn[]): Pt[] {
 }
 
 // Aggregate by calendar month — only months with at least one event.
-function buildMonthlyAggregateSeries(events: Txn[]): Pt[] {
+function buildMonthlyAggregateSeries(events: AnalyticsTxn[]): Pt[] {
   const buckets = new Map<string, Pt>();
   for (const e of events) {
     const d = new Date(e.t);
@@ -202,6 +153,11 @@ function buildMonthlyAggregateSeries(events: Txn[]): Pt[] {
   return Array.from(buckets.values()).sort((a, b) => a.t - b.t);
 }
 
+// ── Live store hook ──────────────────────────────────────────────────────────
+function useTransactions(): AnalyticsTxn[] {
+  return useSyncExternalStore(subscribe, getTransactions, getTransactions);
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 const ACCENT = "hsl(43 90% 55%)";
 const STORAGE_KEY = "pos.analytics.barSelections.v1";
@@ -212,6 +168,8 @@ export default function Analytics() {
   const [range, setRange] = useState<Range>("weekly");
   const [customRange, setCustomRange] = useState<{ from?: Date; to?: Date }>({});
   const [customOpen, setCustomOpen] = useState(false);
+
+  const allTxns = useTransactions();
 
   const [barSlots, setBarSlots] = useState<(string | null)[]>(() => {
     if (typeof window === "undefined") return [null, null, null, null, null];
@@ -232,36 +190,30 @@ export default function Analytics() {
     ? `${+customRange.from}-${+customRange.to}`
     : "none";
 
-  // Single source of truth: an event log of real transactions.
-  const events = useMemo(
-    () => makeEvents(range, customRange),
-    [range, customKey] // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  const win = useMemo(() => rangeWindow(range, customRange), [range, customKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Series chosen per range
+  // Filter the real transaction log to the current range.
+  const events = useMemo(() => {
+    if (!win) return [];
+    return allTxns.filter(e => e.t >= win.from && e.t <= win.to);
+  }, [allTxns, win]);
+
   const series = useMemo<Pt[]>(() => {
     if (range === "daily") return buildDailySeries(events);
     if (range === "yearly") return buildMonthlyAggregateSeries(events);
-    return buildDailyAggregateSeries(events); // weekly, monthly, custom
+    return buildDailyAggregateSeries(events);
   }, [events, range]);
 
-  // X-axis domain = the requested window, so empty days create real gaps.
-  const win = useMemo(() => rangeWindow(range, customRange), [range, customKey]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Per-product totals from the same event log
+  // Per-product totals from the same events
   const totals = useMemo(() => {
-    const byId = new Map<string, { sales: number; profit: number }>();
+    const byId = new Map<string, { id: string; name: string; sales: number; profit: number }>();
     for (const e of events) {
-      const cur = byId.get(e.productId) ?? { sales: 0, profit: 0 };
+      const cur = byId.get(e.productId) ?? { id: e.productId, name: e.productName, sales: 0, profit: 0 };
       cur.sales += e.qty;
       cur.profit = +(cur.profit + e.profit).toFixed(2);
       byId.set(e.productId, cur);
     }
-    return PRODUCTS.map(p => ({
-      product: p,
-      sales: byId.get(p.id)?.sales ?? 0,
-      profit: byId.get(p.id)?.profit ?? 0,
-    }));
+    return Array.from(byId.values());
   }, [events]);
 
   const sortedTotals = useMemo(() => {
@@ -270,22 +222,39 @@ export default function Analytics() {
     );
   }, [totals, mode]);
 
+  // Universe of known product ids (from store + meta) for the swap popover
+  const knownProducts = useMemo(() => {
+    const ids = new Set<string>(Object.keys(PRODUCT_META));
+    for (const t of allTxns) ids.add(t.productId);
+    return Array.from(ids).map(id => ({
+      id,
+      name: PRODUCT_META[id]?.name ?? (allTxns.find(t => t.productId === id)?.productName ?? id),
+      image: PRODUCT_META[id]?.image,
+    }));
+  }, [allTxns]);
+
   // Top 5 with custom slot overrides
   const top5 = useMemo(() => {
     const used = new Set<string>();
     const auto = sortedTotals.slice();
     return barSlots.map((slotId, idx) => {
       if (slotId) {
-        const t = totals.find(t => t.product.id === slotId);
-        if (t) { used.add(t.product.id); return t; }
+        const t = totals.find(t => t.id === slotId);
+        if (t) { used.add(t.id); return t; }
+        // slot points to a product with no sales in this range
+        const meta = knownProducts.find(p => p.id === slotId);
+        if (meta) {
+          used.add(slotId);
+          return { id: slotId, name: meta.name, sales: 0, profit: 0 };
+        }
       }
       while (auto.length) {
         const next = auto.shift()!;
-        if (!used.has(next.product.id)) { used.add(next.product.id); return next; }
+        if (!used.has(next.id)) { used.add(next.id); return next; }
       }
-      return sortedTotals[idx];
+      return sortedTotals[idx] ?? { id: `empty-${idx}`, name: "—", sales: 0, profit: 0 };
     });
-  }, [barSlots, sortedTotals, totals]);
+  }, [barSlots, sortedTotals, totals, knownProducts]);
 
   const top10 = useMemo(() => sortedTotals.slice(0, 10), [sortedTotals]);
 
@@ -306,7 +275,6 @@ export default function Analytics() {
   const xTicks = useMemo(() => {
     if (!win) return undefined;
     if (range === "daily") {
-      // Every 3 hours
       const out: number[] = [];
       for (let h = 0; h <= 24; h += 3) out.push(win.from + h * 3_600_000);
       return out;
@@ -314,17 +282,16 @@ export default function Analytics() {
     if (range === "yearly") {
       const ticks: number[] = [];
       const start = new Date(win.from);
-      for (let i = 0; i < 12; i++) {
-        ticks.push(+new Date(start.getFullYear(), start.getMonth() + i, 15));
-      }
+      for (let i = 0; i < 12; i++) ticks.push(+new Date(start.getFullYear(), start.getMonth() + i, 15));
       return ticks;
     }
     return undefined;
   }, [win, range]);
 
+  const hasAnyTxns = allTxns.length > 0;
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground dark analytics-root">
-      {/* Desktop sidebar */}
       <aside className="hidden sm:flex w-[60px] shrink-0 border-r border-border bg-sidebar flex-col items-center py-4 z-20">
         <div className="flex flex-col gap-6">
           <TooltipProvider delayDuration={100}>
@@ -404,6 +371,20 @@ export default function Analytics() {
         <ScrollArea className="flex-1">
           <div className="px-3 sm:px-6 py-4 sm:py-6 pb-24 sm:pb-12 max-w-[1400px] mx-auto w-full pr-12 sm:pr-20">
 
+            {!hasAnyTxns && (
+              <div className="mb-4 sm:mb-6 rounded-2xl border border-border/70 bg-card/40 backdrop-blur-sm p-5 sm:p-6 flex items-start gap-3">
+                <div className="shrink-0 w-9 h-9 rounded-full bg-secondary/60 flex items-center justify-center text-muted-foreground">
+                  <Inbox size={16} />
+                </div>
+                <div className="text-sm">
+                  <div className="font-medium">No sales recorded yet</div>
+                  <div className="text-muted-foreground text-xs sm:text-[13px] mt-0.5">
+                    Add items to your cart in the POS and tap <span className="font-medium text-foreground">Checkout</span> — each submission adds a real data point here.
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* ── Line chart card ─────────────────────────────────── */}
             <section className="rounded-2xl border border-border/70 bg-card/40 backdrop-blur-sm p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4 sm:mb-6">
@@ -424,16 +405,16 @@ export default function Analytics() {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
                       data={series}
-                      key={`${range}-${mode}-${customKey}`}
+                      key={`${range}-${mode}-${customKey}-${series.length}`}
                       margin={{ top: 10, right: 8, bottom: 0, left: 0 }}
                     >
                       <defs>
                         <linearGradient id="lineFill" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor={ACCENT} stopOpacity={0.28} />
+                          <stop offset="0%" stopColor={ACCENT} stopOpacity={0.22} />
                           <stop offset="100%" stopColor={ACCENT} stopOpacity={0} />
                         </linearGradient>
                       </defs>
-                      <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 6" vertical={false} opacity={0.4} />
+                      <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 6" vertical={false} opacity={0.28} />
                       <XAxis
                         type="number"
                         dataKey="t"
@@ -459,16 +440,27 @@ export default function Analytics() {
                         cursor={{ stroke: "hsl(var(--border))", strokeDasharray: "3 3" }}
                         content={<ChartTooltip mode={mode} range={range} />}
                       />
+                      {/* Filled area under the line */}
+                      <Line
+                        type="monotone"
+                        dataKey={mode}
+                        stroke="transparent"
+                        fill="url(#lineFill)"
+                        dot={false}
+                        activeDot={false}
+                        isAnimationActive={false}
+                        legendType="none"
+                      />
+                      {/* The visible line itself — dots hidden by default, only on hover */}
                       <Line
                         type="monotone"
                         dataKey={mode}
                         stroke={ACCENT}
                         strokeWidth={2}
-                        fill="url(#lineFill)"
-                        dot={{ r: 2.5, stroke: ACCENT, strokeWidth: 1.5, fill: "hsl(var(--background))" }}
+                        dot={false}
                         activeDot={{ r: 5, stroke: "hsl(var(--background))", strokeWidth: 2, fill: ACCENT }}
                         isAnimationActive
-                        animationDuration={900}
+                        animationDuration={800}
                         animationEasing="ease-out"
                         connectNulls={false}
                       />
@@ -484,7 +476,7 @@ export default function Analytics() {
                 <div>
                   <h2 className="font-semibold text-sm sm:text-base">Top 5 Products</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Click a bar to swap in another product
+                    Click a slot below to swap in another product
                   </p>
                 </div>
               </div>
@@ -506,7 +498,7 @@ export default function Analytics() {
                     return copy;
                   });
                 }}
-                allProducts={PRODUCTS}
+                allProducts={knownProducts}
                 rangeKey={`${range}-${customKey}`}
               />
             </section>
@@ -519,7 +511,13 @@ export default function Analytics() {
                   Sorted by {mode === "sales" ? "units sold" : "profit"}
                 </span>
               </div>
-              <Top10List items={top10} mode={mode} />
+              {top10.length === 0 ? (
+                <div className="py-8 text-center text-xs text-muted-foreground/70">
+                  No product activity in this range yet.
+                </div>
+              ) : (
+                <Top10List items={top10} mode={mode} />
+              )}
             </section>
           </div>
         </ScrollArea>
@@ -632,23 +630,25 @@ function ToggleBtn({ active, onClick, icon, label }: { active: boolean; onClick:
   );
 }
 
-// ── Top 5 vertical bars (recharts BarChart with distinct colors) ──────────────
+// ── Top 5 vertical bars (recharts BarChart with muted distinct colors) ────────
+type Top5Item = { id: string; name: string; sales: number; profit: number };
 function Top5Bars({
   items, mode, onReplace, onResetSlot, allProducts, rangeKey,
 }: {
-  items: { product: Product; sales: number; profit: number }[];
+  items: Top5Item[];
   mode: Mode;
   onReplace: (slotIdx: number, productId: string) => void;
   onResetSlot: (slotIdx: number) => void;
-  allProducts: Product[];
+  allProducts: ProductMeta[];
   rangeKey: string;
 }) {
+  const colors = useMemo(() => colorsForOrdered(items.map(i => i.id)), [items]);
   const data = items.map((it, idx) => ({
     idx,
-    name: it.product.name,
-    productId: it.product.id,
+    name: it.name,
+    productId: it.id,
     value: mode === "sales" ? it.sales : it.profit,
-    color: colorFor(it.product.id),
+    color: colors[idx],
   }));
 
   const [openIdx, setOpenIdx] = useState<number | null>(null);
@@ -663,8 +663,8 @@ function Top5Bars({
             key={`${rangeKey}-${mode}`}
             barCategoryGap="22%"
           >
-            <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 6" vertical={false} opacity={0.4} />
-            <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" tick={{ fontSize: 11 }} tickLine={false} axisLine={{ stroke: "hsl(var(--border))" }} interval={0} />
+            <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 6" vertical={false} opacity={0.28} />
+            <XAxis dataKey="name" tick={false} axisLine={{ stroke: "hsl(var(--border))" }} height={4} />
             <YAxis
               stroke="hsl(var(--muted-foreground))"
               tick={{ fontSize: 11 }}
@@ -674,7 +674,7 @@ function Top5Bars({
               tickFormatter={(v) => mode === "profit" ? `$${shortNum(v)}` : shortNum(v)}
             />
             <RTooltip
-              cursor={{ fill: "hsl(var(--secondary) / 0.5)" }}
+              cursor={{ fill: "hsl(var(--secondary) / 0.45)" }}
               content={({ active, payload }: any) => {
                 if (!active || !payload?.length) return null;
                 const p = payload[0].payload;
@@ -690,96 +690,109 @@ function Top5Bars({
             />
             <Bar
               dataKey="value"
-              radius={[10, 10, 4, 4]}
+              radius={[8, 8, 2, 2]}
               isAnimationActive
               animationDuration={750}
               animationEasing="ease-out"
-              onClick={(_, idx) => setOpenIdx(idx)}
-              cursor="pointer"
             >
-              {data.map((d) => (
-                <Cell key={d.productId} fill={d.color} />
+              {data.map((d, i) => (
+                <Cell key={`${d.productId}-${i}`} fill={d.color} />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      {/* Image strip + replace popovers under bars */}
-      <div className="grid grid-cols-5 gap-2 sm:gap-4 mt-2">
-        {items.map((it, idx) => (
-          <Popover key={`${it.product.id}-${idx}`} open={openIdx === idx} onOpenChange={(o) => setOpenIdx(o ? idx : null)}>
-            <PopoverTrigger asChild>
-              <button
-                className="flex flex-col items-center gap-1 rounded-lg p-1.5 hover:bg-secondary/40 transition-colors"
-                aria-label={`Replace ${it.product.name}`}
-                data-testid={`top5-bar-${idx}`}
-              >
-                <div className="relative">
-                  <ProductAvatar p={it.product} size={36} />
-                  <span
-                    className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-background"
-                    style={{ background: colorFor(it.product.id) }}
-                  />
-                </div>
-                <div className="text-[10px] sm:text-xs text-center text-muted-foreground line-clamp-1 w-full" title={it.product.name}>
-                  {it.product.name}
-                </div>
-              </button>
-            </PopoverTrigger>
-            <PopoverContent className="p-1 w-56" align="center">
-              <div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground flex items-center justify-between">
-                <span>Replace product</span>
+      {/* Single product label row under the chart: image + name + value */}
+      <div className="grid grid-cols-5 gap-2 sm:gap-4 mt-3">
+        {items.map((it, idx) => {
+          const meta = allProducts.find(p => p.id === it.id);
+          const value = mode === "sales" ? it.sales : it.profit;
+          const valueLabel = it.id.startsWith("empty-")
+            ? "—"
+            : mode === "profit" ? `$${value.toFixed(2)}` : `${value.toLocaleString()}${value === 1 ? " unit" : ""}`;
+          return (
+            <Popover key={`${it.id}-${idx}`} open={openIdx === idx} onOpenChange={(o) => setOpenIdx(o ? idx : null)}>
+              <PopoverTrigger asChild>
                 <button
-                  onClick={() => { onResetSlot(idx); setOpenIdx(null); }}
-                  className="text-[10px] uppercase tracking-wide hover:text-foreground transition-colors"
+                  className="flex flex-col items-center gap-1.5 rounded-lg p-1.5 hover:bg-secondary/40 transition-colors text-center"
+                  aria-label={`Replace ${it.name}`}
+                  data-testid={`top5-bar-${idx}`}
                 >
-                  Auto
+                  <ProductAvatar p={meta ?? { id: it.id, name: it.name }} size={36} />
+                  <div
+                    className="text-[10px] sm:text-xs font-medium text-foreground/90 line-clamp-1 w-full"
+                    title={it.name}
+                  >
+                    {it.name}
+                  </div>
+                  <div
+                    className="text-[10px] sm:text-[11px] font-mono tabular-nums text-muted-foreground"
+                    style={{ color: colors[idx] }}
+                  >
+                    {valueLabel}
+                  </div>
                 </button>
-              </div>
-              <ScrollArea className="h-56">
-                <div className="flex flex-col">
-                  {allProducts.map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => { onReplace(idx, p.id); setOpenIdx(null); }}
-                      className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-sm hover:bg-secondary/70 transition-colors ${p.id === it.product.id ? "bg-secondary/60" : ""}`}
-                    >
-                      <ProductAvatar p={p} size={24} />
-                      <span className="flex-1 truncate">{p.name}</span>
-                      <span className="w-2 h-2 rounded-full" style={{ background: colorFor(p.id) }} />
-                      {p.id === it.product.id && <Check size={14} className="text-primary shrink-0" />}
-                    </button>
-                  ))}
+              </PopoverTrigger>
+              <PopoverContent className="p-1 w-56" align="center">
+                <div className="px-2 py-1.5 text-[11px] font-medium text-muted-foreground flex items-center justify-between">
+                  <span>Replace product</span>
+                  <button
+                    onClick={() => { onResetSlot(idx); setOpenIdx(null); }}
+                    className="text-[10px] uppercase tracking-wide hover:text-foreground transition-colors"
+                  >
+                    Auto
+                  </button>
                 </div>
-              </ScrollArea>
-            </PopoverContent>
-          </Popover>
-        ))}
+                <ScrollArea className="h-56">
+                  <div className="flex flex-col">
+                    {allProducts.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => { onReplace(idx, p.id); setOpenIdx(null); }}
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-sm hover:bg-secondary/70 transition-colors ${p.id === it.id ? "bg-secondary/60" : ""}`}
+                      >
+                        <ProductAvatar p={p} size={24} />
+                        <span className="flex-1 truncate">{p.name}</span>
+                        <span className="w-2 h-2 rounded-full" style={{ background: baseColorFor(p.id) }} />
+                        {p.id === it.id && <Check size={14} className="text-primary shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </PopoverContent>
+            </Popover>
+          );
+        })}
       </div>
     </div>
   );
 }
 
 // ── Top 10 list ──────────────────────────────────────────────────────────────
-function Top10List({ items, mode }: { items: { product: Product; sales: number; profit: number }[]; mode: Mode }) {
+function Top10List({ items, mode }: {
+  items: { id: string; name: string; sales: number; profit: number }[];
+  mode: Mode;
+}) {
   const max = Math.max(1, ...items.map(it => mode === "sales" ? it.sales : it.profit));
+  const colors = colorsForOrdered(items.map(it => it.id));
   return (
     <ul className="flex flex-col">
       {items.map((it, i) => {
         const v = mode === "sales" ? it.sales : it.profit;
         const pct = Math.max(2, (v / max) * 100);
-        const color = colorFor(it.product.id);
+        const meta = PRODUCT_META[it.id] ?? { id: it.id, name: it.name };
+        const color = colors[i];
         return (
           <li
-            key={it.product.id}
+            key={it.id}
             className="grid grid-cols-[24px_36px_1fr_auto] sm:grid-cols-[28px_40px_1fr_auto] items-center gap-2 sm:gap-3 py-2 sm:py-2.5 border-b border-border/40 last:border-b-0"
             data-testid={`top10-item-${i}`}
           >
             <span className="text-xs text-muted-foreground font-mono tabular-nums">{i + 1}</span>
-            <ProductAvatar p={it.product} size={36} />
+            <ProductAvatar p={meta} size={36} />
             <div className="min-w-0">
-              <div className="text-sm font-medium truncate">{it.product.name}</div>
+              <div className="text-sm font-medium truncate">{it.name}</div>
               <div className="mt-1 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
                 <div
                   className="h-full rounded-full perf-bar"
@@ -800,7 +813,7 @@ function Top10List({ items, mode }: { items: { product: Product; sales: number; 
   );
 }
 
-function ProductAvatar({ p, size = 36 }: { p: Product; size?: number }) {
+function ProductAvatar({ p, size = 36 }: { p: ProductMeta; size?: number }) {
   const initials = p.name.split(" ").map(s => s[0]).join("").slice(0, 2).toUpperCase();
   return (
     <div

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { recordSale } from "@/lib/analytics-store";
 import { 
   Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
   ShoppingCart, Trash2, Minus, Check, Camera
@@ -191,6 +192,24 @@ export default function POS() {
 
   const checkout = () => {
     if (cartItems.length === 0) return;
+    // Record the sale into the analytics store. Profit per unit comes from
+    // the product's edited profit value (set in edit mode) when available;
+    // otherwise we fall back to a 32% margin of the unit price.
+    recordSale(
+      cartItems.map(i => {
+        const editedProfit = parseFloat(editDrafts[i.product.id]?.profit ?? "");
+        const unitProfit = Number.isFinite(editedProfit) && editedProfit > 0
+          ? editedProfit
+          : +(i.product.price * 0.32).toFixed(2);
+        return {
+          productId: i.product.id,
+          productName: i.product.name,
+          qty: i.quantity,
+          unitPrice: i.product.price,
+          unitProfit,
+        };
+      })
+    );
     setCartItems([]);
     setIsCartOpen(false);
     toast.success("Checkout successful!", { icon: <Check className="text-green-500" /> });
