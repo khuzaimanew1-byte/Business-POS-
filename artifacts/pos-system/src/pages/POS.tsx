@@ -693,18 +693,22 @@ export default function POS() {
               </div>
             ) : (
               cartItems.map(item => (
-                <div key={item.product.id} className="flex gap-3 bg-secondary/30 p-3 rounded-xl border border-border/50 group transition-colors duration-200" data-testid={`cart-item-${item.product.id}`}>
-                  <div className="w-14 h-14 bg-secondary overflow-hidden shrink-0 rounded-lg flex items-center justify-center">
+                <div key={item.product.id} className="flex bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.product.id}`}>
+                  {/* IMAGE — edge-to-edge, fills full row height */}
+                  <div className="w-16 shrink-0 bg-secondary self-stretch">
                     {item.product.image
                       ? <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover block" />
-                      : <span className="text-xs font-bold text-muted-foreground">{renderInitials(item.product.name)}</span>}
+                      : <div className="w-full h-full flex items-center justify-center">
+                          <span className="text-xs font-bold text-muted-foreground">{renderInitials(item.product.name)}</span>
+                        </div>}
                   </div>
-                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  {/* CONTENT — name, price, qty controls */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center px-3 py-2.5">
                     <div className="flex justify-between items-start mb-1">
                       <h4 className="font-medium text-sm truncate pr-2">{item.product.name}</h4>
                       <span className="font-semibold text-sm">${(item.product.price * item.quantity).toFixed(2)}</span>
                     </div>
-                    <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">${item.product.price.toFixed(2)} / ea</span>
                       <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
                         <button onClick={() => updateCartQty(item.product.id, item.quantity - 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-minus-${item.product.id}`}>
@@ -717,7 +721,8 @@ export default function POS() {
                       </div>
                     </div>
                   </div>
-                  <button onClick={() => removeFromCart(item.product.id)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive self-center p-2">
+                  {/* DELETE */}
+                  <button onClick={() => removeFromCart(item.product.id)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive self-center pr-3 pl-1 py-2 shrink-0">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
