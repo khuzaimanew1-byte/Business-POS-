@@ -670,30 +670,39 @@ export default function POS() {
       </nav>
 
       {/* ── CART PANEL ────────────────────────────────────────────────────── */}
-      <div
-        className={`fixed inset-0 z-40 sm:pointer-events-none transition-opacity duration-300 ease-in-out ${isCartOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
-        aria-hidden={!isCartOpen}
-      >
-        <button
-          type="button"
-          aria-label="Close cart"
-          onClick={() => setIsCartOpen(false)}
-          className="absolute inset-0 bg-black/30 backdrop-blur-[2px] sm:hidden"
-        />
-        <aside
-          className="fixed bottom-0 right-0 w-full sm:w-[380px] sm:top-0 sm:bottom-0 bg-background border-t sm:border-t-0 sm:border-l border-border shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out translate-y-full sm:translate-y-0 sm:translate-x-full sm:rounded-none rounded-t-3xl"
-          style={{ transform: isCartOpen ? 'translateY(0)' : 'translateY(100%)' }}
-          data-testid="cart-sidebar"
-        >
-          <div className="h-14 sm:h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
-            <h2 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
-              <ShoppingCart className="w-4 h-4" /> Cart Items
-            </h2>
-            <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)} className="rounded-full">
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
 
+      {/* Mobile backdrop — dim + blur, tap to close, hidden on desktop */}
+      <div
+        className={`fixed inset-0 z-40 sm:hidden transition-all duration-300 ease-in-out ${isCartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        onClick={() => setIsCartOpen(false)}
+        aria-hidden
+        style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: isCartOpen ? 'blur(3px)' : 'none' }}
+      />
+
+      {/* Cart panel — bottom sheet on mobile, right sidebar on desktop */}
+      <aside
+        className={`cart-panel fixed z-50 bg-background shadow-2xl flex flex-col
+          bottom-0 left-0 right-0 h-[80vh] rounded-t-3xl border-t border-border
+          sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-[380px] sm:h-auto sm:rounded-none sm:border-t-0 sm:border-l
+          ${isCartOpen ? 'cart-panel-open' : 'cart-panel-closed'}`}
+        data-testid="cart-sidebar"
+      >
+        {/* Drag handle pill — mobile only */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-border/70" />
+        </div>
+
+        {/* Header */}
+        <div className="h-12 sm:h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
+          <h2 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
+            <ShoppingCart className="w-4 h-4" /> Cart Items
+          </h2>
+          <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)} className="rounded-full">
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        {/* Items */}
         <ScrollArea className="flex-1 p-3 sm:p-4">
           <div className="flex flex-col gap-3">
             {cartItems.length === 0 ? (
@@ -704,7 +713,7 @@ export default function POS() {
             ) : (
               cartItems.map(item => (
                 <div key={item.product.id} className="flex bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.product.id}`}>
-                  {/* IMAGE — edge-to-edge, fills full row height */}
+                  {/* IMAGE — edge-to-edge square */}
                   <div className="w-[72px] h-[72px] shrink-0 bg-secondary">
                     {item.product.image
                       ? <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover block" />
@@ -712,7 +721,7 @@ export default function POS() {
                           <span className="text-xs font-bold text-muted-foreground">{renderInitials(item.product.name)}</span>
                         </div>}
                   </div>
-                  {/* CONTENT — name, price, qty controls */}
+                  {/* CONTENT */}
                   <div className="flex-1 min-w-0 flex flex-col justify-center px-3 py-2.5">
                     <div className="flex justify-between items-start mb-1">
                       <h4 className="font-medium text-sm truncate pr-2">{item.product.name}</h4>
@@ -741,8 +750,9 @@ export default function POS() {
           </div>
         </ScrollArea>
 
+        {/* Footer */}
         <div className="p-4 border-t border-border bg-background shrink-0 pb-safe">
-          <div className="flex justify-between font-bold text-lg mb-6 text-foreground">
+          <div className="flex justify-between font-bold text-lg mb-4 text-foreground">
             <span>Total</span>
             <span className="text-primary">${cartTotal.toFixed(2)}</span>
           </div>
@@ -750,8 +760,7 @@ export default function POS() {
             Checkout
           </Button>
         </div>
-        </aside>
-      </div>
+      </aside>
 
       {/* ── ADD PRODUCT MODAL ─────────────────────────────────────────────── */}
       <Dialog open={isAddProductModalOpen} onOpenChange={setIsAddProductModalOpen}>
@@ -832,6 +841,19 @@ export default function POS() {
         /* ── CSS custom property for bottom offset ── */
         :root { --mobile-nav-height: 0px; }
         @media (max-width: 639px) { :root { --mobile-nav-height: 60px; } }
+
+        /* ── Cart panel slide transforms ── */
+        .cart-panel {
+          transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        /* Mobile: slide up from bottom */
+        .cart-panel-closed { transform: translateY(100%); }
+        .cart-panel-open   { transform: translateY(0); }
+        /* Desktop: slide in from right */
+        @media (min-width: 640px) {
+          .cart-panel-closed { transform: translateX(100%); }
+          .cart-panel-open   { transform: translateX(0); }
+        }
 
         /* ── Product grid columns ── */
         .product-grid {
