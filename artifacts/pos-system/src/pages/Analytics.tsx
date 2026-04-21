@@ -373,9 +373,9 @@ function LineGraph({
             <path
               d="M 12 0 L 0 0 0 12"
               fill="none"
-              stroke="hsl(240 6% 22%)"
-              strokeWidth="0.5"
-              opacity="0.35"
+              stroke="hsl(240 8% 30%)"
+              strokeWidth="0.6"
+              opacity="0.65"
             />
           </pattern>
         </defs>
@@ -448,17 +448,18 @@ function LineGraph({
           />
         )}
 
-        {/* Hover guideline */}
-        {hover && (
+        {/* Locked tracking axis — perfectly vertical, anchored to the active point's x */}
+        {hoverPoint && (
           <line
-            x1={hover.x}
-            x2={hover.x}
+            x1={xFor(hoverPoint.ts)}
+            x2={xFor(hoverPoint.ts)}
             y1={padT}
             y2={padT + innerH}
-            stroke="hsl(240 5% 55%)"
+            stroke="hsl(43 90% 55%)"
             strokeWidth={1}
             strokeDasharray="3 3"
-            opacity={0.5}
+            opacity={0.55}
+            shapeRendering="crispEdges"
           />
         )}
 
@@ -524,31 +525,9 @@ function LineGraph({
             ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" })
             : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 
-        // Connector line endpoints (between point edge and tooltip edge)
-        const pointEdgeY = placeBelow ? py + 6 : py - 6;
-        const ttEdgeY = placeBelow ? top : top + TT_H;
-
         return (
           <>
-            {/* Dotted connector from point to tooltip */}
-            <svg
-              className="pointer-events-none absolute inset-0"
-              width={size.w}
-              height={size.h}
-              style={{ overflow: "visible" }}
-            >
-              <line
-                x1={px}
-                x2={px}
-                y1={pointEdgeY}
-                y2={ttEdgeY}
-                stroke="hsl(43 90% 55%)"
-                strokeWidth={1}
-                strokeDasharray="2 3"
-                opacity={0.7}
-              />
-            </svg>
-            {/* Compact tooltip */}
+            {/* Compact tooltip — anchored on the locked vertical axis through the point */}
             <div
               className="pointer-events-none absolute z-10 px-2 py-1 rounded-md border border-border/80 bg-popover/95 backdrop-blur-sm shadow-lg text-[11px] leading-tight whitespace-nowrap transition-[left,top] duration-150 ease-out"
               style={{

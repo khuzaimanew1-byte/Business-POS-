@@ -1,0 +1,155 @@
+Refine the **line graph only** with final precision fixes for tooltip anchoring, point-to-line connection geometry, and grid visibility. This update removes remaining UX flaws and brings the system closer to a professional Google-Analytics-level chart behavior.
+
+---
+
+# 📈 LINE GRAPH — FINAL PRECISION FIX (PRO LEVEL)
+
+---
+
+## 🎯 1. POINT ↔ TOOLTIP CONNECTION (CRITICAL GEOMETRY FIX)
+
+### ❌ Issue:
+
+* Vertical guide line was not perfectly aligned with point center
+* Visual connection feels slightly off / unclear
+
+---
+
+### ✅ FINAL RULE:
+
+* The connection line MUST:
+
+  * Start exactly from **center of tooltip anchor**
+  * Pass through exact **center of active data point**
+  * Be perfectly vertical (no offset, no curve)
+
+---
+
+### 📍 IMPLEMENTATION DETAIL:
+
+* Active point center = exact (x, y) coordinate of data node
+* Guide line:
+
+  * Strictly vertical (x-axis locked)
+  * Extends full height between tooltip and point
+
+✔ This creates a “locked tracking axis” effect
+
+---
+
+## 🧠 2. TOOLTIP + POINT ALIGNMENT (FINAL STABILITY)
+
+* Tooltip remains in **stable zone system (top/bottom hybrid)**
+* BUT connection line ensures:
+
+  * Exact mapping between tooltip and point
+  * No ambiguity even when tooltip is far away vertically
+
+✔ Tooltip position ≠ data reference position
+✔ Guide line becomes the true reference link
+
+---
+
+## 📊 3. GRID SYSTEM (VISIBILITY FIX)
+
+### ❌ Issue:
+
+* Grid too faint → loses structure readability
+
+---
+
+### ✅ UPDATED RULE:
+
+* Increase grid opacity slightly:
+
+  * Still subtle, but clearly visible
+  * Must support fast visual scanning
+
+---
+
+### 🎨 FINAL GRID STYLE:
+
+* Opacity: medium-low (not ultra faint)
+* Balanced contrast with background
+* Includes:
+
+  * Horizontal lines
+  * Vertical lines
+  * Small square subdivisions (micro grid)
+
+✔ Purpose:
+
+* Improve readability
+* Enhance data alignment perception
+* Help visual tracking in dense graphs
+
+---
+
+## 🟢 4. POINT VISIBILITY (FINAL TUNING)
+
+* Points remain:
+
+  * Hidden by default
+  * Visible on hover only
+
+### ON HOVER:
+
+* Slightly larger
+* Sharper edge
+* High contrast against line
+
+✔ Must feel “anchored” to grid system
+
+---
+
+## 🧠 5. LINE BEHAVIOR (FINAL POLISH)
+
+* Line must:
+
+  * Pass through exact point centers
+  * Stay smooth and continuous
+  * Not detach visually from grid structure
+
+---
+
+## 🌊 6. AREA UNDER LINE (RECHECK)
+
+* Light gradient fill
+* Must follow curve precisely
+* Must not interfere with grid visibility
+
+---
+
+## ⚡ 7. INTERACTION RULE (FINAL CONSISTENCY)
+
+* Tooltip:
+
+  * Stable zone system (top/bottom)
+  * No jitter
+  * No micro-movement
+
+* Guide line:
+
+  * Always active when hovering graph
+  * Always perfectly aligned with point center
+
+---
+
+## 🎯 FINAL RESULT (CLEAN SYSTEM)
+
+After this update:
+
+* Tooltip is stable and readable
+* Guide line perfectly connects tooltip ↔ point center
+* No visual misalignment exists
+* Grid is clearly visible but not distracting
+* Points feel mathematically accurate on graph
+* Overall system feels like a professional analytics engine
+
+---
+
+At the end of all changes, ensure that no other parts of the application outside this analytics page are affected or modified.
+
+You are free to improve design, interaction, and structure where needed within this page to make the experience better, cleaner, and more professional. Do not restrict yourself only to the explicitly mentioned points — you may enhance usability and visual quality if it aligns with the existing system.
+
+However, all changes must remain strictly scoped to this analytics page. Do not alter, redesign, or impact any other pages, components, or global styles outside of this context.
