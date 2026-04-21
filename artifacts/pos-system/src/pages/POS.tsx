@@ -668,10 +668,9 @@ export default function POS() {
 
       {/* Mobile backdrop — dim + blur, tap to close, hidden on desktop */}
       <div
-        className={`fixed inset-0 z-40 sm:hidden transition-all duration-300 ease-in-out ${isCartOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+        className={`cart-backdrop fixed inset-0 z-40 sm:hidden ${isCartOpen ? 'cart-backdrop-open' : 'cart-backdrop-closed'}`}
         onClick={() => setIsCartOpen(false)}
         aria-hidden
-        style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: isCartOpen ? 'blur(3px)' : 'none' }}
       />
 
       {/* Cart panel — bottom sheet on mobile, right sidebar on desktop */}
@@ -839,15 +838,43 @@ export default function POS() {
 
         /* ── Cart panel slide transforms ── */
         .cart-panel {
-          transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+          will-change: transform;
+          /* Mobile open: calm, gradual rise */
+          transition: transform 460ms cubic-bezier(0.22, 0.61, 0.36, 1);
+        }
+        .cart-panel.cart-panel-closed {
+          /* Mobile close: slightly quicker, soft ease-in */
+          transition: transform 320ms cubic-bezier(0.4, 0, 0.6, 1);
         }
         /* Mobile: slide up from bottom */
         .cart-panel-closed { transform: translateY(100%); }
         .cart-panel-open   { transform: translateY(0); }
-        /* Desktop: slide in from right */
+        /* Desktop: slide in from right (keep original snappier feel) */
         @media (min-width: 640px) {
+          .cart-panel,
+          .cart-panel.cart-panel-closed {
+            transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+          }
           .cart-panel-closed { transform: translateX(100%); }
           .cart-panel-open   { transform: translateX(0); }
+        }
+
+        /* ── Mobile cart backdrop: gradual dim + blur ── */
+        .cart-backdrop {
+          background: rgba(0, 0, 0, 0.35);
+          -webkit-backdrop-filter: blur(3px);
+          backdrop-filter: blur(3px);
+          transition: opacity 460ms cubic-bezier(0.22, 0.61, 0.36, 1);
+          will-change: opacity;
+        }
+        .cart-backdrop-open {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .cart-backdrop-closed {
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 320ms cubic-bezier(0.4, 0, 0.6, 1);
         }
 
         /* ── Desktop-only push when cart is open ── */
