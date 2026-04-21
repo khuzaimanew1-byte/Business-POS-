@@ -695,7 +695,7 @@ export default function POS() {
               cartItems.map(item => (
                 <div key={item.product.id} className="flex bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.product.id}`}>
                   {/* IMAGE — edge-to-edge, fills full row height */}
-                  <div className="w-16 shrink-0 bg-secondary self-stretch">
+                  <div className="w-[72px] h-[72px] shrink-0 bg-secondary">
                     {item.product.image
                       ? <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover block" />
                       : <div className="w-full h-full flex items-center justify-center">
