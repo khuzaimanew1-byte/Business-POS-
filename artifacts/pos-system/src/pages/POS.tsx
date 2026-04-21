@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { 
-  Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
+  Home, Plus, Pencil, Settings, Search, X, Bell, 
   ShoppingCart, Trash2, Minus, Check, Camera
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { recordSale, seedDemoEventsIfEmpty } from "@/lib/analytics-store";
 
 // Types
 type Category = string;
@@ -83,23 +82,6 @@ export default function POS() {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 150);
     return () => clearTimeout(timer);
   }, [searchQuery]);
-
-  // Snapshot product list for analytics consumption
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "pos.products.snapshot.v1",
-        JSON.stringify(products.map(p => ({ id: p.id, name: p.name, image: p.image, price: p.price })))
-      );
-    } catch { /* noop */ }
-  }, [products]);
-
-  // Seed demo analytics data once
-  useEffect(() => {
-    seedDemoEventsIfEmpty(
-      INITIAL_PRODUCTS.map(p => ({ id: p.id, name: p.name, image: p.image, price: p.price, profit: Math.max(0.5, p.price * 0.3) }))
-    );
-  }, []);
 
   const filteredProducts = useMemo(() => products.filter(p => {
     const matchesCat = selectedCategory === "All" || p.category === selectedCategory;
@@ -210,14 +192,6 @@ export default function POS() {
 
   const checkout = () => {
     if (cartItems.length === 0) return;
-    recordSale(cartItems.map(i => ({
-      productId: i.product.id,
-      name: i.product.name,
-      image: i.product.image,
-      qty: i.quantity,
-      price: i.product.price,
-      profit: i.product.profit ?? 0,
-    })));
     setCartItems([]);
     setIsCartOpen(false);
     toast.success("Checkout successful!", { icon: <Check className="text-green-500" /> });
@@ -273,7 +247,6 @@ export default function POS() {
         <div className="flex flex-col gap-6">
           <TooltipProvider delayDuration={100}>
             <TooltipItem icon={<Home size={20} />} label="Home" active />
-            <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" onClick={() => setLocation("/analytics")} />
             <div onClick={() => setIsAddProductModalOpen(true)}>
               <TooltipItem icon={<Plus size={20} />} label="Add Product" />
             </div>
@@ -651,9 +624,6 @@ export default function POS() {
       <nav className="mobile-bottom-nav sm:hidden fixed bottom-0 left-0 right-0 h-[60px] bg-sidebar border-t border-border flex items-center justify-around px-2 z-30">
         {/* Home */}
         <MobileNavBtn icon={<Home size={20} />} label="Home" active />
-
-        {/* Analytics */}
-        <MobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" onClick={() => setLocation("/analytics")} />
 
         {/* Add Product — center, prominent */}
         <button
