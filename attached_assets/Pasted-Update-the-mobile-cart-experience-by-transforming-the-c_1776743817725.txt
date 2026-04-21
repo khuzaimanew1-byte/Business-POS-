@@ -1,0 +1,81 @@
+Update the mobile cart experience by transforming the current cart behavior into a bottom sheet interaction, while keeping the desktop cart sidebar unchanged. Focus only on mobile screens and ensure a smooth, modern, and intuitive interaction.
+
+---
+
+### 📱 MOBILE CART — BOTTOM SHEET BEHAVIOR
+
+On mobile devices, replace the cart sidebar interaction with a bottom sheet style panel:
+
+* When the cart strip is clicked:
+
+  * A cart panel should **slide up from the bottom**
+  * It should cover approximately **80% of the screen height**
+  * The remaining top area should still show the underlying page
+
+The experience should feel like:
+
+> The cart strip expands into a bottom sheet
+
+---
+
+### 🎨 BACKGROUND TREATMENT
+
+* When the cart bottom sheet is open:
+
+  * The background (main POS page) should remain visible
+  * Apply a **soft blur + slight dim effect** to the background
+* The blur should be subtle, not heavy, so users can still recognize the page behind
+
+---
+
+### ❌ CLOSE INTERACTIONS
+
+The cart bottom sheet should close when:
+
+* User taps on the blurred background area
+* User clicks the **cross (✕) icon** inside the cart panel
+
+Ensure closing animation is:
+
+* Smooth
+* Fast
+* Slides back down naturally
+
+---
+
+### 🧺 CART STRUCTURE (MOBILE)
+
+* Keep the same cart content (items, quantity controls, etc.)
+* Maintain existing layout inside the cart
+* Only change the container behavior (sidebar → bottom sheet)
+
+---
+
+### 🚫 REMOVE SIDEBAR (MOBILE ONLY)
+
+* Disable or remove the right-side cart sidebar functionality on mobile
+* Ensure only one cart interaction exists (bottom sheet)
+
+---
+
+### ⚖️ RESPONSIVE RULES
+
+* Apply this behavior **only on mobile screens**
+* Desktop and tablet layouts should remain unchanged (sidebar behavior continues)
+
+---
+
+### ⚡ INTERACTION FEEL
+
+* Use smooth slide-up and slide-down animations
+* Avoid sharp or fast transitions
+* Maintain consistent micro-interaction timing
+
+---
+
+### 🎯 FINAL GOAL
+
+* Mobile cart feels natural and easy to access
+* Clean bottom sheet interaction similar to modern apps
+* Background remains visible with soft blur
+* UI feels fluid, modern, and optimized for touch interaction

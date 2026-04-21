@@ -254,8 +254,7 @@ export default function POS() {
 
       {/* ── MAIN CONTENT AREA ─────────────────────────────────────────────── */}
       <main
-        className="flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out"
-        style={{ marginRight: isCartOpen ? '380px' : '0' }}
+        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out${isCartOpen ? ' main-cart-pushed' : ''}`}
       >
 
         {/* TOP BAR */}
@@ -597,12 +596,8 @@ export default function POS() {
         {/* BOTTOM CART STRIP */}
         <div
           onClick={() => setIsCartOpen(!isCartOpen)}
-          className={`fixed left-0 sm:left-[60px] h-14 sm:h-16 glass-panel border-t flex items-center justify-between px-4 sm:px-6 cursor-pointer hover:bg-background/70 transition-colors duration-250 z-20${cartFlash ? ' cart-flash' : ''}`}
-          style={{
-            bottom: 'var(--mobile-nav-height, 0px)',
-            right: isCartOpen ? '380px' : '0',
-            transition: 'right 300ms cubic-bezier(0.4,0,0.2,1)',
-          }}
+          className={`fixed left-0 sm:left-[60px] right-0 h-14 sm:h-16 glass-panel border-t flex items-center justify-between px-4 sm:px-6 cursor-pointer hover:bg-background/70 transition-colors duration-250 z-20 cart-strip-right${isCartOpen ? ' cart-pushed' : ''}${cartFlash ? ' cart-flash' : ''}`}
+          style={{ bottom: 'var(--mobile-nav-height, 0px)' }}
           data-testid="cart-strip"
         >
           <div className="flex items-center gap-3">
@@ -853,6 +848,16 @@ export default function POS() {
         @media (min-width: 640px) {
           .cart-panel-closed { transform: translateX(100%); }
           .cart-panel-open   { transform: translateX(0); }
+        }
+
+        /* ── Desktop-only push when cart is open ── */
+        .cart-strip-right {
+          right: 0;
+          transition: right 320ms cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        @media (min-width: 640px) {
+          .cart-strip-right.cart-pushed { right: 380px; }
+          .main-cart-pushed { margin-right: 380px; }
         }
 
         /* ── Product grid columns ── */
