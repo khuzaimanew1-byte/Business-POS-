@@ -670,19 +670,29 @@ export default function POS() {
       </nav>
 
       {/* ── CART PANEL ────────────────────────────────────────────────────── */}
-      <aside
-        className="fixed top-0 bottom-0 right-0 w-full sm:w-[380px] bg-background border-l border-border shadow-2xl z-30 flex flex-col transition-transform duration-300 ease-in-out"
-        style={{ transform: isCartOpen ? 'translateX(0)' : 'translateX(100%)' }}
-        data-testid="cart-sidebar"
+      <div
+        className={`fixed inset-0 z-40 sm:pointer-events-none transition-opacity duration-300 ease-in-out ${isCartOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+        aria-hidden={!isCartOpen}
       >
-        <div className="h-14 sm:h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
-          <h2 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
-            <ShoppingCart className="w-4 h-4" /> Cart Items
-          </h2>
-          <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)} className="rounded-full">
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
+        <button
+          type="button"
+          aria-label="Close cart"
+          onClick={() => setIsCartOpen(false)}
+          className="absolute inset-0 bg-black/30 backdrop-blur-[2px] sm:hidden"
+        />
+        <aside
+          className="fixed bottom-0 right-0 w-full sm:w-[380px] sm:top-0 sm:bottom-0 bg-background border-t sm:border-t-0 sm:border-l border-border shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out translate-y-full sm:translate-y-0 sm:translate-x-full sm:rounded-none rounded-t-3xl"
+          style={{ transform: isCartOpen ? 'translateY(0)' : 'translateY(100%)' }}
+          data-testid="cart-sidebar"
+        >
+          <div className="h-14 sm:h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
+            <h2 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
+              <ShoppingCart className="w-4 h-4" /> Cart Items
+            </h2>
+            <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)} className="rounded-full">
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
 
         <ScrollArea className="flex-1 p-3 sm:p-4">
           <div className="flex flex-col gap-3">
@@ -740,7 +750,8 @@ export default function POS() {
             Checkout
           </Button>
         </div>
-      </aside>
+        </aside>
+      </div>
 
       {/* ── ADD PRODUCT MODAL ─────────────────────────────────────────────── */}
       <Dialog open={isAddProductModalOpen} onOpenChange={setIsAddProductModalOpen}>
