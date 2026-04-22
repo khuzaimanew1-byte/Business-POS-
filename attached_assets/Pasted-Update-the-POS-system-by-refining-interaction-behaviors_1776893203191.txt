@@ -1,0 +1,155 @@
+Update the POS system by refining interaction behaviors, keyboard flow, visual feedback, and consistency across Add Product, Search, and Edit environments. Maintain smooth, non-flashy animations and a premium dark UI experience.
+
+You are allowed to improve visual clarity, contrast, and interaction feedback where needed.
+
+---
+
+# ⌨️ GLOBAL KEYBOARD BEHAVIOR
+
+## ✅ Enter Key (Universal Confirmation)
+
+* Enter key should act as **primary confirmation action** across the system:
+
+  * Create category → Enter confirms
+  * Submit inputs → Enter confirms (if valid)
+  * Any inline creation → Enter confirms
+
+---
+
+## ⚡ Shortcut Updates
+
+* **Shift + A → Open Analytics Page**
+* Ensure no delay and no conflict with input typing
+
+---
+
+# 🗂️ CATEGORY CREATION (INLINE UX)
+
+* When user types a new category name:
+
+  * Pressing **Enter instantly creates it**
+  * No extra confirmation button required
+
+### Behavior:
+
+* Smooth appearance in dropdown
+* Auto-select newly created category
+* No modal or interruption
+
+---
+
+# 🎨 SUGGESTION / AUTOFILL COLOR FIX
+
+Problem:
+
+* Clicking suggestion applies a color that does not fit dark UI
+
+### Fix:
+
+* Replace current suggestion-applied color with:
+
+  * Neutral highlight tone (soft grey / subtle blue / low-contrast accent)
+* Ensure:
+
+  * Text remains highly readable
+  * No harsh or bright color clash
+  * Works consistently across dark backgrounds
+
+---
+
+# 🔖 QUICK CODE SYSTEM CLEANUP
+
+## ❌ REMOVE:
+
+* Numeric quick code system completely
+* Any number-based code logic
+* Remove from:
+
+  * Search placeholder
+  * Backend logic
+  * UI references
+
+## ✅ KEEP:
+
+* Only visible quick code (text-based with `#`)
+* This is the **only editable quick code** in edit mode
+
+---
+
+# 🖼️ EDIT MODE IMAGE ICON
+
+* Reduce blur on image change (+) icon slightly
+* Improve clarity while maintaining soft overlay feel
+
+---
+
+# 🔍 SEARCH RESULT HIGHLIGHT
+
+## 🎯 Behavior:
+
+When user searches and results appear:
+
+* Matching product cards should:
+
+  * Get a **soft golden highlight tint**
+
+### Visual Style:
+
+* Very subtle golden overlay
+* Should feel like:
+  → “highlighted / selected” not “selected permanently”
+
+### Rules:
+
+* No strong yellow
+* No harsh glow
+* Keep it elegant and premium
+
+---
+
+# 📱 ADD PRODUCT PAGE — MOBILE UPDATE
+
+## 🖼️ Upload Icon Visibility
+
+* On mobile:
+
+  * Upload icon must be **always visible**
+  * No hover dependency
+
+### Behavior:
+
+* Clearly tappable
+* No hidden interaction
+
+---
+
+# 🎬 ANIMATION RULES
+
+* Keep all animations:
+
+  * Smooth
+  * Fast
+  * Minimal
+
+Avoid:
+
+* Flash effects
+* Sharp transitions
+* Over-bright highlights
+
+---
+
+# 🎯 FINAL GOAL
+
+* Faster confirmation flow (Enter-driven UX)
+* Cleaner quick code system (single source of truth)
+* Better dark theme consistency
+* Clear search highlighting
+* Improved mobile usability
+
+The system should feel:
+
+* Fast ⚡
+* Clean 🧼
+* Smart 🧠
+* Visually balanced 🎨

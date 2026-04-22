@@ -39,7 +39,7 @@ export default function POS() {
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [cartFlash, setCartFlash] = useState(false);
 
-  type EditDraft = { name: string; price: string; stock: string; code: string; profit: string; image?: string };
+  type EditDraft = { name: string; price: string; stock: string; quickCode: string; profit: string; image?: string };
   const [isEditMode, setIsEditMode] = useState(false);
   const [editDrafts, setEditDrafts] = useState<Record<string, EditDraft>>({});
   const [savedProducts, setSavedProducts] = useState<Product[]>([]);
@@ -97,16 +97,13 @@ export default function POS() {
     const ql = q.toLowerCase();
     const qn = normalize(q);
     const name = p.name.toLowerCase();
-    const code = p.code.toLowerCase();
-    const qc = quickCode(p.name);
+    const qc = p.quickCode || quickCode(p.name);
     const qcn = normalize(qc);
     if (qcn === qn) return 0;
     if (name === ql) return 1;
     if (qcn.startsWith(qn)) return 2;
     if (name.startsWith(ql)) return 3;
-    if (code.startsWith('#' + ql) || code.startsWith(ql)) return 4;
     if (name.includes(ql)) return 5 + name.indexOf(ql) / 100;
-    if (code.includes(ql)) return 7;
     return 99;
   };
 
@@ -117,10 +114,9 @@ export default function POS() {
       const matchesCat = selectedCategory === "All" || p.category === selectedCategory;
       if (!matchesCat) return false;
       if (!q) return true;
-      const qcn = normalize(quickCode(p.name));
+      const qcn = normalize(p.quickCode || quickCode(p.name));
       return (
         p.name.toLowerCase().includes(q) ||
-        p.code.toLowerCase().includes(q) ||
         (qn && qcn.includes(qn))
       );
     });
@@ -158,7 +154,7 @@ export default function POS() {
     setSavedProducts(products);
     setSavedCategories(categories);
     const drafts: Record<string, EditDraft> = {};
-    products.forEach(p => { drafts[p.id] = { name: p.name, price: String(p.price), stock: String(p.stock), code: p.code, profit: String(p.profit ?? 0), image: p.image }; });
+    products.forEach(p => { drafts[p.id] = { name: p.name, price: String(p.price), stock: String(p.stock), quickCode: (p.quickCode || quickCode(p.name)).replace(/^#/, ''), profit: String(p.profit ?? 0), image: p.image }; });
     const catDrafts: Record<string, string> = {};
     categories.forEach(c => { catDrafts[c] = c; });
     setEditDrafts(drafts);
@@ -174,12 +170,13 @@ export default function POS() {
     setProducts(prev => prev.map(p => {
       const d = editDrafts[p.id];
       if (!d) return { ...p, category: renamedMap[p.category] || p.category };
+      const qcRaw = d.quickCode.trim().toLowerCase().replace(/[^a-z0-9\-]/g, '');
       return {
         ...p,
         name: d.name.trim() || p.name,
         price: parseFloat(d.price) || p.price,
         stock: parseInt(d.stock, 10) >= 0 ? parseInt(d.stock, 10) : p.stock,
-        code: d.code.trim() || p.code,
+        quickCode: qcRaw ? `#${qcRaw}` : (p.quickCode || quickCode(p.name)),
         category: renamedMap[p.category] || p.category,
         image: d.image,
         profit: parseFloat(d.profit) >= 0 ? parseFloat(d.profit) : (p.profit ?? 0),
@@ -383,10 +380,10 @@ export default function POS() {
         setLocation('/add-product');
         return;
       }
-      // Shift + A → Home (POS) page
+      // Shift + A → Analytics page
       if (e.shiftKey && (e.key === 'A' || e.key === 'a') && !isTypingTarget(e.target)) {
         e.preventDefault();
-        setLocation('/');
+        setLocation('/analytics');
         return;
       }
       // Shift + Backspace → on Home, prompt exit; elsewhere, go back
@@ -446,7 +443,7 @@ export default function POS() {
             <input
               ref={searchInputRef}
               type="text"
-              placeholder="Search products, quick-code or #code…"
+              placeholder="Search products or quick-code (e.g. #wi-e)…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => {
@@ -664,7 +661,7 @@ export default function POS() {
                     ? 'border border-primary/20 cursor-default'
                     : isSelectMode
                       ? `border-2 ${isSelected ? 'border-primary shadow-[0_0_0_3px_rgba(99,102,241,0.18)]' : 'border-card-border hover:border-primary/40'} cursor-pointer`
-                      : `border ${isTopMatch ? 'border-primary/70 shadow-[0_0_0_2px_rgba(99,102,241,0.18)] top-match-pulse' : 'border-card-border'} hover:-translate-y-0.5 hover:shadow-md cursor-pointer`
+                      : `border ${isTopMatch ? 'search-match-card' : 'border-card-border'} hover:-translate-y-0.5 hover:shadow-md cursor-pointer`
                 }`,
                 onClick: () => {
                   if (isEditMode) return;
@@ -704,37 +701,40 @@ export default function POS() {
                       >
                         <span
                           className="img-upload-circle flex items-center justify-center rounded-full transition-all duration-250"
-                          style={{ width: 34, height: 34, background: 'rgba(0,0,0,0.42)', backdropFilter: 'blur(4px)' }}
+                          style={{ width: 34, height: 34, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}
                         >
-                          <Plus style={{ width: 15, height: 15, color: 'rgba(255,255,255,0.92)' }} />
+                          <Plus style={{ width: 15, height: 15, color: 'rgba(255,255,255,0.96)' }} />
                         </span>
                       </button>
                     )}
 
                     {/* Quick code badge — lowercase, hyphen-segmented (e.g. Apple Juice → #ap-j) */}
-                    <div
-                      className={`quick-code-badge absolute top-1.5 left-1.5 flex items-center justify-center rounded-md select-none${activeQuickCodeId === product.id ? ' quick-code-active' : ''}`}
-                      title={`Quick code: ${qc} · ${product.code}`}
-                    >
-                      <span className="quick-code-text text-white text-[12px] sm:text-[13px] leading-none">
-                        {qc}
-                      </span>
-                    </div>
+                    {!isEditMode && (
+                      <div
+                        className={`quick-code-badge absolute top-1.5 left-1.5 flex items-center justify-center rounded-md select-none${activeQuickCodeId === product.id ? ' quick-code-active' : ''}`}
+                        title={`Quick code: ${qc}`}
+                      >
+                        <span className="quick-code-text text-white text-[12px] sm:text-[13px] leading-none">
+                          {qc}
+                        </span>
+                      </div>
+                    )}
 
-                    {/* Numeric code (small, edit mode only — keeps editing flow intact) */}
+                    {/* Quick code editor (edit mode only) — overlays the badge slot */}
                     {isEditMode && (
                       <div
-                        className="absolute top-1.5 right-9 flex items-center font-mono leading-none text-white rounded-md"
-                        style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', padding: '2px 5px' }}
+                        className="absolute top-1.5 left-1.5 flex items-center font-mono leading-none text-white rounded-md"
+                        style={{ background: 'rgba(8,10,18,0.86)', border: '1px solid rgba(255,255,255,0.14)', padding: '3px 6px' }}
                       >
-                        <span className="text-[10px] leading-none">#</span>
+                        <span className="text-[11px] leading-none mr-0.5">#</span>
                         <input
                           type="text"
-                          value={(editDrafts[product.id]?.code ?? product.code).replace(/^#/, '')}
-                          onChange={e => updateDraft(product.id, 'code', '#' + e.target.value)}
+                          value={editDrafts[product.id]?.quickCode ?? ''}
+                          onChange={e => updateDraft(product.id, 'quickCode', e.target.value.toLowerCase().replace(/[^a-z0-9\-]/g, ''))}
                           onClick={e => e.stopPropagation()}
-                          className="bg-transparent focus:outline-none text-white font-mono text-[10px] leading-none"
-                          style={{ width: '2.4rem' }}
+                          maxLength={8}
+                          className="bg-transparent focus:outline-none text-white font-mono text-[11px] leading-none"
+                          style={{ width: '3.2rem' }}
                         />
                       </div>
                     )}
@@ -1296,13 +1296,36 @@ export default function POS() {
           text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
         }
 
-        /* ── Top search match: subtle pulsing ring ── */
-        @keyframes top-match-pulse-anim {
-          0%, 100% { box-shadow: 0 0 0 2px rgba(99,102,241,0.18); }
-          50%      { box-shadow: 0 0 0 3px rgba(99,102,241,0.32); }
+        /* ── Top search match: subtle golden highlight (premium, no harsh glow) ── */
+        .search-match-card {
+          border-color: rgba(212, 175, 90, 0.55) !important;
+          background:
+            linear-gradient(180deg, rgba(212, 175, 90, 0.10), rgba(212, 175, 90, 0.04)) ,
+            hsl(var(--card));
+          box-shadow:
+            0 0 0 1px rgba(212, 175, 90, 0.22),
+            0 4px 18px rgba(212, 175, 90, 0.08);
+          transition: background 220ms ease, box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease;
         }
-        .top-match-pulse {
-          animation: top-match-pulse-anim 1.6s ease-in-out infinite;
+        .search-match-card:hover {
+          transform: translateY(-1px);
+          box-shadow:
+            0 0 0 1px rgba(212, 175, 90, 0.32),
+            0 6px 22px rgba(212, 175, 90, 0.12);
+        }
+
+        /* ── Autofill: keep dark-UI palette (no yellow/blue browser tint) ── */
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus,
+        input:-webkit-autofill:active,
+        textarea:-webkit-autofill,
+        select:-webkit-autofill {
+          -webkit-text-fill-color: hsl(var(--foreground)) !important;
+          -webkit-box-shadow: 0 0 0 1000px hsl(var(--secondary) / 0.55) inset !important;
+          box-shadow: 0 0 0 1000px hsl(var(--secondary) / 0.55) inset !important;
+          caret-color: hsl(var(--foreground));
+          transition: background-color 9999s ease-in-out 0s;
         }
 
         /* ── Cart flash ── */

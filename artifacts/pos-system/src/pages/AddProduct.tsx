@@ -317,7 +317,6 @@ export default function AddProduct() {
 
   const buildProduct = (): Product => ({
     id: Math.random().toString(36).slice(2, 11),
-    code: `#${1000 + products.length + 1}`,
     quickCode: fullQuickCode,
     name: name.trim(),
     price: priceNum,
@@ -390,7 +389,7 @@ export default function AddProduct() {
       }
       if (e.shiftKey && (e.key === 'A' || e.key === 'a') && !typing) {
         e.preventDefault();
-        setLocation('/');
+        setLocation('/analytics');
         return;
       }
       if (e.shiftKey && e.key === 'Backspace' && !typing) {
@@ -475,9 +474,9 @@ export default function AddProduct() {
               {/* Centered upload icon (clear, minimal blur) */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div
-                  className={`flex items-center justify-center rounded-full transition-all duration-300 shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${
+                  className={`upload-icon flex items-center justify-center rounded-full transition-all duration-300 shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${
                     image
-                      ? 'w-12 h-12 bg-black/55 text-white opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:scale-100 scale-90'
+                      ? 'w-12 h-12 bg-black/60 text-white scale-100 opacity-100 md:opacity-0 md:scale-90 md:group-hover:opacity-100 md:group-hover:scale-100 md:group-active:opacity-100'
                       : dragOver
                         ? 'w-16 h-16 bg-primary text-primary-foreground scale-110'
                         : 'w-14 h-14 bg-secondary text-foreground/85 group-hover:bg-primary/15 group-hover:text-primary'
@@ -863,6 +862,18 @@ export default function AddProduct() {
         .add-product-page .no-spinners-ap::-webkit-outer-spin-button,
         .add-product-page .no-spinners-ap::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .add-product-page .no-spinners-ap { -moz-appearance: textfield; }
+
+        /* ── Autofill / suggestion styling: keep it dark, no harsh yellow ── */
+        .add-product-page input:-webkit-autofill,
+        .add-product-page input:-webkit-autofill:hover,
+        .add-product-page input:-webkit-autofill:focus,
+        .add-product-page input:-webkit-autofill:active {
+          -webkit-text-fill-color: hsl(var(--foreground)) !important;
+          -webkit-box-shadow: 0 0 0 1000px hsl(var(--secondary) / 0.55) inset !important;
+          box-shadow: 0 0 0 1000px hsl(var(--secondary) / 0.55) inset !important;
+          caret-color: hsl(var(--foreground));
+          transition: background-color 9999s ease-in-out 0s;
+        }
 
         /* ── Border-trace input ───────────────────────────────── */
         .trace-wrap { position: relative; }

@@ -841,7 +841,7 @@ export default function Analytics() {
       const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
       if (typing) return;
       if (e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault(); setLocation('/'); return;
+        e.preventDefault(); setLocation('/analytics'); return;
       }
       if (e.shiftKey && e.key === 'Backspace') {
         e.preventDefault(); setLocation('/'); return;
