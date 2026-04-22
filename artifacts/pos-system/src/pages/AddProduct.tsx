@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Plus, Check, X, ChevronDown, FolderPlus, Loader2, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Check, X, ChevronDown, FolderPlus, Loader2, Trash2, Upload } from "lucide-react";
 import { useStore, normalizeCode, type Product } from "@/lib/store";
 import { toast } from "sonner";
 import {
@@ -34,6 +34,8 @@ type TraceFieldProps = {
   inputClassName?: string;
   inputRef?: React.Ref<HTMLInputElement>;
   testId?: string;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
+  rightOverlay?: React.ReactNode;
 };
 
 const TraceField = React.forwardRef<HTMLInputElement, TraceFieldProps>(function TraceField(
@@ -43,7 +45,7 @@ const TraceField = React.forwardRef<HTMLInputElement, TraceFieldProps>(function 
     invalid = false, hint, required = false,
     inputMode, step, min, max, maxLength, autoFocus,
     inputClassName = "",
-    inputRef, testId,
+    inputRef, testId, onKeyDown, rightOverlay,
   },
   _outerRef
 ) {
@@ -88,6 +90,7 @@ const TraceField = React.forwardRef<HTMLInputElement, TraceFieldProps>(function 
             onChange={e => onChange(e.target.value)}
             onFocus={() => { setFocused(true); onFocus?.(); }}
             onBlur={() => { setFocused(false); onBlur?.(); }}
+            onKeyDown={onKeyDown}
             placeholder={lifted ? placeholder : ''}
             inputMode={inputMode}
             step={step}
@@ -100,6 +103,7 @@ const TraceField = React.forwardRef<HTMLInputElement, TraceFieldProps>(function 
           />
           {suffix && <span className="trace-suffix">{suffix}</span>}
         </div>
+        {rightOverlay}
       </div>
       {hint && <div className={`trace-hint ${invalid ? 'is-invalid' : ''}`}>{hint}</div>}
     </div>
@@ -126,7 +130,6 @@ export default function AddProduct() {
   // UI state
   const [dragOver, setDragOver] = useState(false);
   const [profitFocused, setProfitFocused] = useState(false);
-  const [profitShake, setProfitShake] = useState(false);
   const [isCatDropdownOpen, setIsCatDropdownOpen] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -134,10 +137,29 @@ export default function AddProduct() {
   const [submittingMode, setSubmittingMode] = useState<null | 'redirect' | 'another'>(null);
   const [imageFading, setImageFading] = useState(false);
 
+  // Per-field shake + transient error messages
+  type FieldKey = 'name' | 'quickCode' | 'price' | 'profit' | 'stock' | 'category';
+  const fieldOrder: FieldKey[] = ['name', 'quickCode', 'price', 'profit', 'stock', 'category'];
+  const [shake, setShake] = useState<Partial<Record<FieldKey, boolean>>>({});
+  const [transientError, setTransientError] = useState<Partial<Record<FieldKey, string>>>({});
+
   // Refs
   const fileInputRef = useRef<HTMLInputElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const quickCodeInputRef = useRef<HTMLInputElement>(null);
+  const priceInputRef = useRef<HTMLInputElement>(null);
+  const profitInputRef = useRef<HTMLInputElement>(null);
+  const stockInputRef = useRef<HTMLInputElement>(null);
+  const categoryButtonRef = useRef<HTMLButtonElement>(null);
+
+  const fieldRefs: Record<FieldKey, React.RefObject<HTMLElement>> = {
+    name: nameInputRef as React.RefObject<HTMLElement>,
+    quickCode: quickCodeInputRef as React.RefObject<HTMLElement>,
+    price: priceInputRef as React.RefObject<HTMLElement>,
+    profit: profitInputRef as React.RefObject<HTMLElement>,
+    stock: stockInputRef as React.RefObject<HTMLElement>,
+    category: categoryButtonRef as React.RefObject<HTMLElement>,
+  };
 
   // Derived
   const priceNum = parseFloat(price);
@@ -183,14 +205,94 @@ export default function AddProduct() {
   // Profit shake when too high
   useEffect(() => {
     if (!profitTooHigh) return;
-    setProfitShake(false);
-    const id = requestAnimationFrame(() => setProfitShake(true));
-    const t = setTimeout(() => setProfitShake(false), 480);
-    return () => { cancelAnimationFrame(id); clearTimeout(t); };
+    triggerShake('profit');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profitTooHigh, profit]);
 
   // Focus name on mount
   useEffect(() => { nameInputRef.current?.focus(); }, []);
+
+  // ── Intelligent flow helpers ───────────────────────────────────────────
+  function triggerShake(f: FieldKey) {
+    setShake(s => ({ ...s, [f]: false }));
+    requestAnimationFrame(() => {
+      setShake(s => ({ ...s, [f]: true }));
+      setTimeout(() => setShake(s => ({ ...s, [f]: false })), 480);
+    });
+  }
+  function setError(f: FieldKey, msg: string) {
+    setTransientError(e => ({ ...e, [f]: msg }));
+  }
+  function clearError(f: FieldKey) {
+    setTransientError(e => {
+      if (!e[f]) return e;
+      const { [f]: _omit, ...rest } = e;
+      return rest;
+    });
+  }
+
+  function isFieldFilled(f: FieldKey): boolean {
+    switch (f) {
+      case 'name': return name.trim().length > 0;
+      case 'quickCode': return quickCodeRaw.length > 0;
+      case 'price': return price.trim().length > 0 && !isNaN(parseFloat(price));
+      case 'profit': return profit.trim().length > 0 && !isNaN(parseFloat(profit));
+      case 'stock': return stock.trim().length > 0 && !isNaN(parseInt(stock, 10));
+      case 'category': return !!category && category !== 'All';
+    }
+  }
+  function fieldValidationMsg(f: FieldKey): string | null {
+    if (!isFieldFilled(f)) return 'This field is required';
+    if (f === 'quickCode' && codeIsDuplicate) return 'Quick code already in use';
+    if (f === 'profit' && profitTooHigh) return 'Profit cannot exceed price';
+    return null;
+  }
+  function focusField(f: FieldKey) {
+    const el = fieldRefs[f].current;
+    if (!el) return;
+    el.focus();
+    if (el instanceof HTMLInputElement) {
+      try { el.select(); } catch { /* number inputs throw */ }
+    }
+  }
+  function firstInvalidField(): FieldKey | null {
+    for (const f of fieldOrder) {
+      if (fieldValidationMsg(f)) return f;
+    }
+    return null;
+  }
+  const trySubmitOrFocusFirstError = useCallback(() => {
+    const bad = firstInvalidField();
+    if (bad) {
+      setError(bad, fieldValidationMsg(bad)!);
+      focusField(bad);
+      triggerShake(bad);
+      return;
+    }
+    submit('redirect');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, quickCodeRaw, price, profit, stock, category, codeIsDuplicate, profitTooHigh]);
+
+  function handleFieldEnter(current: FieldKey, e: React.KeyboardEvent) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (e.shiftKey) {
+      trySubmitOrFocusFirstError();
+      return;
+    }
+    const msg = fieldValidationMsg(current);
+    if (msg) {
+      setError(current, msg);
+      triggerShake(current);
+      return;
+    }
+    const idx = fieldOrder.indexOf(current);
+    if (idx === fieldOrder.length - 1) {
+      trySubmitOrFocusFirstError();
+    } else {
+      focusField(fieldOrder[idx + 1]);
+    }
+  }
 
   // ── handlers ──────────────────────────────────────────────────────────
   const handleFile = (file: File | null | undefined) => {
@@ -270,24 +372,14 @@ export default function AddProduct() {
     toast.success(`Removed "${cat}"`);
   };
 
-  // ── keyboard shortcuts ───────────────────────────────────────────────
+  // ── keyboard shortcuts (global; Enter handled per-field) ────────────
   useEffect(() => {
-    const isTextarea = (t: EventTarget | null) => {
-      const el = t as HTMLElement | null;
-      return !!el && (el.tagName === 'TEXTAREA' || el.isContentEditable);
-    };
     const onKey = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.key === '`') {
         e.preventDefault();
         nameInputRef.current?.focus();
         nameInputRef.current?.select();
         return;
-      }
-      if (e.key === 'Enter' && !isTextarea(e.target)) {
-        if (isFormValid && !submittingMode) {
-          e.preventDefault();
-          submit(e.shiftKey ? 'another' : 'redirect');
-        }
       }
       if (e.key === 'Escape' && pendingDelete) {
         e.preventDefault();
@@ -296,7 +388,7 @@ export default function AddProduct() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isFormValid, submittingMode, submit, pendingDelete]);
+  }, [pendingDelete]);
 
   // ── render ────────────────────────────────────────────────────────────
   return (
@@ -325,10 +417,10 @@ export default function AddProduct() {
       </header>
 
       {/* Body */}
-      <main className="max-w-6xl mx-auto px-3 sm:px-8 pt-6 sm:pt-9 pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)_260px] gap-5 sm:gap-7">
+      <main className="max-w-5xl mx-auto px-3 sm:px-8 pt-6 sm:pt-9 pb-20">
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(220px,300px)_minmax(0,1fr)] gap-6 sm:gap-8">
           {/* ── LEFT: IMAGE ─────────────────────────────────────── */}
-          <section className="lg:sticky lg:top-20 self-start">
+          <section className="md:sticky md:top-20 self-start">
             <div
               onClick={() => fileInputRef.current?.click()}
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -367,18 +459,18 @@ export default function AddProduct() {
                 />
               )}
 
-              {/* Always-visible centered + icon */}
+              {/* Centered upload icon (clear, minimal blur) */}
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div
-                  className={`flex items-center justify-center rounded-full transition-all duration-300 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.3)] ${
+                  className={`flex items-center justify-center rounded-full transition-all duration-300 shadow-[0_4px_18px_rgba(0,0,0,0.28)] ${
                     image
-                      ? 'w-12 h-12 bg-black/45 text-white opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:scale-100 scale-90'
+                      ? 'w-12 h-12 bg-black/55 text-white opacity-0 group-hover:opacity-100 group-active:opacity-100 group-hover:scale-100 scale-90'
                       : dragOver
                         ? 'w-16 h-16 bg-primary text-primary-foreground scale-110'
-                        : 'w-14 h-14 bg-secondary/85 text-muted-foreground group-hover:bg-primary/15 group-hover:text-primary'
+                        : 'w-14 h-14 bg-secondary text-foreground/85 group-hover:bg-primary/15 group-hover:text-primary'
                   }`}
                 >
-                  <Plus size={image ? 22 : 26} strokeWidth={2.2} />
+                  <Upload size={image ? 20 : 24} strokeWidth={2.1} />
                 </div>
               </div>
 
@@ -398,140 +490,202 @@ export default function AddProduct() {
             </div>
           </section>
 
-          {/* ── CENTER: PRIMARY INPUTS ──────────────────────────── */}
+          {/* ── RIGHT: STRUCTURED INPUT FLOW ─────────────────────── */}
           <section className="flex flex-col gap-5">
-            <TraceField
-              id="ap-name"
-              label="Product Name"
-              value={name}
-              onChange={setName}
-              placeholder="e.g. Avocado Wrap"
-              required
-              inputRef={nameInputRef}
-              testId="input-name"
-              inputClassName="text-[15px] font-medium"
-            />
+            {/* Row 1: Product Name | Quick Code */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <TraceField
+                id="ap-name"
+                label="Product Name"
+                value={name}
+                onChange={v => { setName(v); if (transientError.name) clearError('name'); }}
+                placeholder="e.g. Avocado Wrap"
+                required
+                inputRef={nameInputRef}
+                testId="input-name"
+                inputClassName={`text-[15px] font-medium ${shake.name ? 'shake-anim-input' : ''}`}
+                onKeyDown={(e) => handleFieldEnter('name', e)}
+                invalid={!!transientError.name}
+                hint={transientError.name
+                  ? <span className="flex items-center gap-1"><X size={11} /> {transientError.name}</span>
+                  : null}
+              />
+              <TraceField
+                id="ap-quickcode"
+                label="Quick Code"
+                value={quickCodeRaw}
+                onChange={v => {
+                  setQuickCodeRaw(v.toLowerCase().replace(/[^a-z0-9\-]/g, ''));
+                  if (transientError.quickCode) clearError('quickCode');
+                }}
+                placeholder="wi-e"
+                required
+                maxLength={8}
+                prefix={<span className="text-muted-foreground font-mono select-none">#</span>}
+                invalid={codeIsDuplicate || !!transientError.quickCode}
+                hint={
+                  transientError.quickCode
+                    ? <span className="flex items-center gap-1"><X size={11} /> {transientError.quickCode}</span>
+                    : codeIsDuplicate
+                      ? <span className="flex items-center gap-1"><X size={11} /> This quick code is already in use</span>
+                      : <span className="text-muted-foreground/70">Lowercase, unique. Letters, numbers, hyphen.</span>
+                }
+                inputRef={quickCodeInputRef}
+                testId="input-quickcode"
+                inputClassName={`font-mono ${shake.quickCode ? 'shake-anim-input' : ''}`}
+                onKeyDown={(e) => handleFieldEnter('quickCode', e)}
+              />
+            </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            {/* Row 2: Price | Profit (with margin overlay anchored to Profit) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <TraceField
                 id="ap-price"
                 label="Price"
                 value={price}
-                onChange={setPrice}
+                onChange={v => { setPrice(v); if (transientError.price) clearError('price'); }}
                 type="number"
                 step="0.01"
                 min="0"
                 inputMode="decimal"
                 placeholder="0.00"
                 required
+                inputRef={priceInputRef}
                 prefix={<span className="text-primary font-semibold">$</span>}
                 testId="input-price"
-                inputClassName="no-spinners-ap tabular-nums"
-              />
-              <TraceField
-                id="ap-profit"
-                label="Profit"
-                value={profit}
-                onChange={setProfit}
-                type="number"
-                step="0.01"
-                min="0"
-                inputMode="decimal"
-                placeholder="0.00"
-                required
-                invalid={profitTooHigh}
-                onFocus={() => setProfitFocused(true)}
-                onBlur={() => setProfitFocused(false)}
-                prefix={
-                  <span className={`font-semibold ${profitTooHigh ? 'text-destructive' : 'text-muted-foreground'}`}>$</span>
-                }
-                hint={profitTooHigh
-                  ? <span className="flex items-center gap-1"><X size={11} /> Profit cannot exceed price</span>
+                inputClassName={`no-spinners-ap tabular-nums ${shake.price ? 'shake-anim-input' : ''}`}
+                onKeyDown={(e) => handleFieldEnter('price', e)}
+                invalid={!!transientError.price}
+                hint={transientError.price
+                  ? <span className="flex items-center gap-1"><X size={11} /> {transientError.price}</span>
                   : null}
-                testId="input-profit"
-                inputClassName={`no-spinners-ap tabular-nums ${profitShake ? 'shake-anim-input' : ''}`}
               />
-            </div>
-
-            {/* Margin indicator — only when Profit focused */}
-            <div
-              className={`overflow-hidden transition-all duration-300 ease-out ${
-                profitFocused ? 'opacity-100 max-h-24 mt-[-6px]' : 'opacity-0 max-h-0'
-              }`}
-              aria-hidden={!profitFocused}
-            >
-              <div className="rounded-xl border border-border/40 bg-secondary/25 px-4 py-2.5 flex items-center gap-3">
-                <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">Margin</span>
-                <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-primary/60 to-primary transition-[width] duration-500 ease-out"
-                    style={{ width: `${margin ?? 0}%` }}
-                  />
-                </div>
-                <span className="text-[12px] font-mono tabular-nums text-foreground shrink-0">
-                  {margin === null ? '—' : `${margin.toFixed(1)}%`}
-                </span>
-              </div>
-            </div>
-
-            <TraceField
-              id="ap-quickcode"
-              label="Quick Code"
-              value={quickCodeRaw}
-              onChange={v => setQuickCodeRaw(v.toLowerCase().replace(/[^a-z0-9\-]/g, ''))}
-              placeholder="wi-e"
-              required
-              maxLength={8}
-              prefix={<span className="text-muted-foreground font-mono select-none">#</span>}
-              invalid={codeIsDuplicate}
-              hint={codeIsDuplicate
-                ? <span className="flex items-center gap-1"><X size={11} /> This quick code is already in use</span>
-                : <span className="text-muted-foreground/70">Lowercase letters, numbers and hyphen. Must be unique.</span>}
-              inputRef={quickCodeInputRef}
-              testId="input-quickcode"
-              inputClassName="font-mono"
-            />
-          </section>
-
-          {/* ── RIGHT: SECONDARY INPUTS ─────────────────────────── */}
-          <section className="flex flex-col gap-5">
-            <TraceField
-              id="ap-stock"
-              label="Stock"
-              value={stock}
-              onChange={setStock}
-              type="number"
-              min="0"
-              inputMode="numeric"
-              placeholder="100"
-              required
-              testId="input-stock"
-              inputClassName="no-spinners-ap tabular-nums"
-            />
-
-            <div>
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/85 mb-1.5 px-1">
-                Category <span className="text-destructive">*</span>
-              </div>
-              <DropdownMenu
-                open={isCatDropdownOpen}
-                onOpenChange={open => {
-                  setIsCatDropdownOpen(open);
-                  if (!open) { setIsAddingCategory(false); setPendingDelete(null); }
-                }}
-              >
-                <DropdownMenuTrigger asChild>
-                  <button
-                    type="button"
-                    className="w-full bg-secondary/40 border border-border/50 rounded-lg px-3.5 py-2.5 text-sm flex items-center justify-between text-left hover:bg-secondary/55 transition-colors duration-200 focus:outline-none focus:border-primary/60 focus:shadow-[0_0_0_3px_rgba(99,102,241,0.18)]"
-                    data-testid="btn-category"
-                  >
-                    <span className={category ? '' : 'text-muted-foreground/60'}>
-                      {category || 'Select category'}
+              <div className="relative">
+                {/* Margin overlay — absolute, floats above Profit when focused */}
+                <div
+                  className={`pointer-events-none absolute left-0 right-0 z-10 transition-all duration-280 ease-out ${
+                    profitFocused
+                      ? 'opacity-100 -translate-y-1'
+                      : 'opacity-0 translate-y-1.5'
+                  }`}
+                  style={{ bottom: 'calc(100% + 6px)' }}
+                  aria-hidden={!profitFocused}
+                >
+                  <div className="rounded-lg border border-border/50 bg-popover/95 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.35)] px-3 py-2 flex items-center gap-3">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">Margin</span>
+                    <div className="flex-1 h-1.5 bg-secondary/70 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-primary/60 to-primary transition-[width] duration-500 ease-out"
+                        style={{ width: `${margin ?? 0}%` }}
+                      />
+                    </div>
+                    <span className="text-[12px] font-mono tabular-nums text-foreground shrink-0">
+                      {margin === null ? '—' : `${margin.toFixed(1)}%`}
                     </span>
-                    <ChevronDown size={15} className={`text-muted-foreground transition-transform duration-200 ${isCatDropdownOpen ? 'rotate-180' : ''}`} />
-                  </button>
-                </DropdownMenuTrigger>
+                  </div>
+                </div>
+
+                <TraceField
+                  id="ap-profit"
+                  label="Profit"
+                  value={profit}
+                  onChange={v => { setProfit(v); if (transientError.profit) clearError('profit'); }}
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  required
+                  inputRef={profitInputRef}
+                  invalid={profitTooHigh || !!transientError.profit}
+                  onFocus={() => setProfitFocused(true)}
+                  onBlur={() => setProfitFocused(false)}
+                  prefix={
+                    <span className={`font-semibold ${profitTooHigh ? 'text-destructive' : 'text-muted-foreground'}`}>$</span>
+                  }
+                  hint={
+                    transientError.profit
+                      ? <span className="flex items-center gap-1"><X size={11} /> {transientError.profit}</span>
+                      : profitTooHigh
+                        ? <span className="flex items-center gap-1"><X size={11} /> Profit cannot exceed price</span>
+                        : null
+                  }
+                  testId="input-profit"
+                  inputClassName={`no-spinners-ap tabular-nums ${shake.profit ? 'shake-anim-input' : ''}`}
+                  onKeyDown={(e) => handleFieldEnter('profit', e)}
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Stock | Category */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <TraceField
+                id="ap-stock"
+                label="Stock"
+                value={stock}
+                onChange={v => { setStock(v); if (transientError.stock) clearError('stock'); }}
+                type="number"
+                min="0"
+                inputMode="numeric"
+                placeholder="100"
+                required
+                inputRef={stockInputRef}
+                testId="input-stock"
+                inputClassName={`no-spinners-ap tabular-nums ${shake.stock ? 'shake-anim-input' : ''}`}
+                onKeyDown={(e) => handleFieldEnter('stock', e)}
+                invalid={!!transientError.stock}
+                hint={transientError.stock
+                  ? <span className="flex items-center gap-1"><X size={11} /> {transientError.stock}</span>
+                  : null}
+              />
+
+              <div className={shake.category ? 'shake-anim-input' : ''}>
+                <DropdownMenu
+                  open={isCatDropdownOpen}
+                  onOpenChange={open => {
+                    setIsCatDropdownOpen(open);
+                    if (!open) { setIsAddingCategory(false); setPendingDelete(null); }
+                  }}
+                >
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      ref={categoryButtonRef}
+                      type="button"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          // Pre-empt Radix open if our flow says submit
+                          if (!isFieldFilled('category')) {
+                            e.preventDefault();
+                            setError('category', 'Please select a category');
+                            triggerShake('category');
+                            return;
+                          }
+                          if (e.shiftKey) {
+                            e.preventDefault();
+                            trySubmitOrFocusFirstError();
+                            return;
+                          }
+                          // Last field → submit
+                          e.preventDefault();
+                          trySubmitOrFocusFirstError();
+                        }
+                      }}
+                      className={`w-full h-[56px] bg-secondary/32 hover:bg-secondary/45 border ${
+                        transientError.category ? 'border-destructive' : 'border-border/60'
+                      } rounded-[10px] px-3.5 text-sm flex items-center justify-between text-left transition-colors duration-200 focus:outline-none focus:border-primary/60 focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.18)]`}
+                      data-testid="btn-category"
+                    >
+                      <span className="flex flex-col items-start leading-tight">
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/95">
+                          Category <span className="text-destructive">*</span>
+                        </span>
+                        <span className={category ? 'text-foreground text-sm mt-0.5' : 'text-muted-foreground/60 text-sm mt-0.5'}>
+                          {category || 'Select…'}
+                        </span>
+                      </span>
+                      <ChevronDown size={15} className={`text-muted-foreground transition-transform duration-200 ${isCatDropdownOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                  </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)] sm:w-60 max-h-72 overflow-y-auto">
                   {categories.filter(c => c !== 'All').map(c => {
                     const isCustom = customCategories.has(c);
@@ -623,6 +777,7 @@ export default function AddProduct() {
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
+              </div>
             </div>
           </section>
         </div>

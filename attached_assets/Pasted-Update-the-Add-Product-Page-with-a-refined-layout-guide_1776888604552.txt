@@ -1,0 +1,263 @@
+Update the **Add Product Page** with a refined layout, guided input flow, and advanced interaction system. Maintain all existing functionality, but restructure layout, validation flow, and animations to create a fast, intelligent POS-style input experience.
+
+You are allowed to enhance positioning, spacing, and micro-interactions where needed, but keep everything smooth and non-flashy.
+
+---
+
+# 📐 RESPONSIVE LAYOUT
+
+## 💻 Laptop + Tablet (Portrait)
+
+Use a **2-column layout**:
+
+### LEFT:
+
+* Image upload (square)
+
+### RIGHT:
+
+* All inputs in a **single vertical structured flow**
+
+---
+
+## 📱 Mobile / Small Screens
+
+* Use **single column layout**
+* Order:
+
+  * Image (top)
+  * Inputs below (same order as desktop)
+
+---
+
+# 🧱 INPUT STRUCTURE (STRICT FLOW)
+
+Follow exact row grouping:
+
+---
+
+## 🧾 Row 1
+
+* Product Name
+* Quick Code (`#` static prefix)
+
+---
+
+## 💰 Row 2
+
+* Price
+* Profit
+
+---
+
+## 📦 Row 3
+
+* Stock
+* Category dropdown
+
+---
+
+# 🔖 QUICK CODE RULES
+
+* Must start with static `#`
+* User editable after prefix
+* Lowercase only
+* Must be unique
+* No auto-generation
+
+---
+
+# 🖼️ IMAGE COMPONENT
+
+* Square container
+* Use **upload icon (not plus icon)**
+* Reduce blur on icon for better clarity
+
+### Behavior:
+
+* Click → upload
+* Drag & drop supported
+* Preview replaces placeholder
+* Same icon used to replace image
+
+---
+
+# 📊 PROFIT → MARGIN OVERLAY SYSTEM
+
+## 📍 POSITION (IMPORTANT)
+
+* Margin indicator appears as an **overlay directly above the Profit input field**
+* Slightly floating, aligned with input width
+* Does NOT affect layout spacing (absolute positioned)
+
+---
+
+## 🎬 BEHAVIOR
+
+### On Profit Focus:
+
+* Margin overlay **smoothly fades + slides in (bottom → top slight motion)**
+* Appears attached visually to the Profit input
+
+### On Unfocus:
+
+* Reverse animation (top → slight fade out)
+* Completely hidden when not active
+
+---
+
+## 📈 VISUAL
+
+* Slim horizontal bar + percentage text
+* Bar fills based on margin
+* Smooth left → right animation
+
+---
+
+# ⌨️ INTELLIGENT INPUT FLOW (CORE SYSTEM)
+
+## ENTER KEY BEHAVIOR
+
+### Case 1: Current input filled
+
+→ Move focus to next input
+
+---
+
+### Case 2: Current input empty
+
+→ Stay on same input
+→ Trigger:
+
+* Subtle vibration (shake)
+* Inline error message below input
+
+---
+
+### Case 3: Last input reached
+
+#### If any previous input is empty:
+
+→ Focus first empty input
+→ Apply:
+
+* Shake animation
+* Error message
+
+#### If all inputs are filled:
+
+→ Trigger CREATE action
+
+---
+
+# ⚡ SHIFT + ENTER
+
+* Same validation logic as Enter
+* Only creates product if all inputs are valid
+* Otherwise follows error focus system
+
+---
+
+# ❗ VALIDATION RULES
+
+* All inputs required
+* Profit cannot exceed price:
+
+  * Red border
+  * Smooth shake
+  * Inline error message
+
+---
+
+# 🎨 INPUT DESIGN SYSTEM
+
+## ✨ BORDER TRACE ANIMATION
+
+### Behavior:
+
+* On focus:
+
+  * Border draws from **left + right simultaneously**
+  * Smoothly completes full outline
+  * Must follow **rounded corners (radius-aware)**
+
+### Style:
+
+* Soft glow line
+* No flashing
+* Smooth continuous motion
+
+---
+
+## 🏷️ FLOATING LABEL
+
+* Label starts inside input
+
+* On focus:
+
+  * Moves above border
+  * Slight scale-down
+  * Smooth transition
+
+* Label overlays border line cleanly
+
+---
+
+# 🔘 ACTION BUTTONS (BOTTOM)
+
+* Do NOT create separate bar
+* Buttons sit naturally at bottom of form
+
+### Buttons:
+
+* Create
+* Create & Add Another
+
+---
+
+## 🎬 BUTTON BEHAVIOR
+
+* Click → press animation
+* If invalid form:
+
+  * No action
+  * Trigger validation animations
+
+---
+
+# 🔄 FORM COMPLETION LOGIC
+
+* Product can ONLY be created when:
+
+  * All inputs are filled
+  * All validations pass
+
+---
+
+# 🎬 MICRO INTERACTIONS
+
+Use only:
+
+* Smooth fade
+* Soft slide
+* Subtle shake
+* Press feedback
+
+Avoid:
+
+* Flash animations
+* Sharp transitions
+
+---
+
+# 🎯 FINAL GOAL
+
+Create a **guided, high-speed product entry system** where:
+
+* Layout is clean and logical
+* Input flow is intelligent and controlled
+* Errors are handled visually and smoothly
+* Margin interaction feels dynamic but not distracting
+* User never feels confused or blocked
+
+This should feel like a **smart POS input engine**, not a simple form.
