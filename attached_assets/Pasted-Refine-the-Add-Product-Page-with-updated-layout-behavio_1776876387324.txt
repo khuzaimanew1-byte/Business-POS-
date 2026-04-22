@@ -1,0 +1,218 @@
+Refine the **Add Product Page** with updated layout behavior, advanced input interactions, and smoother visual system. Maintain existing functionality but improve structure, animations, and usability for a premium POS experience.
+
+All improvements must feel **fast, clean, and non-flashy**.
+
+---
+
+* Remove global navigation from this page (already handled globally)
+
+# 🧱 DESKTOP / LAPTOP LAYOUT (3-COLUMN SYSTEM)
+
+Use a structured **3-column layout** for better speed and clarity:
+
+---
+
+## 1️⃣ LEFT COLUMN — IMAGE ZONE
+
+* Square product image upload
+* Center plus icon overlay
+* Drag & drop supported
+
+### Behavior:
+
+* Empty → show subtle placeholder
+* Image added → preview fills container
+* Click plus icon always replaces image (no extra icons needed)
+
+---
+
+## 2️⃣ CENTER COLUMN — PRIMARY INPUTS
+
+Main data entry area:
+
+* Product Name
+* Price
+* Profit
+* Quick Code
+
+### Behavior:
+
+* Clean vertical stacking
+* Focus-driven highlight system
+* Fast typing optimized
+
+---
+
+## 3️⃣ RIGHT COLUMN — SECONDARY INPUTS
+
+* Stock
+* Category dropdown (+ add category option)
+
+### Behavior:
+
+* Lighter visual priority than center column
+* Minimal spacing, clean alignment
+
+---
+
+# 🧠 INPUT DESIGN SYSTEM (MAJOR UPGRADE)
+
+## ✨ FLOATING LABELS + BORDER TRACE ANIMATION
+
+Replace normal borders with **animated trace border system**.
+
+---
+
+## 🎬 BORDER TRACE ANIMATION (IMPORTANT)
+
+### Behavior:
+
+* When input is focused:
+
+  * Border line starts drawing from **left + right simultaneously**
+  * It smoothly completes the full outline
+  * Follows **rounded corners (radius aware animation)**
+
+### Key Rule:
+
+* Animation must match border radius shape (no sharp corners)
+
+---
+
+## ⚡ VISUAL STYLE
+
+* Soft glowing line (not neon)
+* Smooth continuous trace effect
+* No flashing or abrupt animation
+
+---
+
+## 🏷️ LABEL OVERLAY SYSTEM
+
+* Labels sit **on top of border line**
+* Floating behavior:
+
+### States:
+
+* Default → inside input
+* Focused → moves above border line smoothly
+* Active → stays slightly elevated
+
+### Rule:
+
+* Label must feel embedded in border system, not separate
+
+---
+
+# 📊 MARGIN INDICATOR (IMPROVED BEHAVIOR)
+
+## Placement:
+
+* Appears only when **Profit input is focused**
+
+---
+
+## Behavior:
+
+* Hidden by default
+* On profit focus → fades in smoothly
+
+---
+
+## Design:
+
+* Small horizontal bar
+* Shows margin % visually
+* Smooth fill animation (left → right)
+
+---
+
+# 🔖 QUICK CODE SYSTEM
+
+* Keep `#` static prefix
+* Manual input required (no auto-generation)
+
+### Rules:
+
+* Lowercase only
+* Must be unique
+* Real-time validation
+
+---
+
+# 🖼️ IMAGE COMPONENT
+
+* No extra icons except central plus
+* Plus icon always visible (even after image upload)
+* Clicking plus replaces image instantly
+
+---
+
+# 🗂️ CATEGORY DROPDOWN
+
+* Includes existing categories
+* Includes “+ Add Category” option
+
+### Enhancement:
+
+* Newly added categories can be deleted
+* Soft confirmation before deletion
+* Instant update in dropdown
+
+---
+
+# 🔘 BOTTOM ACTION BAR (CLEAN DESIGN)
+
+* No separate heavy bar styling
+* Buttons appear naturally at bottom of form
+
+### Buttons:
+
+* Create
+* Create & Add Another
+
+### Behavior:
+
+* Smooth press animation
+* Clear hierarchy (primary vs secondary)
+
+---
+
+# 🎬 ANIMATION SYSTEM (GLOBAL RULES)
+
+### Allowed:
+
+* Smooth transitions
+* Border trace animation
+* Fade + slide micro interactions
+
+### Not allowed:
+
+* Flashy effects
+* Rapid blinking
+* Heavy motion
+
+---
+
+# ⚖️ RESPONSIVE RULE
+
+* Desktop → 3-column layout
+* Mobile → stacked single column layout
+
+---
+
+# 🎯 FINAL GOAL
+
+This Add Product Page should feel like:
+
+* A **fast POS input terminal**
+* Not a form
+* Not a modal replacement
+
+Key qualities:
+
+* Smooth border tracing inputs
+* Clean floating label system
+* Fast data entry flow
+* Minimal but premium UI feel
+* Fully responsive and production-ready

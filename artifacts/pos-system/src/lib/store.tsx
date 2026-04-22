@@ -37,6 +37,9 @@ type StoreValue = {
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
+  customCategories: Set<string>;
+  addCustomCategory: (name: string) => void;
+  removeCategory: (name: string) => void;
 };
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -44,8 +47,32 @@ const StoreContext = createContext<StoreValue | null>(null);
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [customCategories, setCustomCategories] = useState<Set<string>>(() => new Set());
+
+  const addCustomCategory = (name: string) => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setCategories(prev => prev.includes(trimmed) ? prev : [...prev, trimmed]);
+    setCustomCategories(prev => {
+      if (prev.has(trimmed)) return prev;
+      const next = new Set(prev);
+      next.add(trimmed);
+      return next;
+    });
+  };
+
+  const removeCategory = (name: string) => {
+    setCategories(prev => prev.filter(c => c !== name));
+    setCustomCategories(prev => {
+      if (!prev.has(name)) return prev;
+      const next = new Set(prev);
+      next.delete(name);
+      return next;
+    });
+  };
+
   return (
-    <StoreContext.Provider value={{ products, setProducts, categories, setCategories }}>
+    <StoreContext.Provider value={{ products, setProducts, categories, setCategories, customCategories, addCustomCategory, removeCategory }}>
       {children}
     </StoreContext.Provider>
   );
