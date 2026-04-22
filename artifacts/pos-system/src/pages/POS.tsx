@@ -21,54 +21,21 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
 
-// Types
-type Category = string;
-
-type Product = {
-  id: string;
-  code: string;
-  name: string;
-  price: number;
-  category: Category;
-  stock: number;
-  image?: string;
-  profit?: number;
-};
+import { useStore, type Product, type Category } from "@/lib/store";
 
 type CartItem = {
   product: Product;
   quantity: number;
 };
 
-// Initial Data
-const INITIAL_CATEGORIES: Category[] = ["All", "Drinks", "Snacks", "Electronics", "Clothing", "Food"];
-
-const INITIAL_PRODUCTS: Product[] = [
-  { id: "1",  code: "#1001", name: "Espresso",        price: 3.50,  category: "Drinks",      stock: 50,  image: "/images/espresso.png" },
-  { id: "2",  code: "#1002", name: "Latte",            price: 4.50,  category: "Drinks",      stock: 45,  image: "/images/latte.png" },
-  { id: "3",  code: "#1003", name: "Cappuccino",       price: 4.00,  category: "Drinks",      stock: 30,  image: "/images/cappuccino.png" },
-  { id: "4",  code: "#1004", name: "Trail Mix",        price: 2.99,  category: "Snacks",      stock: 100, image: "/images/trail-mix.png" },
-  { id: "5",  code: "#1005", name: "Granola Bar",      price: 1.99,  category: "Snacks",      stock: 200, image: "/images/granola-bar.png" },
-  { id: "6",  code: "#1006", name: "Chips Pack",       price: 1.49,  category: "Snacks",      stock: 150 },
-  { id: "7",  code: "#1007", name: "Wireless Earbuds", price: 29.99, category: "Electronics", stock: 20,  image: "/images/earbuds.png" },
-  { id: "8",  code: "#1008", name: "USB Cable",        price: 9.99,  category: "Electronics", stock: 75,  image: "/images/usb-cable.png" },
-  { id: "9",  code: "#1009", name: "Phone Stand",      price: 14.99, category: "Electronics", stock: 40,  image: "/images/phone-stand.png" },
-  { id: "10", code: "#1010", name: "T-Shirt",          price: 19.99, category: "Clothing",    stock: 60 },
-  { id: "11", code: "#1011", name: "Cap",              price: 12.99, category: "Clothing",    stock: 80 },
-  { id: "12", code: "#1012", name: "Sandwich",         price: 6.99,  category: "Food",        stock: 25 },
-  { id: "13", code: "#1013", name: "Salad Bowl",       price: 8.99,  category: "Food",        stock: 15 },
-];
-
 export default function POS() {
   const [, setLocation] = useLocation();
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
-  const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const { products, setProducts, categories, setCategories } = useStore();
   const [selectedCategory, setSelectedCategory] = useState<Category>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [cartFlash, setCartFlash] = useState(false);
 
@@ -273,19 +240,6 @@ export default function POS() {
     toast.success("Checkout successful!", { icon: <Check className="text-green-500" /> });
   };
 
-  const handleAddProduct = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const fd = new FormData(e.currentTarget);
-    const name = fd.get("name") as string;
-    const price = parseFloat(fd.get("price") as string);
-    const cat = fd.get("category") as string;
-    const stock = parseInt(fd.get("stock") as string, 10);
-    const code = `#${1000 + products.length + 1}`;
-    setProducts(prev => [...prev, { id: Math.random().toString(36).substr(2, 9), name, price, category: cat, stock, code }]);
-    setIsAddProductModalOpen(false);
-    toast.success(`Added ${name}`);
-  };
-
   const handleAddCategory = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
@@ -422,6 +376,18 @@ export default function POS() {
         if (!isEditMode) enterEditMode();
         return;
       }
+      // Shift + P → Add Product page
+      if (e.shiftKey && (e.key === 'P' || e.key === 'p') && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        setLocation('/add-product');
+        return;
+      }
+      // Shift + A → Analytics page
+      if (e.shiftKey && (e.key === 'A' || e.key === 'a') && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        setLocation('/analytics');
+        return;
+      }
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'c' || e.key === 'C') {
@@ -438,7 +404,7 @@ export default function POS() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [cartItems, isEditMode]);
+  }, [cartItems, isEditMode, setLocation]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -452,7 +418,7 @@ export default function POS() {
           <TooltipProvider delayDuration={100}>
             <TooltipItem icon={<Home size={20} />} label="Home" active />
             <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" onClick={() => setLocation("/analytics")} />
-            <div onClick={() => setIsAddProductModalOpen(true)}>
+            <div onClick={() => setLocation("/add-product")}>
               <TooltipItem icon={<Plus size={20} />} label="Add Product" />
             </div>
             <TooltipItem icon={<Settings size={20} />} label="Settings" />
@@ -681,7 +647,7 @@ export default function POS() {
           >
             {filteredProducts.map(product => {
               const currentImage = isEditMode ? (editDrafts[product.id]?.image ?? product.image) : product.image;
-              const qc = quickCode(product.name);
+              const qc = product.quickCode || quickCode(product.name);
               const isTopMatch = product.id === topMatchId;
               const isSelected = selectedIds.has(product.id);
               const cardCommonProps = {
@@ -976,7 +942,7 @@ export default function POS() {
 
         {/* Add Product — center, prominent */}
         <button
-          onClick={() => setIsAddProductModalOpen(true)}
+          onClick={() => setLocation("/add-product")}
           className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all duration-200 -mt-4"
           aria-label="Add Product"
         >
@@ -1104,41 +1070,6 @@ export default function POS() {
           </Button>
         </div>
       </aside>
-
-      {/* ── ADD PRODUCT MODAL ─────────────────────────────────────────────── */}
-      <Dialog open={isAddProductModalOpen} onOpenChange={setIsAddProductModalOpen}>
-        <DialogContent className="sm:max-w-[425px] glass-panel border-border/50">
-          <DialogHeader><DialogTitle>Add New Product</DialogTitle></DialogHeader>
-          <form onSubmit={handleAddProduct}>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="name">Product Name</Label>
-                <Input id="name" name="name" required placeholder="e.g. Avocado Wrap" className="bg-background/50" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="price">Price ($)</Label>
-                  <Input id="price" name="price" type="number" step="0.01" min="0" required placeholder="0.00" className="bg-background/50" />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="stock">Initial Stock</Label>
-                  <Input id="stock" name="stock" type="number" min="0" required placeholder="100" className="bg-background/50" />
-                </div>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="category">Category</Label>
-                <select name="category" id="category" className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background/50 px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" required>
-                  {categories.filter(c => c !== "All").map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsAddProductModalOpen(false)}>Cancel</Button>
-              <Button type="submit">Create Product</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* ── ADD CATEGORY MODAL ────────────────────────────────────────────── */}
       <Dialog open={isAddCategoryModalOpen} onOpenChange={setIsAddCategoryModalOpen}>

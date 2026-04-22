@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { Home, BarChart2, Plus, Settings, Bell, Calendar as CalendarIcon, Check } from "lucide-react";
+import { Home, BarChart2, Plus, Settings, Bell, Calendar as CalendarIcon, Check, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";

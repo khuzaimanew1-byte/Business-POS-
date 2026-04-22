@@ -1,0 +1,299 @@
+
+# 🧩 COMPONENT PROMPTS — ADD PRODUCT PAGE
+
+---
+
+## 🖼️ 1. IMAGE UPLOAD COMPONENT
+
+Create a square product image upload component that supports both click-to-upload and drag-and-drop.
+
+The container should maintain a fixed square ratio and visually act as a strong anchor on the page. In the center, place a circular plus icon that clearly indicates upload action.
+
+When the user hovers (desktop), the border should softly highlight. When a file is dragged over the area, apply a subtle magnetic or glow effect to indicate drop readiness.
+
+Once an image is selected:
+
+* Instantly show preview inside the container (cover fit)
+* Add a very subtle overlay interaction that allows replacing or removing the image
+* Avoid visible buttons unless interacted with
+
+On mobile:
+
+* No hover behavior
+* Plus icon must always remain visible
+* Tap should directly open file picker
+
+Ensure transitions are smooth and quick, not flashy.
+
+---
+
+## 🏷️ 2. PRODUCT NAME INPUT
+
+Create a clean, minimal product name input field.
+
+This is a primary field and should visually stand out slightly more than secondary inputs.
+
+Behavior:
+
+* Required field
+* On focus → apply a soft glow or highlight
+* Keep typography clear and readable
+
+Avoid:
+
+* heavy borders
+* unnecessary icons
+
+Ensure fast typing experience with no lag or distractions.
+
+---
+
+## 🔖 3. QUICK CODE INPUT
+
+Create a quick code input field with a static prefix.
+
+Requirements:
+
+* The field must always start with a non-editable “#”
+* User can only type after the prefix
+* Input must remain in lowercase
+
+Behavior:
+
+* If left empty → auto-generate a 3–4 character code from product name
+* Ensure generated code is readable (initial-based)
+
+Validation:
+
+* Must be unique across products
+* If duplicate:
+
+  * show subtle inline warning
+  * prevent form submission
+
+Ensure the input is compact but clearly readable.
+
+---
+
+## 💰 4. PRICE INPUT
+
+Create a numeric price input field with a fixed currency symbol.
+
+Requirements:
+
+* Currency symbol must be visible but not editable
+* Only numeric values allowed
+* Clean input styling
+
+Behavior:
+
+* On focus → subtle highlight
+* Should align visually with profit input (side-by-side layout)
+
+Ensure clarity and precision for fast entry.
+
+---
+
+## 📈 5. PROFIT INPUT + VALIDATION
+
+Create a profit input field that works in relation with the price field.
+
+Requirements:
+
+* Numeric input only
+* Currency symbol fixed (non-editable)
+
+Validation logic:
+
+* Profit must not exceed price
+
+If profit > price:
+
+* Input border turns red
+* Apply a subtle shake animation
+* Show inline message:
+  “Profit cannot exceed price”
+
+Keep the animation quick and minimal (micro-interaction, not distracting).
+
+---
+
+## 📊 6. MARGIN PREVIEW COMPONENT
+
+Create a live margin preview component below the price and profit inputs.
+
+Behavior:
+
+* Automatically calculate margin percentage based on inputs
+* Update in real time as user types
+
+Display:
+
+* Margin percentage
+* Optional small supporting text
+
+Visual:
+
+* Clean, subtle
+* Not overly prominent
+* Helps user understand profit instantly
+
+Ensure no lag in calculation or display.
+
+---
+
+## 📦 7. STOCK INPUT
+
+Create a numeric stock input field.
+
+Requirements:
+
+* Only integer values allowed
+* Clean, minimal design
+* Slightly lower visual priority than main inputs
+
+Behavior:
+
+* Focus highlight
+* Smooth typing
+
+Avoid extra decoration.
+
+---
+
+## 🗂️ 8. CATEGORY DROPDOWN
+
+Create a category dropdown component.
+
+Requirements:
+
+* Show existing categories
+* Last option should be “+ Add Category”
+
+Behavior:
+
+* Selecting a category assigns it immediately
+
+When “Add Category” is selected:
+
+* Show inline mini input (not modal)
+* Allow quick category creation
+* Newly created category should:
+
+  * appear instantly in list
+  * become selected
+
+On mobile:
+
+* Use full-width dropdown or bottom sheet style
+
+Ensure interaction is smooth and fast.
+
+---
+
+## 🔘 9. CREATE BUTTON
+
+Create a primary “Create” button.
+
+Behavior:
+
+* On click:
+
+  * Validate all fields
+  * Show loading state
+  * Then show subtle success feedback
+  * Redirect to main POS page
+
+Interaction:
+
+* Slight press animation on click
+* No flashy effects
+
+Ensure button feels responsive and reliable.
+
+---
+
+## ➕ 10. CREATE & ADD ANOTHER BUTTON
+
+Create a secondary “Create & Add Another” button.
+
+Behavior:
+
+* On click:
+
+  * Create product
+  * Show success feedback
+  * Smoothly reset all inputs
+
+Reset behavior:
+
+* Inputs clear quickly (not abruptly)
+* Image fades out
+* Cursor returns to product name input
+
+Ensure flow feels continuous and efficient.
+
+---
+
+## 🎬 11. FORM RESET SYSTEM
+
+Implement a smooth form reset system.
+
+Behavior:
+
+* Triggered after “Create & Add Another”
+* Inputs clear in a quick, smooth sequence
+* Image resets with fade-out effect
+* Margin preview resets instantly
+* Focus returns to first input
+
+Avoid:
+
+* sudden jumps
+* hard resets
+
+Ensure fluid UX.
+
+---
+
+## ⌨️ 12. KEYBOARD SHORTCUT SYSTEM
+
+Implement global keyboard shortcuts for fast navigation and actions.
+
+Shortcuts:
+
+* Shift + P → open Add Product page
+* Enter → create product and redirect
+* Shift + Enter → create and continue
+* Shift + A → open analytics page
+* Ctrl + ` → toggle search bar focus
+
+Ensure:
+
+* Shortcuts do not conflict with input typing
+* They feel responsive and reliable
+
+No visual clutter required.
+
+---
+
+## 🎬 13. MICRO-INTERACTION SYSTEM
+
+Apply consistent micro-interactions across the page.
+
+Include:
+
+* Input focus → soft glow
+* Error → subtle shake
+* Button click → press feedback
+* Success → minimal tick feedback
+
+Rules:
+
+* Animations must be fast and smooth
+* Avoid flashy or exaggerated motion
+* Maintain performance
+
+Goal:
+Enhance feedback without slowing workflow.
+

@@ -1,0 +1,317 @@
+Design and implement a **dedicated Add Product Page** for the POS system. This page replaces the previous modal-based product creation and must feel like a **fast, professional product entry environment**, optimized for real retail workflows.
+
+You are allowed to enhance design, spacing, animations, and interaction quality wherever needed. The system must feel clean, fast, and premium — not like a basic form.
+
+---
+
+# 🧭 GLOBAL STRUCTURE
+
+* Use the **same global navigation bar** as the main POS page:
+
+  * Desktop → left sidebar (icons only)
+  * Mobile → bottom navigation bar
+
+* Page should feel like part of the system, not a separate screen
+
+---
+
+# 🧱 CORE LAYOUT SYSTEM (DESKTOP / LAPTOP)
+
+Create a **3-zone intelligent layout** optimized for speed and clarity:
+
+---
+
+## 1️⃣ LEFT — IMAGE ZONE (VISUAL ANCHOR)
+
+* Square image upload container (fixed ratio)
+* Centered circular plus icon
+* Supports:
+
+  * Click to upload
+  * Drag & drop
+
+### States:
+
+* Empty → subtle placeholder
+* Hover → soft border highlight
+* Image selected → preview fills container
+* Replace/remove via subtle overlay interaction
+
+### Interaction:
+
+* Dragging image over → soft magnetic highlight
+* Image appears instantly after selection
+
+This section should feel visually strong but not heavy.
+
+---
+
+## 2️⃣ CENTER — PRIMARY INPUT FLOW (MAIN FOCUS)
+
+This is the **fast-entry core area**.
+
+### Order (top → bottom):
+
+### 🏷️ Product Name
+
+* Required field
+* Clean input with focus glow
+* No duplicate warning (removed as per requirement)
+
+---
+
+### 🔖 Quick Code Input
+
+* Starts with static `#` prefix (non-editable)
+* User enters remaining value
+* Must be **unique across products**
+* If empty:
+
+  * Auto-generate from product name (3–4 letters, readable format)
+
+### Behavior:
+
+* Live uniqueness validation
+* If duplicate:
+
+  * subtle warning
+  * prevent submission
+
+---
+
+### 💰 Price + Profit (COMBINED ROW)
+
+* Two inputs side-by-side
+* Both required numeric fields
+* Currency symbol fixed (non-editable)
+
+---
+
+### 📊 PROFIT LOGIC (STRICT + VISUAL)
+
+* Profit **cannot exceed price**
+
+### Behavior:
+
+* If profit ≤ price:
+
+  * normal state
+
+* If profit > price:
+
+  * input border turns red
+  * subtle shake animation
+  * inline message:
+    “Profit cannot exceed price”
+
+---
+
+### 📈 LIVE MARGIN PREVIEW
+
+Below price/profit:
+
+* Show:
+
+  * margin %
+  * calculated value
+
+* Updates in real time as user types
+
+---
+
+## 3️⃣ RIGHT — SECONDARY INPUTS
+
+Lower priority, lighter visual weight:
+
+### 📦 Stock Input
+
+* Numeric only
+* Clean minimal input
+
+---
+
+### 🗂️ Category Dropdown
+
+* Dropdown with:
+
+  * existing categories
+  * last option: **“+ Add Category”**
+
+### Behavior:
+
+* Clicking “Add Category”:
+
+  * inline mini input appears
+  * create instantly
+  * auto-select new category
+
+---
+
+# 🧩 VISUAL GROUPING
+
+* Use soft spacing instead of heavy borders
+* Light card-like grouping allowed (very subtle)
+* Avoid boxed/cluttered UI
+
+---
+
+# 🔻 BOTTOM — ACTION ZONE
+
+Two buttons:
+
+### ✅ Create
+
+* Creates product
+* Shows quick success feedback
+* Redirects to main POS page
+
+---
+
+### ➕ Create & Add Another
+
+* Creates product
+* Smoothly resets form
+* Keeps user on same page
+
+---
+
+### ✨ SUBMIT INTERACTION
+
+* Button → loading state
+* Subtle success tick
+* Then action (redirect/reset)
+
+---
+
+# ⚡ FLOW OPTIMIZATION
+
+User flow should feel natural:
+
+Image → Name → Quick Code → Price/Profit → Stock → Category → Create
+
+* No confusion
+* No unnecessary movement
+* Optimized for keyboard + speed
+
+---
+
+# ⌨️ KEYBOARD SHORTCUT SYSTEM
+
+Implement global shortcuts:
+
+* **Shift + P**
+  → Open Add Product page
+
+* **Enter**
+  → Create + Redirect
+
+* **Shift + Enter**
+  → Create & Add Another
+
+* **Shift + A**
+  → Open Analytics page
+
+* **Ctrl + `**
+  → Toggle search bar focus/unfocus
+
+---
+
+# 📱 MOBILE UX (FULLY OPTIMIZED)
+
+Completely adapt layout for mobile:
+
+---
+
+## 📱 STRUCTURE (TOP → BOTTOM)
+
+1. Image Upload (full width, square)
+2. Product Name
+3. Quick Code
+4. Price
+5. Profit
+6. Margin Preview
+7. Stock
+8. Category
+9. Action Buttons (bottom / sticky)
+
+---
+
+## 🎯 MOBILE BEHAVIOR
+
+* No hover dependency
+* Plus icon always visible on image
+* Large tap areas
+* Clean spacing (not cramped)
+
+---
+
+## 📂 DROPDOWN UX
+
+* Category dropdown opens as:
+
+  * full-width modal sheet
+  * easy thumb interaction
+
+---
+
+## ⚡ IMAGE INTERACTION
+
+* Tap → upload
+* Instant preview
+* Smooth replace behavior
+
+---
+
+# 🎬 MICRO-ANIMATION SYSTEM
+
+Keep animations:
+
+* Smooth
+* Fast
+* Non-flashy
+
+### Add:
+
+* Input focus → soft glow
+* Error → subtle shake
+* Button → press feedback
+* Form reset → smooth clearing
+
+---
+
+# 🧠 SYSTEM LOGIC RULES
+
+* Quick code must be unique
+* Profit cannot exceed price
+* Required fields must be validated
+* No submission on invalid data
+
+---
+
+# 🎨 DESIGN FREEDOM
+
+You are encouraged to:
+
+* Improve spacing and alignment
+* Add depth using subtle shadows
+* Refine typography hierarchy
+* Enhance dark UI readability
+
+Avoid:
+
+* heavy borders
+* flashy animations
+* cluttered layouts
+
+---
+
+# 🎯 FINAL GOAL
+
+Create a **high-speed product creation experience** that feels:
+
+* Fast like a real POS system
+* Clean and distraction-free
+* Smart with validations and feedback
+* Optimized for both desktop and mobile
+
+This should feel like a **professional retail tool**, not a basic form.
