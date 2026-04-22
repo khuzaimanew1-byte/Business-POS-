@@ -995,7 +995,7 @@ export default function Analytics() {
         <div className="flex-1 flex overflow-hidden">
 
           {/* Scrollable analytics content */}
-          <main className="flex-1 overflow-y-auto p-3 sm:p-5 pb-[76px] sm:pb-5">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-5 pb-[76px] sm:pb-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div className="max-w-4xl w-full mx-auto">
 
               {/* Summary */}
