@@ -86,8 +86,7 @@ function buildChartData(
 
   if (mode === "daily") {
     const rangeStart = startOfDay(now);
-    // Real-time: never extend past the current moment
-    const rangeEnd = Math.min(rangeStart + 86400000, now.getTime());
+    const rangeEnd = rangeStart + 86400000;
     // Group sales by minute — multiple sales at the same minute add up
     const byMinute = new Map<number, number>();
     for (const e of events) {
@@ -126,7 +125,7 @@ function buildChartData(
 
   if (mode === "weekly") {
     rangeStart = startOfDay(now) - 6 * 86400000;
-    rangeEnd = now.getTime(); // up to right now, no future
+    rangeEnd = startOfDay(now) + 86400000;
     rangeLabel = "Last 7 days";
     for (let d = 0; d < 7; d++) {
       const ts = rangeStart + d * 86400000 + 43200000; // noon
@@ -138,8 +137,6 @@ function buildChartData(
   } else if (mode === "monthly") {
     rangeStart = startOfMonth(now);
     const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    // Keep the X-axis spanning the whole month (so day labels stay anchored)
-    // but data filtering still excludes future timestamps via byDay below.
     rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
     rangeLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
     const stride = days <= 14 ? 2 : days <= 21 ? 3 : 4;
@@ -150,8 +147,6 @@ function buildChartData(
   } else if (mode === "yearly") {
     const yr = now.getFullYear();
     rangeStart = startOfYear(now);
-    // Keep the X-axis labeled for the full year (12 months) so the timeline
-    // structure is preserved, but future-dated data is filtered out below.
     rangeEnd = new Date(yr + 1, 0, 1).getTime();
     rangeLabel = String(yr);
     for (let m = 0; m < 12; m++) {
@@ -184,12 +179,10 @@ function buildChartData(
     }
   }
 
-  // Aggregate sales by day for non-daily modes — strictly past + today
-  const nowMs = now.getTime();
+  // Aggregate sales by day for non-daily modes
   const byDay = new Map<number, number>();
   for (const e of events) {
     if (e.ts < rangeStart || e.ts >= rangeEnd) continue;
-    if (e.ts > nowMs) continue; // safety: ignore any future-dated event
     const dayStart = startOfDay(new Date(e.ts));
     byDay.set(dayStart, (byDay.get(dayStart) ?? 0) + valueOf(e));
   }
@@ -198,12 +191,8 @@ function buildChartData(
     // place point at noon of that day for visual centering
     .map(([dayStart, value]) => ({ ts: dayStart + 43200000, value, visible: true }));
 
-  // For zero-anchor continuity, cap the right boundary at "now" so the
-  // baseline never extends into the future portion of the timeline.
-  const dataEnd = Math.min(nowMs, rangeEnd);
-
   // Anchor offset: ~12 hours so the line drops fully back to 0 between active days
-  const bins = withZeroAnchors(real, rangeStart, dataEnd, 12 * 3600000);
+  const bins = withZeroAnchors(real, rangeStart, rangeEnd, 12 * 3600000);
 
   return { bins, rangeStart, rangeEnd, rangeLabel, xTicks };
 }

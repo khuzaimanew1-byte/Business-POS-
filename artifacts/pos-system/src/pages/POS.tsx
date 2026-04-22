@@ -12,7 +12,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { recordSale } from "@/lib/analytics-store";
 
 // Types
 type Category = string;
@@ -193,16 +192,6 @@ export default function POS() {
 
   const checkout = () => {
     if (cartItems.length === 0) return;
-    // ── Event-driven analytics: a sale event is recorded ONLY here ────────
-    recordSale(
-      cartItems.map(({ product, quantity }) => ({
-        productId: product.id,
-        name: product.name,
-        qty: quantity,
-        price: product.price,
-        profit: product.profit ?? 0,
-      })),
-    );
     setCartItems([]);
     setIsCartOpen(false);
     toast.success("Checkout successful!", { icon: <Check className="text-green-500" /> });
