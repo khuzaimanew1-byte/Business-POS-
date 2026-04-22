@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, DollarSign, TrendingUp, Calendar as CalendarIcon } from "lucide-react";
+import { ArrowLeft, DollarSign, TrendingUp, Calendar as CalendarIcon, ChevronDown, Search, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useSaleEvents, type SaleEvent } from "@/lib/analytics-store";
+import { useSaleEvents, type SaleEvent, type SaleItem } from "@/lib/analytics-store";
+import { PRODUCTS_META, getProductMeta, colorForProduct, type ProductMeta } from "@/lib/products-meta";
 
 type Mode = "daily" | "weekly" | "monthly" | "yearly" | "custom";
 type Metric = "sales" | "profit";
@@ -269,6 +270,47 @@ function fmtMetric(v: number, metric: Metric) {
   }
   const n = Math.round(v);
   return `${n} item${n === 1 ? "" : "s"}`;
+}
+
+// ── Product aggregation ───────────────────────────────────────────────────
+type ProductAgg = {
+  id: string;
+  name: string;
+  image?: string;
+  color: string;
+  value: number;
+};
+
+function aggregateProducts(
+  events: SaleEvent[],
+  metric: Metric,
+  rangeStart: number,
+  rangeEnd: number,
+): ProductAgg[] {
+  const totals = new Map<string, { name: string; value: number }>();
+  const valueOf = (it: SaleItem) =>
+    metric === "sales" ? it.qty : it.profit * it.qty;
+  for (const e of events) {
+    if (e.ts < rangeStart || e.ts >= rangeEnd) continue;
+    for (const it of e.items) {
+      const cur = totals.get(it.productId) ?? { name: it.name, value: 0 };
+      cur.value += valueOf(it);
+      cur.name = it.name;
+      totals.set(it.productId, cur);
+    }
+  }
+  return Array.from(totals.entries())
+    .map(([id, v]) => {
+      const meta = getProductMeta(id, v.name);
+      return {
+        id,
+        name: meta.name,
+        image: meta.image,
+        color: colorForProduct(id),
+        value: v.value,
+      };
+    })
+    .sort((a, b) => b.value - a.value);
 }
 
 function fmtYTick(v: number, metric: Metric) {
@@ -552,6 +594,249 @@ function Chart({
 }
 
 // ──────────────────────────────────────────────────────────────────────────
+//  PRODUCT PICKER (popover content)
+// ──────────────────────────────────────────────────────────────────────────
+function ProductPicker({
+  currentId,
+  excludeIds,
+  onPick,
+}: {
+  currentId: string;
+  excludeIds: Set<string>;
+  onPick: (id: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  const items = useMemo(() => {
+    const term = q.trim().toLowerCase();
+    return PRODUCTS_META.filter((p) => {
+      if (p.id !== currentId && excludeIds.has(p.id)) return false;
+      if (!term) return true;
+      return p.name.toLowerCase().includes(term);
+    });
+  }, [q, currentId, excludeIds]);
+
+  return (
+    <div className="w-56">
+      <div className="relative mb-2">
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+        <input
+          autoFocus
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search products"
+          className="w-full pl-7 pr-2 py-1.5 text-xs bg-secondary/50 rounded-md outline-none focus:ring-1 focus:ring-ring/40"
+        />
+      </div>
+      <div className="max-h-56 overflow-y-auto -mx-1 pr-1">
+        {items.length === 0 && (
+          <p className="text-[11px] text-muted-foreground text-center py-3">
+            No matches
+          </p>
+        )}
+        {items.map((p) => {
+          const isCurrent = p.id === currentId;
+          return (
+            <button
+              key={p.id}
+              onClick={() => onPick(p.id)}
+              className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs transition-colors ${
+                isCurrent
+                  ? "bg-primary/15 text-foreground"
+                  : "hover:bg-secondary/60 text-foreground/90"
+              }`}
+            >
+              <span
+                className="w-2.5 h-2.5 rounded-full shrink-0"
+                style={{ background: colorForProduct(p.id) }}
+              />
+              <ProductThumb meta={p} size={20} />
+              <span className="truncate flex-1">{p.name}</span>
+              {isCurrent && <Check className="w-3 h-3 text-primary" />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ProductThumb({ meta, size = 28 }: { meta: ProductMeta; size?: number }) {
+  const initials = meta.name
+    .split(/\s+/)
+    .map((w) => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  return (
+    <span
+      className="inline-flex items-center justify-center rounded-full overflow-hidden bg-secondary/70 text-[10px] font-semibold text-muted-foreground shrink-0"
+      style={{ width: size, height: size }}
+    >
+      {meta.image ? (
+        <img
+          src={meta.image}
+          alt={meta.name}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = "none";
+          }}
+        />
+      ) : (
+        initials
+      )}
+    </span>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+//  TOP PRODUCTS BAR CHART
+// ──────────────────────────────────────────────────────────────────────────
+function TopProductsBar({
+  slots,
+  metric,
+  excludeIds,
+  onSwap,
+}: {
+  slots: ProductAgg[];
+  metric: Metric;
+  excludeIds: Set<string>;
+  onSwap: (slotIdx: number, newId: string) => void;
+}) {
+  const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const max = Math.max(1, ...slots.map((s) => s.value));
+
+  return (
+    <section className="bg-card/40 border border-card-border rounded-xl p-4 sm:p-5">
+      <div className="flex items-baseline justify-between mb-4">
+        <h3 className="text-sm font-semibold">Top 5 products</h3>
+        <p className="text-[11px] text-muted-foreground">
+          Tap a bar to swap product
+        </p>
+      </div>
+      <div className="grid grid-cols-5 gap-2 sm:gap-4 items-end">
+        {slots.map((p, i) => {
+          const heightPct = Math.max(8, (p.value / max) * 100);
+          return (
+            <Popover
+              key={`${i}-${p.id}`}
+              open={openIdx === i}
+              onOpenChange={(o) => setOpenIdx(o ? i : null)}
+            >
+              <PopoverTrigger asChild>
+                <button className="flex flex-col items-center group focus:outline-none">
+                  {/* Value pill */}
+                  <span className="text-[10px] sm:text-[11px] font-semibold mb-1 text-foreground/90">
+                    {fmtMetric(p.value, metric)}
+                  </span>
+                  {/* Bar track */}
+                  <div className="relative w-full h-32 sm:h-36 rounded-md bg-secondary/40 overflow-hidden">
+                    <div
+                      className="absolute bottom-0 left-0 right-0 rounded-md transition-all duration-500 ease-out group-hover:brightness-110"
+                      style={{
+                        height: `${heightPct}%`,
+                        background: `linear-gradient(180deg, ${p.color} 0%, ${p.color.replace("hsl(", "hsla(").replace(")", " / 0.55)")} 100%)`,
+                        boxShadow: `0 0 18px -4px ${p.color}`,
+                      }}
+                    />
+                  </div>
+                  {/* Label */}
+                  <div className="mt-2 flex flex-col items-center gap-1 w-full">
+                    <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
+                    <div className="flex items-center gap-0.5 max-w-full">
+                      <span className="text-[10px] sm:text-[11px] truncate text-foreground/80">
+                        {p.name}
+                      </span>
+                      <ChevronDown className="w-3 h-3 text-muted-foreground opacity-60 shrink-0" />
+                    </div>
+                  </div>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="center" className="p-2 border-border">
+                <ProductPicker
+                  currentId={p.id}
+                  excludeIds={excludeIds}
+                  onPick={(id) => {
+                    onSwap(i, id);
+                    setOpenIdx(null);
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+//  TOP PRODUCTS LIST
+// ──────────────────────────────────────────────────────────────────────────
+function TopProductsList({
+  items,
+  metric,
+  startRank,
+}: {
+  items: ProductAgg[];
+  metric: Metric;
+  startRank: number;
+}) {
+  const max = Math.max(1, ...items.map((i) => i.value));
+  if (items.length === 0) {
+    return (
+      <section className="bg-card/40 border border-card-border rounded-xl p-5">
+        <h3 className="text-sm font-semibold mb-2">Top products</h3>
+        <p className="text-xs text-muted-foreground">No more products with sales in this period.</p>
+      </section>
+    );
+  }
+  return (
+    <section className="bg-card/40 border border-card-border rounded-xl p-4 sm:p-5">
+      <div className="flex items-baseline justify-between mb-4">
+        <h3 className="text-sm font-semibold">Ranked breakdown</h3>
+        <p className="text-[11px] text-muted-foreground">
+          {items.length} more product{items.length === 1 ? "" : "s"}
+        </p>
+      </div>
+      <ul className="flex flex-col gap-2">
+        {items.map((p, i) => {
+          const widthPct =
+            p.value > 0 ? Math.max(4, (p.value / max) * 100) : 2;
+          return (
+            <li
+              key={p.id}
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/30 transition-colors"
+            >
+              <span className="w-5 text-[11px] font-semibold tabular-nums text-muted-foreground text-right">
+                {startRank + i}
+              </span>
+              <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium truncate">{p.name}</p>
+                <div className="mt-1 h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${widthPct}%`,
+                      background: p.color,
+                      opacity: p.value > 0 ? 1 : 0.4,
+                    }}
+                  />
+                </div>
+              </div>
+              <span className="text-xs font-semibold tabular-nums shrink-0 ml-2">
+                {fmtMetric(p.value, metric)}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 //  PAGE
 // ──────────────────────────────────────────────────────────────────────────
 export default function Analytics() {
@@ -584,6 +869,88 @@ export default function Analytics() {
     () => visibleBins.reduce((s, b) => s + b.value, 0),
     [visibleBins],
   );
+
+  // Product aggregation shares the chart's range — same filter, same data.
+  const ranked = useMemo(
+    () => aggregateProducts(events, metric, data.rangeStart, data.rangeEnd),
+    [events, metric, data.rangeStart, data.rangeEnd],
+  );
+
+  // User overrides per slot index (0..4). Persists across filter changes.
+  const [barOverrides, setBarOverrides] = useState<Record<number, string>>({});
+
+  // Build the 5 bar slots: overrides first, then auto-fill with top ranked.
+  const barSlots = useMemo<ProductAgg[]>(() => {
+    const result: ProductAgg[] = [];
+    const used = new Set<string>();
+    const overrideIds = new Set(Object.values(barOverrides));
+    for (let i = 0; i < 5; i++) {
+      const overrideId = barOverrides[i];
+      if (overrideId) {
+        const found = ranked.find((p) => p.id === overrideId);
+        if (found) {
+          result.push(found);
+        } else {
+          const meta = getProductMeta(overrideId);
+          result.push({
+            id: overrideId,
+            name: meta.name,
+            image: meta.image,
+            color: colorForProduct(overrideId),
+            value: 0,
+          });
+        }
+        used.add(overrideId);
+      } else {
+        const next = ranked.find(
+          (p) => !used.has(p.id) && !overrideIds.has(p.id),
+        );
+        if (next) {
+          result.push(next);
+          used.add(next.id);
+        } else {
+          // Fallback: pick any unused product from the catalog
+          const fallback = PRODUCTS_META.find(
+            (m) => !used.has(m.id) && !overrideIds.has(m.id),
+          );
+          if (!fallback) break;
+          result.push({
+            id: fallback.id,
+            name: fallback.name,
+            image: fallback.image,
+            color: colorForProduct(fallback.id),
+            value: 0,
+          });
+          used.add(fallback.id);
+        }
+      }
+    }
+    return result;
+  }, [ranked, barOverrides]);
+
+  const barIds = useMemo(() => new Set(barSlots.map((s) => s.id)), [barSlots]);
+
+  const listItems = useMemo(
+    () => ranked.filter((p) => !barIds.has(p.id)).slice(0, 10),
+    [ranked, barIds],
+  );
+
+  const swapSlot = (slotIdx: number, newId: string) => {
+    setBarOverrides((prev) => {
+      const next = { ...prev };
+      // If newId is already in another slot, swap their products
+      const existingSlot = Object.entries(next).find(
+        ([, id]) => id === newId,
+      )?.[0];
+      if (existingSlot !== undefined && Number(existingSlot) !== slotIdx) {
+        const oldId = barSlots[slotIdx]?.id;
+        if (oldId) next[Number(existingSlot)] = oldId;
+        else delete next[Number(existingSlot)];
+      }
+      next[slotIdx] = newId;
+      return next;
+    });
+  };
 
   const applyCustom = () => {
     const f = new Date(fromStr).getTime();
@@ -709,6 +1076,21 @@ export default function Analytics() {
               mode={mode}
               loadingKey={`${mode}-${metric}-${custom?.from ?? 0}-${custom?.to ?? 0}`}
             />
+          </div>
+
+          {/* Top 5 products bar chart */}
+          <div className="mt-6">
+            <TopProductsBar
+              slots={barSlots}
+              metric={metric}
+              excludeIds={barIds}
+              onSwap={swapSlot}
+            />
+          </div>
+
+          {/* Top 10 ranked list */}
+          <div className="mt-4">
+            <TopProductsList items={listItems} metric={metric} startRank={6} />
           </div>
         </main>
 

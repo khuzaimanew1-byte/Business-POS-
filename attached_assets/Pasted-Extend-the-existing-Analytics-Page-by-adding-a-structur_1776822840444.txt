@@ -1,0 +1,176 @@
+Extend the existing Analytics Page by adding a structured multi-section data visualization system. Keep the current layout, navigation, and graph implementation intact — only enhance the analytics area with additional visual components and unified filtering behavior.
+
+---
+
+# 📊 OVERALL ANALYTICS STRUCTURE UPDATE
+
+The analytics page should now contain three connected sections:
+
+1. **Main Line Graph (existing)**
+2. **New Top Products Bar Graph (below line graph)**
+3. **Top Products List (below bar graph)**
+
+All sections must be synchronized with the same filters and data state.
+
+---
+
+# ⏱️ GLOBAL TIME FILTER SYSTEM (IMPORTANT)
+
+The top time filter (Daily / Weekly / Monthly / Yearly / Custom):
+
+* Must control **ALL analytics components together**
+
+  * Line graph
+  * Bar graph
+  * Product list
+
+Behavior:
+
+* Switching time range updates everything simultaneously
+* No section should behave independently
+
+---
+
+# 📈 LINE GRAPH (UNCHANGED CORE)
+
+* Keep existing line graph structure and logic
+* Already event-based (sales/profit toggle remains)
+* No visual redesign needed
+
+---
+
+# 📊 NEW SECTION 1 — TOP 5 PRODUCTS BAR GRAPH
+
+Add a new bar graph directly below the line graph:
+
+### 📦 CONTENT RULES:
+
+* Show **Top 5 products only**
+* Ranking based on:
+
+  * Sales count OR Profit (depending on selected toggle)
+
+### 📊 BAR DESIGN:
+
+* Each product has a **vertical bar**
+* Each bar has a **unique color**
+* Colors should:
+
+  * Be visually distinct
+  * Work well in dark UI
+  * Be auto-generated for new products (dynamic color assignment system)
+
+---
+
+### 🖼️ PRODUCT LABELING:
+
+Under each bar:
+
+* Product image (small circular or square)
+* Product name (short, truncated if needed)
+
+Layout:
+
+* Bar on top
+* Image + name directly beneath it
+
+---
+
+### 🎛️ INTERACTION (IMPORTANT)
+
+* Entire bar graph section should be clickable
+* On click:
+
+  * Open a dropdown selector
+  * Allow custom product selection for comparison or replacement
+
+Dropdown should:
+
+* Be smooth
+* Not block layout
+* Allow replacing any top product dynamically
+
+---
+
+# 📋 NEW SECTION 2 — TOP 10 PRODUCTS LIST
+
+Below bar graph, add a ranked product list:
+
+### 📦 CONTENT:
+
+* Show **Top 10 products (excluding top 5 bar graph items)**
+* Each row includes:
+
+  * Rank number
+  * Product image
+  * Product name
+  * Horizontal performance bar
+  * Value (Sales or Profit)
+
+---
+
+### 📊 VISUAL RULES:
+
+* Each product row has a horizontal progress-style bar
+* Bar length represents performance value
+* If value is **0**:
+
+  * Show minimal visible bar height/width (not empty)
+  * Keep row visually consistent
+
+---
+
+### 🧠 STRUCTURE:
+
+Each list item layout:
+
+* Rank number (left)
+* Image + name
+* Progress bar
+* Value (right side)
+
+Keep it compact and scan-friendly.
+
+---
+
+# 🎨 COLOR SYSTEM (IMPORTANT)
+
+* Each product gets a unique color
+* Colors should be:
+
+  * Automatically generated
+  * Consistent across line graph, bar graph, and list
+  * Optimized for dark theme visibility
+
+---
+
+# ⚡ DATA CONSISTENCY RULE
+
+All sections must use the same dataset:
+
+* Line graph events
+* Bar graph ranking
+* List ranking
+
+No mismatched or separate data sources.
+
+---
+
+# 🧠 UI BEHAVIOR PRINCIPLES
+
+* Smooth transitions when switching filters
+* No layout shifting between sections
+* Keep animations subtle and non-flashy
+* Maintain fast rendering even with large datasets
+
+---
+
+# 🎯 FINAL GOAL
+
+The analytics page should feel like a unified dashboard where:
+
+* Line graph shows overall trend
+* Bar graph highlights top 5 products visually
+* List provides deeper ranked breakdown
+* All components are synchronized through a single time filter system
+* UI remains clean, fast, and professional for real POS analytics usage
