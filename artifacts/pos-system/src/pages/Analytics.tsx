@@ -29,130 +29,110 @@ function startOfYear(d: Date) {
   return new Date(d.getFullYear(), 0, 1).getTime();
 }
 
-type Bin = { ts: number; label: string; value: number };
+type SeriesPoint = { ts: number; value: number };
+type AxisTick = { ts: number; label: string };
+type Series = {
+  points: SeriesPoint[];
+  range: { from: number; to: number };
+  xTicks: AxisTick[];
+  rangeLabel: string;
+};
 
-function buildBins(
+function buildSeries(
   mode: Mode,
   events: SaleEvent[],
   metric: Metric,
   custom: { from: number; to: number } | null,
-): { bins: Bin[]; rangeLabel: string } {
+): Series {
   const now = new Date();
   const valueOf = (e: SaleEvent) => (metric === "sales" ? e.totalQty : e.totalProfit);
 
-  if (mode === "daily") {
-    // 24 hourly bins for today
-    const start = startOfDay(now);
-    const bins: Bin[] = Array.from({ length: 24 }, (_, h) => ({
-      ts: start + h * 3600000,
-      label: `${h.toString().padStart(2, "0")}:00`,
-      value: 0,
-    }));
-    for (const e of events) {
-      if (e.ts < start || e.ts >= start + 86400000) continue;
-      const h = new Date(e.ts).getHours();
-      bins[h].value += valueOf(e);
-    }
-    return {
-      bins,
-      rangeLabel: now.toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "short",
-        day: "numeric",
-      }),
-    };
-  }
+  let from: number, to: number, rangeLabel: string;
+  let xTicks: AxisTick[] = [];
 
-  if (mode === "weekly") {
-    const start = startOfDay(now) - 6 * 86400000;
-    const bins: Bin[] = Array.from({ length: 7 }, (_, d) => {
-      const ts = start + d * 86400000;
-      return {
+  if (mode === "daily") {
+    from = startOfDay(now);
+    to = from + 86400000;
+    rangeLabel = now.toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "short",
+      day: "numeric",
+    });
+    // Hourly ticks every 3 hours
+    for (let h = 0; h <= 24; h += 3) {
+      xTicks.push({
+        ts: from + h * 3600000,
+        label: h === 24 ? "" : `${((h + 11) % 12) + 1}${h < 12 ? "a" : "p"}`,
+      });
+    }
+  } else if (mode === "weekly") {
+    to = startOfDay(now) + 86400000;
+    from = to - 7 * 86400000;
+    rangeLabel = "Last 7 days";
+    for (let d = 0; d < 7; d++) {
+      const ts = from + d * 86400000;
+      xTicks.push({
         ts,
         label: new Date(ts).toLocaleDateString(undefined, { weekday: "short" }),
-        value: 0,
-      };
-    });
-    for (const e of events) {
-      if (e.ts < start || e.ts >= start + 7 * 86400000) continue;
-      const idx = Math.floor((startOfDay(new Date(e.ts)) - start) / 86400000);
-      if (idx >= 0 && idx < 7) bins[idx].value += valueOf(e);
+      });
     }
-    return { bins, rangeLabel: "Last 7 days" };
-  }
-
-  if (mode === "monthly") {
-    const start = startOfMonth(now);
-    const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const bins: Bin[] = Array.from({ length: days }, (_, d) => {
-      const ts = new Date(now.getFullYear(), now.getMonth(), d + 1).getTime();
-      return { ts, label: String(d + 1), value: 0 };
-    });
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
-    for (const e of events) {
-      if (e.ts < start || e.ts >= end) continue;
-      const idx = new Date(e.ts).getDate() - 1;
-      if (idx >= 0 && idx < days) bins[idx].value += valueOf(e);
+  } else if (mode === "monthly") {
+    from = startOfMonth(now);
+    to = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+    rangeLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    const days = Math.round((to - from) / 86400000);
+    const stepDays = days > 20 ? 3 : 2;
+    for (let d = 0; d < days; d += stepDays) {
+      const ts = from + d * 86400000;
+      xTicks.push({ ts, label: String(d + 1) });
     }
-    return {
-      bins,
-      rangeLabel: now.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
-    };
-  }
-
-  if (mode === "yearly") {
-    // Daily bins for the entire current year
-    const yr = now.getFullYear();
-    const start = startOfYear(now);
-    const end = new Date(yr + 1, 0, 1).getTime();
-    const totalDays = Math.round((end - start) / 86400000);
-    const bins: Bin[] = Array.from({ length: totalDays }, (_, d) => {
-      const ts = start + d * 86400000;
-      const dt = new Date(ts);
-      return {
+  } else if (mode === "yearly") {
+    from = startOfYear(now);
+    to = new Date(now.getFullYear() + 1, 0, 1).getTime();
+    rangeLabel = String(now.getFullYear());
+    for (let m = 0; m < 12; m++) {
+      const ts = new Date(now.getFullYear(), m, 1).getTime();
+      xTicks.push({
         ts,
-        label: dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-        value: 0,
-      };
-    });
-    for (const e of events) {
-      if (e.ts < start || e.ts >= end) continue;
-      const idx = Math.floor((startOfDay(new Date(e.ts)) - start) / 86400000);
-      if (idx >= 0 && idx < totalDays) bins[idx].value += valueOf(e);
+        label: new Date(ts).toLocaleDateString(undefined, { month: "short" }),
+      });
     }
-    return { bins, rangeLabel: String(yr) };
+  } else {
+    const range = custom ?? {
+      from: startOfDay(now) - 6 * 86400000,
+      to: startOfDay(now) + 86400000,
+    };
+    from = range.from;
+    to = range.to;
+    rangeLabel = `${new Date(from).toLocaleDateString()} – ${new Date(to).toLocaleDateString()}`;
+    const span = Math.max(1, to - from);
+    const useHours = span <= 2 * 86400000;
+    const targetTicks = 7;
+    const step = span / targetTicks;
+    for (let i = 0; i <= targetTicks; i++) {
+      const ts = from + i * step;
+      xTicks.push({
+        ts,
+        label: useHours
+          ? new Date(ts).toLocaleTimeString(undefined, {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+            })
+          : new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      });
+    }
   }
 
-  // Custom
-  const range = custom ?? { from: startOfDay(now) - 6 * 86400000, to: startOfDay(now) + 86400000 };
-  const span = Math.max(1, range.to - range.from);
-  const days = Math.max(1, Math.round(span / 86400000));
-  const useHours = days <= 2;
-  const stepMs = useHours ? 3600000 : 86400000;
-  const count = Math.max(2, Math.min(120, Math.ceil(span / stepMs)));
-  const actualStep = span / count;
-  const bins: Bin[] = Array.from({ length: count }, (_, i) => {
-    const ts = range.from + i * actualStep;
-    return {
-      ts,
-      label: useHours
-        ? new Date(ts).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-        : new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-      value: 0,
-    };
-  });
-  for (const e of events) {
-    if (e.ts < range.from || e.ts > range.to) continue;
-    const idx = Math.min(count - 1, Math.floor((e.ts - range.from) / actualStep));
-    bins[idx].value += valueOf(e);
-  }
-  return {
-    bins,
-    rangeLabel: `${new Date(range.from).toLocaleDateString()} – ${new Date(range.to).toLocaleDateString()}`,
-  };
+  const points: SeriesPoint[] = events
+    .filter((e) => e.ts >= from && e.ts < to)
+    .sort((a, b) => a.ts - b.ts)
+    .map((e) => ({ ts: e.ts, value: valueOf(e) }));
+
+  return { points, range: { from, to }, xTicks, rangeLabel };
 }
 
-// ── Y axis helpers (from reference) ───────────────────────────────────────
+// ── Y axis helpers ────────────────────────────────────────────────────────
 function computeYTicks(minVal: number, maxVal: number, maxTicks = 5): number[] {
   const span = Math.max(1, maxVal - minVal);
   const rough = span / Math.max(1, maxTicks - 1);
@@ -173,19 +153,6 @@ function computeYTicks(minVal: number, maxVal: number, maxTicks = 5): number[] {
   }
   if (ticks.length === 0) ticks.push(minVal, maxVal);
   return ticks;
-}
-
-function pickXTicks<T>(arr: T[], maxLabels: number): { i: number; item: T }[] {
-  const n = arr.length;
-  if (n === 0) return [];
-  if (n <= maxLabels) return arr.map((item, i) => ({ i, item }));
-  const out: { i: number; item: T }[] = [];
-  const step = (n - 1) / (maxLabels - 1);
-  for (let k = 0; k < maxLabels; k++) {
-    const i = Math.min(n - 1, Math.round(k * step));
-    out.push({ i, item: arr[i] });
-  }
-  return out;
 }
 
 function smoothPath(pts: { x: number; y: number }[]): string {
@@ -247,16 +214,57 @@ function fmtYTick(v: number, metric: Metric) {
   return String(Math.round(v));
 }
 
+function fmtTooltipTime(ts: number, mode: Mode) {
+  const d = new Date(ts);
+  if (mode === "daily") {
+    return d.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+  if (mode === "yearly") {
+    return d.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+  }
+  if (mode === "weekly") {
+    return d.toLocaleString(undefined, {
+      weekday: "short",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+  if (mode === "monthly") {
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  }
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+}
+
 // ──────────────────────────────────────────────────────────────────────────
-//  CHART
+//  CHART  (event-based — one vertex per real sale)
 // ──────────────────────────────────────────────────────────────────────────
 function Chart({
-  bins,
+  series,
   metric,
   loadingKey,
   mode,
 }: {
-  bins: Bin[];
+  series: Series;
   metric: Metric;
   loadingKey: string;
   mode: Mode;
@@ -266,7 +274,6 @@ function Chart({
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const [animKey, setAnimKey] = useState(0);
 
-  // Reset & re-animate on mode/metric change
   useEffect(() => {
     setHoverIdx(null);
     setAnimKey((k) => k + 1);
@@ -286,11 +293,10 @@ function Chart({
     return () => ro.disconnect();
   }, []);
 
-  const max = Math.max(...bins.map((b) => b.value), 0);
-  const min = 0;
-  // Add small headroom so the line is never glued to the top
+  const { points, range, xTicks } = series;
+  const max = Math.max(0, ...points.map((p) => p.value));
   const padTop = max === 0 ? 1 : max * 0.15;
-  const yMin = min;
+  const yMin = 0;
   const yMax = max + padTop;
 
   const yTicks = computeYTicks(yMin, yMax, 5);
@@ -302,72 +308,55 @@ function Chart({
   const plotH = Math.max(10, size.h - margin.top - margin.bottom);
   const baseY = margin.top + plotH;
 
-  const n = bins.length;
-  const xAt = (i: number) => margin.left + (plotW * i) / Math.max(1, n - 1);
+  // Time-based X: position by actual timestamp within the range
+  const span = Math.max(1, range.to - range.from);
+  const xAtTs = (ts: number) =>
+    margin.left + (plotW * (ts - range.from)) / span;
   const yAt = (v: number) =>
     margin.top + plotH * (1 - (v - yMin) / Math.max(1e-6, yMax - yMin));
 
-  const pts = bins.map((b, i) => ({ x: xAt(i), y: yAt(b.value) }));
-  const lineD = smoothPath(pts);
+  // Render line: connect real events. Anchor at baseline at range start/end so
+  // the area fill is well-formed but no fake mid-range data points are added.
+  const renderPts = points.map((p) => ({ x: xAtTs(p.ts), y: yAt(p.value) }));
+  const lineD = smoothPath(renderPts);
   const areaD =
-    pts.length > 0
-      ? `${lineD} L ${pts[n - 1].x} ${baseY} L ${pts[0].x} ${baseY} Z`
+    renderPts.length > 0 && lineD
+      ? `${lineD} L ${renderPts[renderPts.length - 1].x} ${baseY} L ${renderPts[0].x} ${baseY} Z`
       : "";
 
-  const xTicks = pickXTicks(bins, Math.min(12, Math.max(5, Math.floor(plotW / 80))));
-
+  // Hover: find nearest point by X distance (no virtual buckets)
   const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
-    if (n === 0) return;
+    if (points.length === 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const rel = (x / rect.width) * plotW;
-    let idx = Math.round((rel / plotW) * (n - 1));
-    idx = Math.max(0, Math.min(n - 1, idx));
-    setHoverIdx(idx);
+    const xRel = ((e.clientX - rect.left) / rect.width) * plotW;
+    const cursorX = margin.left + xRel;
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    for (let i = 0; i < renderPts.length; i++) {
+      const dx = Math.abs(renderPts[i].x - cursorX);
+      if (dx < bestDist) {
+        bestDist = dx;
+        bestIdx = i;
+      }
+    }
+    setHoverIdx(bestIdx);
   };
   const handleLeave = () => setHoverIdx(null);
 
-  // Tooltip — fixed at top of chart, only moves horizontally
-  const TT_W_EST = metric === "profit" ? 180 : 200;
-  const hover = hoverIdx !== null ? bins[hoverIdx] : null;
-  const hoverPx = hoverIdx !== null ? xAt(hoverIdx) : 0;
-  const hoverPy = hoverIdx !== null ? yAt(hover!.value) : 0;
+  const hover = hoverIdx !== null ? points[hoverIdx] : null;
+  const hoverPx = hover ? xAtTs(hover.ts) : 0;
+  const hoverPy = hover ? yAt(hover.value) : 0;
 
+  // Tooltip — locked at the top, only horizontal motion
+  const TT_W_EST = metric === "profit" ? 200 : 220;
   let ttLeft = 0;
-  const ttTop = 8; // locked near the top of the chart
+  const ttTop = 8;
   if (hover) {
     ttLeft = Math.max(
       margin.left + 4,
       Math.min(size.w - TT_W_EST - 4, hoverPx - TT_W_EST / 2),
     );
   }
-
-  const fmtTooltipTime = (ts: number) => {
-    const d = new Date(ts);
-    if (mode === "daily") {
-      return d.toLocaleTimeString(undefined, {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
-    }
-    if (mode === "yearly") {
-      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    }
-    if (mode === "weekly") {
-      return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-    }
-    if (mode === "monthly") {
-      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    }
-    return d.toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
 
   return (
     <div
@@ -383,7 +372,7 @@ function Chart({
           </linearGradient>
         </defs>
 
-        {/* Horizontal grid + Y labels */}
+        {/* Y grid + labels */}
         {yTicks.map((v, i) => {
           const y = yAt(v);
           return (
@@ -411,21 +400,26 @@ function Chart({
           );
         })}
 
-        {/* X labels */}
-        {xTicks.map(({ i, item }) => (
-          <text
-            key={i}
-            x={xAt(i)}
-            y={baseY + 18}
-            fontSize="11"
-            fill="hsl(240 5% 60%)"
-            textAnchor="middle"
-          >
-            {item.label}
-          </text>
-        ))}
+        {/* X labels — generated from the timeline, NOT from points */}
+        {xTicks.map((t, i) => {
+          if (!t.label) return null;
+          const x = xAtTs(t.ts);
+          if (x < margin.left - 1 || x > margin.left + plotW + 1) return null;
+          return (
+            <text
+              key={i}
+              x={x}
+              y={baseY + 18}
+              fontSize="11"
+              fill="hsl(240 5% 60%)"
+              textAnchor="middle"
+            >
+              {t.label}
+            </text>
+          );
+        })}
 
-        {/* Line + area (CSS fade-in for clean re-mount on mode/metric changes) */}
+        {/* Line + area */}
         <g key={animKey} className="chart-reveal">
           {areaD && <path d={areaD} fill="url(#aFill)" />}
           {lineD && (
@@ -440,7 +434,7 @@ function Chart({
           )}
         </g>
 
-        {/* Crosshair + active point (no per-point markers) */}
+        {/* Crosshair + active marker */}
         {hover && (
           <>
             <line
@@ -484,13 +478,13 @@ function Chart({
         />
       </svg>
 
-      {/* Bar-style tooltip (horizontal row) */}
+      {/* Tooltip — top-anchored, X-only motion */}
       {hover && (
         <div
           className="pointer-events-none absolute z-10 px-3 py-1.5 rounded-full border border-border bg-popover/95 backdrop-blur-md shadow-xl text-xs flex items-center gap-3 whitespace-nowrap transition-[left] duration-100 ease-out"
           style={{ left: ttLeft, top: ttTop }}
         >
-          <span className="text-muted-foreground">{fmtTooltipTime(hover.ts)}</span>
+          <span className="text-muted-foreground">{fmtTooltipTime(hover.ts, mode)}</span>
           <span className="w-px h-3 bg-border" />
           <span className="font-semibold text-foreground">
             {fmtMetric(hover.value, metric)}
@@ -498,8 +492,8 @@ function Chart({
         </div>
       )}
 
-      {/* Empty / loading hint when totally flat */}
-      {bins.every((b) => b.value === 0) && (
+      {/* Empty state */}
+      {points.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <p className="text-xs text-muted-foreground">No activity in this period</p>
         </div>
@@ -523,19 +517,21 @@ export default function Analytics() {
 
   const events = useSaleEvents({ seedIfEmpty: true });
 
-  // Simulated load delay (matches reference UX)
   useEffect(() => {
     setIsLoading(true);
     const t = setTimeout(() => setIsLoading(false), 280);
     return () => clearTimeout(t);
   }, [mode, metric, custom?.from, custom?.to]);
 
-  const { bins, rangeLabel } = useMemo(
-    () => buildBins(mode, events, metric, custom),
+  const series = useMemo(
+    () => buildSeries(mode, events, metric, custom),
     [mode, events, metric, custom],
   );
 
-  const totalValue = useMemo(() => bins.reduce((s, b) => s + b.value, 0), [bins]);
+  const totalValue = useMemo(
+    () => series.points.reduce((s, p) => s + p.value, 0),
+    [series],
+  );
 
   const applyCustom = () => {
     const f = new Date(fromStr).getTime();
@@ -549,7 +545,6 @@ export default function Analytics() {
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* Top bar (sticky) */}
       <header className="sticky top-0 z-20 bg-background/85 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-3 px-3 sm:px-5 h-14">
           <Button
@@ -563,10 +558,9 @@ export default function Analytics() {
           </Button>
           <div className="min-w-0">
             <h1 className="text-base sm:text-lg font-semibold leading-tight">Analytics</h1>
-            <p className="text-[11px] text-muted-foreground truncate">{rangeLabel}</p>
+            <p className="text-[11px] text-muted-foreground truncate">{series.rangeLabel}</p>
           </div>
 
-          {/* Mode pills */}
           <div className="ml-auto flex items-center gap-1 p-1 bg-card border border-card-border rounded-full overflow-x-auto">
             {MODES.map((m) => {
               if (m.id === "custom") {
@@ -630,10 +624,8 @@ export default function Analytics() {
         </div>
       </header>
 
-      {/* Body */}
       <div className="flex-1 flex">
         <main className="flex-1 min-w-0 p-3 sm:p-5">
-          {/* Summary card */}
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <p className="text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -644,11 +636,10 @@ export default function Analytics() {
               </p>
             </div>
             <div className="text-[11px] text-muted-foreground hidden sm:block">
-              {bins.length} data point{bins.length === 1 ? "" : "s"}
+              {series.points.length} sale{series.points.length === 1 ? "" : "s"}
             </div>
           </div>
 
-          {/* Chart */}
           <div className="relative">
             {isLoading && (
               <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-card/30 backdrop-blur-[1px]">
@@ -656,7 +647,7 @@ export default function Analytics() {
               </div>
             )}
             <Chart
-              bins={bins}
+              series={series}
               metric={metric}
               mode={mode}
               loadingKey={`${mode}-${metric}-${custom?.from ?? 0}-${custom?.to ?? 0}`}
@@ -664,7 +655,6 @@ export default function Analytics() {
           </div>
         </main>
 
-        {/* Right Sales/Profit toggle (desktop) */}
         <div className="hidden sm:flex sticky top-14 h-[calc(100vh-3.5rem)] w-[68px] shrink-0 items-start justify-center pt-6">
           <div className="flex flex-col gap-2 p-1.5 bg-card border border-card-border rounded-full">
             <button
@@ -695,7 +685,6 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* Mobile floating Sales/Profit toggle */}
       <div className="sm:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-30 flex p-1 bg-card/95 backdrop-blur-md border border-card-border rounded-full shadow-2xl">
         <button
           onClick={() => setMetric("sales")}
