@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { 
   Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
   ShoppingCart, Trash2, Minus, Check, Camera, MousePointer,
-  FolderInput, FolderPlus, ChevronRight, LogOut
+  FolderInput, ChevronRight, LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -289,10 +289,19 @@ export default function POS() {
     toast.success(`Moved to "${cat}"`);
   };
 
-  const importProductsToCategory = (ids: string[], cat: Category) => {
+  const moveProductsToCategory = (ids: string[], cat: Category) => {
     if (cat === 'All' || ids.length === 0) return;
     setProducts(prev => prev.map(p => ids.includes(p.id) ? { ...p, category: cat } : p));
-    toast.success(`${ids.length} item${ids.length > 1 ? 's' : ''} imported to "${cat}"`);
+    toast.success(`${ids.length} item${ids.length > 1 ? 's' : ''} moved to "${cat}"`);
+    exitSelectMode();
+  };
+
+  const bulkDeleteProducts = (ids: string[]) => {
+    if (ids.length === 0) return;
+    const set = new Set(ids);
+    setProducts(prev => prev.filter(p => !set.has(p.id)));
+    setCartItems(prev => prev.filter(i => !set.has(i.product.id)));
+    toast.success(`${ids.length} item${ids.length > 1 ? 's' : ''} deleted`);
     exitSelectMode();
   };
 
@@ -443,74 +452,94 @@ export default function POS() {
 
         {/* TOP BAR */}
         <header className={`h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-all duration-400 ${isEditMode ? 'border-b border-primary/25 bg-primary/5 shadow-none' : 'bg-background/90 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)]'}`}>
-          {/* Search */}
-          <div className="relative flex-1 max-w-xl group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-[14px] h-[14px]" />
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search products or quick-code (e.g. #wi-e)…"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' && topMatchId) {
-                  e.preventDefault();
-                  addTopMatchToCart();
-                  setSearchQuery('');
-                }
-              }}
-              className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-9 pr-9 outline-none transition-all duration-250 placeholder:text-muted-foreground text-[14px] sm:text-[16px]"
-              data-testid="input-search"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200">
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          {/* Search — hidden during selection mode */}
+          {isSelectMode ? (
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="text-sm sm:text-base font-semibold text-foreground whitespace-nowrap">
+                <span className="text-primary tabular-nums">{selectedIds.size}</span>
+                <span className="text-muted-foreground font-medium"> selected</span>
+              </span>
+            </div>
+          ) : (
+            <div className="relative flex-1 max-w-xl group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-[14px] h-[14px]" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search products or quick-code (e.g. #wi-e)…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && topMatchId) {
+                    e.preventDefault();
+                    addTopMatchToCart();
+                    setSearchQuery('');
+                  }
+                }}
+                className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-9 pr-9 outline-none transition-all duration-250 placeholder:text-muted-foreground text-[14px] sm:text-[16px]"
+                data-testid="input-search"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200">
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Right controls */}
           <div className="flex items-center gap-1.5 ml-3">
             {/* Selection mode toolbar — overrides other controls when active */}
             {isSelectMode && (
-              <div className="flex items-center gap-1.5 sm:gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
-                <button
-                  onClick={exitSelectMode}
-                  className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors duration-200"
-                  aria-label="Exit selection"
-                  data-testid="btn-exit-select"
-                >
-                  <X size={16} />
-                </button>
-                <span className="text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">
-                  <span className="text-primary tabular-nums">{selectedIds.size}</span>
-                  <span className="text-muted-foreground"> selected</span>
-                </span>
+              <div className="flex items-center gap-1 sm:gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
                 <DropdownMenu open={importMenuOpen} onOpenChange={setImportMenuOpen}>
                   <DropdownMenuTrigger asChild>
                     <button
                       disabled={selectedIds.size === 0}
-                      className="ml-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:brightness-110 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-                      data-testid="btn-selection-import"
+                      className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:brightness-110 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                      data-testid="btn-selection-move"
                     >
                       <FolderInput size={14} />
-                      Import
+                      Move To
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
                     {categories.filter(c => c !== 'All').map(c => (
                       <DropdownMenuItem
                         key={c}
-                        onSelect={() => importProductsToCategory(Array.from(selectedIds), c)}
+                        onSelect={() => moveProductsToCategory(Array.from(selectedIds), c)}
                       >
                         {c}
                       </DropdownMenuItem>
                     ))}
-                    {categories.length <= 1 && (
+                    {categories.filter(c => c !== 'All').length === 0 && (
                       <div className="px-2 py-1.5 text-xs text-muted-foreground">No categories</div>
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <button
+                  disabled={selectedIds.size === 0}
+                  onClick={() => {
+                    const ids = Array.from(selectedIds);
+                    confirmAction(
+                      `Delete ${ids.length} selected item${ids.length > 1 ? 's' : ''}?`,
+                      () => bulkDeleteProducts(ids),
+                    );
+                  }}
+                  className="p-2 rounded-full hover:bg-destructive/15 text-destructive transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                  aria-label="Delete selected"
+                  data-testid="btn-selection-delete"
+                >
+                  <Trash2 size={16} />
+                </button>
+                <button
+                  onClick={exitSelectMode}
+                  className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors duration-200"
+                  aria-label="Exit selection"
+                  data-testid="btn-exit-select"
+                >
+                  <X size={16} />
+                </button>
               </div>
             )}
 
@@ -618,20 +647,43 @@ export default function POS() {
               </>
             ) : (
               <>
-                {categories.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    data-testid={`btn-category-${cat}`}
-                    className={`shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 ${
-                      selectedCategory === cat
-                        ? 'text-primary-foreground bg-primary shadow-sm'
-                        : 'text-muted-foreground/60 hover:bg-secondary hover:text-foreground/90'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
+                {categories.map(cat => {
+                  const btn = (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      data-testid={`btn-category-${cat}`}
+                      className={`shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 ${
+                        selectedCategory === cat
+                          ? 'text-primary-foreground bg-primary shadow-sm'
+                          : 'text-muted-foreground/60 hover:bg-secondary hover:text-foreground/90'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                  if (cat === 'All') return btn;
+                  return (
+                    <ContextMenu key={cat}>
+                      <ContextMenuTrigger asChild>{btn}</ContextMenuTrigger>
+                      <ContextMenuContent className="w-52">
+                        <ContextMenuItem
+                          className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                          onSelect={() => {
+                            const hasProducts = products.some(p => p.category === cat);
+                            if (hasProducts) {
+                              toast.error('Category contains products. Move or delete products first.');
+                              return;
+                            }
+                            confirmAction(`Delete category "${cat}"?`, () => deleteCategory(cat));
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Category
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
+                  );
+                })}
                 <button
                   onClick={() => setIsAddCategoryModalOpen(true)}
                   className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium text-muted-foreground/50 border border-dashed border-border hover:border-primary hover:text-primary transition-colors duration-250 ml-1 flex items-center gap-1"
@@ -888,18 +940,6 @@ export default function POS() {
                     <ContextMenuItem onSelect={() => enterSelectMode(product.id)}>
                       <MousePointer className="mr-2 h-3.5 w-3.5" /> Select
                     </ContextMenuItem>
-                    <ContextMenuSub>
-                      <ContextMenuSubTrigger>
-                        <FolderPlus className="mr-2 h-3.5 w-3.5" /> Import
-                      </ContextMenuSubTrigger>
-                      <ContextMenuSubContent className="w-40">
-                        {categories.filter(c => c !== 'All').map(c => (
-                          <ContextMenuItem key={c} onSelect={() => importProductsToCategory([product.id], c)}>
-                            {c}
-                          </ContextMenuItem>
-                        ))}
-                      </ContextMenuSubContent>
-                    </ContextMenuSub>
                     <ContextMenuSeparator />
                     <ContextMenuItem
                       className="text-destructive focus:text-destructive focus:bg-destructive/10"

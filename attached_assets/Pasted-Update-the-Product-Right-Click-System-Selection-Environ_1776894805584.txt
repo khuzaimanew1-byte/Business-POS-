@@ -1,0 +1,129 @@
+Update the **Product Right-Click System + Selection Environment Top Bar** with revised actions, cleaner structure, and improved bulk management behavior. Maintain existing POS logic but refine interaction flow and remove unnecessary import actions.
+
+---
+
+# 🖱️ PRODUCT RIGHT-CLICK SYSTEM (UPDATED RULES)
+
+## 📦 PRODUCT RIGHT-CLICK MENU (DESKTOP ONLY)
+
+When user right-clicks on a **product card**, show custom context menu.
+
+### Available options:
+
+## 🔄 MOVE TO (UPDATED)
+- Hover opens category submenu
+- Allows moving product to any category instantly
+- Updates UI + data immediately
+
+---
+
+## ☑️ SELECT MODE
+- Enables selection mode for bulk actions
+- Product becomes selectable (checkbox state internally)
+
+---
+
+## 🗑️ DELETE
+- Deletes single product
+- Must show confirmation popup:
+  - “Are you sure you want to delete this product?”
+
+- Affects UI + database instantly
+
+---
+
+# 🗂️ CATEGORY RIGHT-CLICK (NEW RULE)
+
+When user right-clicks on a **category**:
+
+## 🗑️ ONLY OPTION:
+- DELETE CATEGORY
+
+### Behavior:
+- Confirmation popup required
+- If category has products:
+  - show warning:
+    “Category contains products. Move or delete products first.”
+
+---
+
+# 📱 MOBILE BEHAVIOR
+
+- Right-click → replaced with **long press (hold)**
+- Same menu behavior as desktop
+
+---
+
+# 🧠 SELECTION ENVIRONMENT (TOP BAR REWORK)
+
+When **Select Mode is active**, top bar transforms into a **Selection Control Bar**.
+
+---
+
+## 🧭 TOP BAR LAYOUT (UPDATED)
+
+### LEFT:
+- Selected items count indicator
+
+---
+
+### CENTER:
+- ❌ REMOVE search bar completely in selection mode
+
+---
+
+### RIGHT ACTIONS:
+
+## 🔄 MOVE TO (ICON + TEXT)
+- Opens category list
+- Moves selected products to chosen category
+
+---
+
+## 🗑️ DELETE ICON
+- Bulk delete selected products
+- Must show confirmation popup:
+  - “Delete selected items?”
+
+---
+
+## ❌ EXIT SELECTION
+- Exit select mode
+- Restore normal UI state
+
+---
+
+# 🚫 REMOVED FEATURES
+
+- ❌ Import option removed completely from system
+- ❌ No import actions in any menu or selection mode
+- ❌ No search bar in selection environment
+
+---
+
+# 🎯 SELECTION MODE BEHAVIOR RULES
+
+- Search bar disabled (not hidden, but inactive state removed)
+- Only bulk actions visible
+- UI becomes minimal and action-focused
+- No distractions allowed in selection mode
+
+---
+
+# ⚡ UX PRINCIPLES
+
+- Fast bulk operations
+- Minimal interaction friction
+- Clear destructive action confirmation
+- No overlapping actions between modes
+
+---
+
+# 🧠 FINAL SYSTEM RESULT
+
+This update turns the system into:
+
+- ⚡ Fast product management tool
+- 🧩 Clean selection + bulk control system
+- 🗂️ Category-aware management interface
+- 🧼 Reduced UI clutter during selection mode
