@@ -1,0 +1,127 @@
+Fix and refine the **Product Selection Environment Top Bar + Right Click System**, focusing on alignment, hierarchy, and premium UI styling. Maintain functionality but improve structure, spacing, and visual balance.
+
+---
+
+# 🖱️ RIGHT-CLICK SYSTEM FIX
+
+## 📂 CATEGORY RIGHT-CLICK (IMPORTANT FIX)
+
+- Ensure **category right-click DELETE works correctly**
+- Behavior must be:
+  - Right-click on category → show menu
+  - Only option: **Delete Category**
+  - Show confirmation popup:
+    - “Are you sure you want to delete this category?”
+
+### RULE:
+- If category contains products:
+  - Show warning:
+    - “Category has products. Move or delete them first.”
+- Prevent accidental deletion
+
+---
+
+# 🧭 SELECTION ENV TOP BAR (FULL RESTRUCTURE)
+
+When selection mode is active, replace top bar with a **clean action strip (NOT bright, NOT flashy)**.
+
+---
+
+## 📐 LAYOUT STRUCTURE (FIXED ALIGNMENT)
+
+### LEFT SECTION:
+- Selected items count (e.g. “3 selected”)
+- Keep minimal text styling
+
+---
+
+### CENTER:
+- (EMPTY SPACE — used for balance only)
+
+---
+
+### RIGHT SECTION (ACTION GROUP):
+
+Arrange in this exact order:
+
+## ❌ 1. CROSS ICON (EXIT SELECTION)
+- Positioned first in right group
+- Closes selection mode
+- Clean icon only (no heavy background)
+
+---
+
+## 🗑️ 2. DELETE ICON (BULK DELETE)
+- Deletes selected items
+- Must trigger confirmation popup:
+  - “Delete selected items?”
+
+---
+
+## 🔄 3. MOVE BUTTON (WITH ICON)
+- Opens category list
+- Moves selected products
+
+---
+
+# 🎨 VISUAL DESIGN FIXES
+
+## ❌ REMOVE:
+- Bright highlights
+- Heavy background colors
+- Over-emphasized buttons
+
+---
+
+## ✅ APPLY PREMIUM STYLE:
+
+### Buttons:
+- Minimal outline or soft glass style
+- Low contrast background
+- Slight hover elevation only
+
+### Icons:
+- Subtle size increase only (no exaggeration)
+- Consistent stroke style
+
+---
+
+# 📏 SPACING & ALIGNMENT FIX
+
+- Equal spacing between icons
+- Vertically center all elements
+- Ensure:
+  - No crowding on right side
+  - Balanced empty space in center
+
+---
+
+# ⚡ INTERACTION RULES
+
+- Hover → soft glow (very subtle)
+- Click → quick press animation
+- No flashing or strong transitions
+
+---
+
+# 🧠 UX PRINCIPLE
+
+Selection bar should feel:
+
+- Professional ⚙️
+- Calm 🧘
+- Non-distracting 👁️
+- Action-focused ⚡
+
+NOT like a notification strip or alert bar.
+
+---
+
+# 🎯 FINAL RESULT
+
+After fix:
+
+- Right-click category delete works correctly
+- Selection top bar is properly aligned
+- Cross, delete, move are balanced and structured
+- UI feels premium and minimal (not bright or noisy)

@@ -454,10 +454,10 @@ export default function POS() {
         <header className={`h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-all duration-400 ${isEditMode ? 'border-b border-primary/25 bg-primary/5 shadow-none' : 'bg-background/90 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)]'}`}>
           {/* Search — hidden during selection mode */}
           {isSelectMode ? (
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-sm sm:text-base font-semibold text-foreground whitespace-nowrap">
-                <span className="text-primary tabular-nums">{selectedIds.size}</span>
-                <span className="text-muted-foreground font-medium"> selected</span>
+            <div className="flex items-center flex-1 min-w-0">
+              <span className="text-[13px] sm:text-sm text-muted-foreground font-medium whitespace-nowrap tracking-tight">
+                <span className="text-foreground tabular-nums font-semibold">{selectedIds.size}</span>
+                <span className="ml-1">selected</span>
               </span>
             </div>
           ) : (
@@ -491,16 +491,39 @@ export default function POS() {
           <div className="flex items-center gap-1.5 ml-3">
             {/* Selection mode toolbar — overrides other controls when active */}
             {isSelectMode && (
-              <div className="flex items-center gap-1 sm:gap-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="flex items-center gap-2 sm:gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+                <button
+                  onClick={exitSelectMode}
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-white/[0.04] active:scale-[0.96] transition-all duration-200"
+                  aria-label="Exit selection"
+                  data-testid="btn-exit-select"
+                >
+                  <X size={17} strokeWidth={1.75} />
+                </button>
+                <button
+                  disabled={selectedIds.size === 0}
+                  onClick={() => {
+                    const ids = Array.from(selectedIds);
+                    confirmAction(
+                      `Delete selected items?`,
+                      () => bulkDeleteProducts(ids),
+                    );
+                  }}
+                  className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/[0.08] active:scale-[0.96] transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                  aria-label="Delete selected"
+                  data-testid="btn-selection-delete"
+                >
+                  <Trash2 size={16} strokeWidth={1.75} />
+                </button>
                 <DropdownMenu open={importMenuOpen} onOpenChange={setImportMenuOpen}>
                   <DropdownMenuTrigger asChild>
                     <button
                       disabled={selectedIds.size === 0}
-                      className="px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:brightness-110 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                      className="h-9 px-3.5 rounded-full border border-border/60 bg-white/[0.02] hover:bg-white/[0.05] hover:border-border text-foreground text-[13px] sm:text-sm font-medium active:scale-[0.97] transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed flex items-center gap-1.5"
                       data-testid="btn-selection-move"
                     >
-                      <FolderInput size={14} />
-                      Move To
+                      <FolderInput size={14} strokeWidth={1.75} />
+                      <span>Move</span>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
@@ -517,29 +540,6 @@ export default function POS() {
                     )}
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <button
-                  disabled={selectedIds.size === 0}
-                  onClick={() => {
-                    const ids = Array.from(selectedIds);
-                    confirmAction(
-                      `Delete ${ids.length} selected item${ids.length > 1 ? 's' : ''}?`,
-                      () => bulkDeleteProducts(ids),
-                    );
-                  }}
-                  className="p-2 rounded-full hover:bg-destructive/15 text-destructive transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                  aria-label="Delete selected"
-                  data-testid="btn-selection-delete"
-                >
-                  <Trash2 size={16} />
-                </button>
-                <button
-                  onClick={exitSelectMode}
-                  className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors duration-200"
-                  aria-label="Exit selection"
-                  data-testid="btn-exit-select"
-                >
-                  <X size={16} />
-                </button>
               </div>
             )}
 
@@ -672,10 +672,10 @@ export default function POS() {
                           onSelect={() => {
                             const hasProducts = products.some(p => p.category === cat);
                             if (hasProducts) {
-                              toast.error('Category contains products. Move or delete products first.');
+                              toast.error('Category has products. Move or delete them first.');
                               return;
                             }
-                            confirmAction(`Delete category "${cat}"?`, () => deleteCategory(cat));
+                            confirmAction(`Are you sure you want to delete this category?`, () => deleteCategory(cat));
                           }}
                         >
                           <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete Category
