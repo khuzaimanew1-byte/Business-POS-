@@ -112,10 +112,8 @@ export default function POS() {
     const parts = cleaned.split(/\s+/).filter(Boolean);
     if (parts.length === 0) return '#';
     if (parts.length === 1) {
-      const w = parts[0];
-      const head = w.slice(0, 2);
-      const tail = w.length > 2 ? w[2] : (w[1] ?? '');
-      return `#${head}${tail ? '-' + tail : ''}`;
+      // Single-word names: no hyphen, just up to 3 chars (e.g. "Cola" -> "#col")
+      return `#${parts[0].slice(0, 3)}`;
     }
     const head = parts[0].slice(0, 2).padEnd(1, '');
     const tail = parts[1][0];
