@@ -334,11 +334,17 @@ export default function POS() {
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
-      // Ctrl + ` (backtick) → focus search (allow even when typing elsewhere)
+      // Ctrl + ` (backtick) → toggle search focus
       if (e.ctrlKey && e.key === '`') {
         e.preventDefault();
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
+        const input = searchInputRef.current;
+        if (!input) return;
+        if (document.activeElement === input) {
+          input.blur();
+        } else {
+          input.focus();
+          input.select();
+        }
         return;
       }
 
