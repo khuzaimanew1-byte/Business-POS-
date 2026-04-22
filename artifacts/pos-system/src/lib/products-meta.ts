@@ -29,20 +29,20 @@ export function getProductMeta(id: string, fallbackName?: string): ProductMeta {
   );
 }
 
-// Curated palette tuned for dark UI — high saturation, mid-bright.
+// Curated palette tuned for dark UI — slightly muted for a premium feel.
 const PALETTE = [
-  "hsl(43 90% 55%)",   // amber (primary)
-  "hsl(195 85% 60%)",  // cyan
-  "hsl(280 75% 68%)",  // violet
-  "hsl(150 70% 55%)",  // emerald
-  "hsl(340 80% 65%)",  // pink
-  "hsl(25 90% 62%)",   // orange
-  "hsl(210 85% 65%)",  // blue
-  "hsl(90 60% 58%)",   // lime
-  "hsl(0 75% 65%)",    // red
-  "hsl(170 65% 55%)",  // teal
-  "hsl(310 70% 68%)",  // magenta
-  "hsl(60 75% 58%)",   // yellow
+  "hsl(43 78% 60%)",   // amber (primary)
+  "hsl(195 65% 60%)",  // cyan
+  "hsl(280 55% 68%)",  // violet
+  "hsl(150 50% 58%)",  // emerald
+  "hsl(340 65% 66%)",  // pink
+  "hsl(25 75% 62%)",   // orange
+  "hsl(210 65% 65%)",  // blue
+  "hsl(90 45% 60%)",   // lime
+  "hsl(0 60% 66%)",    // red
+  "hsl(170 50% 58%)",  // teal
+  "hsl(310 55% 70%)",  // magenta
+  "hsl(50 65% 62%)",   // yellow
 ];
 
 const colorCache = new Map<string, string>();

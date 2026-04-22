@@ -660,7 +660,15 @@ function ProductPicker({
   );
 }
 
-function ProductThumb({ meta, size = 28 }: { meta: ProductMeta; size?: number }) {
+function ProductThumb({
+  meta,
+  size = 28,
+  shape = "square",
+}: {
+  meta: ProductMeta;
+  size?: number;
+  shape?: "square" | "circle";
+}) {
   const initials = meta.name
     .split(/\s+/)
     .map((w) => w[0])
@@ -668,10 +676,11 @@ function ProductThumb({ meta, size = 28 }: { meta: ProductMeta; size?: number })
     .slice(0, 2)
     .join("")
     .toUpperCase();
+  const radius = shape === "circle" ? "rounded-full" : "rounded-[8px]";
   return (
     <span
-      className="inline-flex items-center justify-center rounded-full overflow-hidden bg-secondary/70 text-[10px] font-semibold text-muted-foreground shrink-0"
-      style={{ width: size, height: size }}
+      className={`inline-flex items-center justify-center overflow-hidden bg-secondary/60 text-[10px] font-semibold text-muted-foreground shrink-0 border border-white/5 shadow-[0_1px_2px_rgba(0,0,0,0.35)] ${radius}`}
+      style={{ width: size, height: size, aspectRatio: "1 / 1" }}
     >
       {meta.image ? (
         <img
@@ -704,19 +713,26 @@ function TopProductsBar({
   onSwap: (slotIdx: number, newId: string) => void;
 }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const max = Math.max(1, ...slots.map((s) => s.value));
 
   return (
-    <section className="bg-card/40 border border-card-border rounded-xl p-4 sm:p-5">
-      <div className="flex items-baseline justify-between mb-4">
-        <h3 className="text-sm font-semibold">Top 5 products</h3>
-        <p className="text-[11px] text-muted-foreground">
-          Tap a bar to swap product
+    <div className="px-4 sm:px-6 pt-5 pb-6">
+      <div className="flex items-baseline justify-between mb-5">
+        <div>
+          <h3 className="text-sm font-semibold tracking-tight">Top 5 products</h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            Highest performers in this period
+          </p>
+        </div>
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground/70 hidden sm:block">
+          Tap a bar to swap
         </p>
       </div>
-      <div className="grid grid-cols-5 gap-2 sm:gap-4 items-end">
+      <div className="grid grid-cols-5 gap-3 sm:gap-6 items-end">
         {slots.map((p, i) => {
-          const heightPct = Math.max(8, (p.value / max) * 100);
+          const heightPct = Math.max(6, (p.value / max) * 100);
+          const isHover = hoverIdx === i;
           return (
             <Popover
               key={`${i}-${p.id}`}
@@ -724,30 +740,53 @@ function TopProductsBar({
               onOpenChange={(o) => setOpenIdx(o ? i : null)}
             >
               <PopoverTrigger asChild>
-                <button className="flex flex-col items-center group focus:outline-none">
-                  {/* Value pill */}
-                  <span className="text-[10px] sm:text-[11px] font-semibold mb-1 text-foreground/90">
-                    {fmtMetric(p.value, metric)}
-                  </span>
-                  {/* Bar track */}
-                  <div className="relative w-full h-32 sm:h-36 rounded-md bg-secondary/40 overflow-hidden">
+                <button
+                  onMouseEnter={() => setHoverIdx(i)}
+                  onMouseLeave={() => setHoverIdx((cur) => (cur === i ? null : cur))}
+                  className="flex flex-col items-center group focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 rounded-lg"
+                >
+                  {/* Bar track + tooltip */}
+                  <div className="relative w-full h-36 sm:h-44 flex items-end">
+                    {/* Tooltip */}
                     <div
-                      className="absolute bottom-0 left-0 right-0 rounded-md transition-all duration-500 ease-out group-hover:brightness-110"
-                      style={{
-                        height: `${heightPct}%`,
-                        background: `linear-gradient(180deg, ${p.color} 0%, ${p.color.replace("hsl(", "hsla(").replace(")", " / 0.55)")} 100%)`,
-                        boxShadow: `0 0 18px -4px ${p.color}`,
-                      }}
-                    />
+                      className={`absolute left-1/2 -translate-x-1/2 -top-1 pointer-events-none transition-all duration-150 z-10 ${
+                        isHover
+                          ? "opacity-100 translate-y-0"
+                          : "opacity-0 -translate-y-1"
+                      }`}
+                    >
+                      <div className="px-2 py-1 rounded-md bg-popover/95 backdrop-blur border border-border/70 shadow-lg whitespace-nowrap text-center">
+                        <p className="text-[10px] font-medium text-foreground/90 leading-tight">
+                          {p.name}
+                        </p>
+                        <p className="text-[10px] font-semibold tabular-nums leading-tight" style={{ color: p.color }}>
+                          {fmtMetric(p.value, metric)}
+                        </p>
+                      </div>
+                    </div>
+                    {/* Track */}
+                    <div className="relative w-full h-full rounded-lg bg-secondary/30 overflow-hidden">
+                      <div
+                        className="absolute bottom-0 left-0 right-0 rounded-t-lg transition-all duration-500 ease-out"
+                        style={{
+                          height: `${heightPct}%`,
+                          background: `linear-gradient(180deg, ${p.color} 0%, color-mix(in oklab, ${p.color} 55%, transparent) 100%)`,
+                          boxShadow: isHover
+                            ? `0 0 22px -4px ${p.color}, inset 0 1px 0 rgba(255,255,255,0.18)`
+                            : `0 0 12px -6px ${p.color}, inset 0 1px 0 rgba(255,255,255,0.1)`,
+                          filter: isHover ? "brightness(1.08)" : undefined,
+                        }}
+                      />
+                    </div>
                   </div>
                   {/* Label */}
-                  <div className="mt-2 flex flex-col items-center gap-1 w-full">
-                    <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
-                    <div className="flex items-center gap-0.5 max-w-full">
-                      <span className="text-[10px] sm:text-[11px] truncate text-foreground/80">
+                  <div className="mt-3 flex flex-col items-center gap-1.5 w-full">
+                    <ProductThumb meta={getProductMeta(p.id, p.name)} size={32} />
+                    <div className="flex items-center gap-0.5 max-w-full px-1">
+                      <span className="text-[11px] truncate text-muted-foreground group-hover:text-foreground transition-colors">
                         {p.name}
                       </span>
-                      <ChevronDown className="w-3 h-3 text-muted-foreground opacity-60 shrink-0" />
+                      <ChevronDown className="w-3 h-3 text-muted-foreground/50 shrink-0" />
                     </div>
                   </div>
                 </button>
@@ -766,7 +805,7 @@ function TopProductsBar({
           );
         })}
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -783,56 +822,61 @@ function TopProductsList({
   startRank: number;
 }) {
   const max = Math.max(1, ...items.map((i) => i.value));
-  if (items.length === 0) {
-    return (
-      <section className="bg-card/40 border border-card-border rounded-xl p-5">
-        <h3 className="text-sm font-semibold mb-2">Top products</h3>
-        <p className="text-xs text-muted-foreground">No more products with sales in this period.</p>
-      </section>
-    );
-  }
   return (
-    <section className="bg-card/40 border border-card-border rounded-xl p-4 sm:p-5">
-      <div className="flex items-baseline justify-between mb-4">
-        <h3 className="text-sm font-semibold">Ranked breakdown</h3>
-        <p className="text-[11px] text-muted-foreground">
-          {items.length} more product{items.length === 1 ? "" : "s"}
-        </p>
+    <div className="px-4 sm:px-6 pt-5 pb-5">
+      <div className="flex items-baseline justify-between mb-3">
+        <div>
+          <h3 className="text-sm font-semibold tracking-tight">Ranked breakdown</h3>
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            {items.length === 0
+              ? "No additional products in this period"
+              : `${items.length} more product${items.length === 1 ? "" : "s"}`}
+          </p>
+        </div>
       </div>
-      <ul className="flex flex-col gap-2">
-        {items.map((p, i) => {
-          const widthPct =
-            p.value > 0 ? Math.max(4, (p.value / max) * 100) : 2;
-          return (
-            <li
-              key={p.id}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/30 transition-colors"
-            >
-              <span className="w-5 text-[11px] font-semibold tabular-nums text-muted-foreground text-right">
-                {startRank + i}
-              </span>
-              <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium truncate">{p.name}</p>
-                <div className="mt-1 h-1.5 w-full bg-secondary/50 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${widthPct}%`,
-                      background: p.color,
-                      opacity: p.value > 0 ? 1 : 0.4,
-                    }}
-                  />
+      {items.length === 0 ? (
+        <div className="py-6 text-center text-xs text-muted-foreground/80">
+          Nothing else to show.
+        </div>
+      ) : (
+        <ul className="flex flex-col">
+          {items.map((p, i) => {
+            const widthPct =
+              p.value > 0 ? Math.max(3, (p.value / max) * 100) : 1.5;
+            return (
+              <li
+                key={p.id}
+                className="group flex items-center gap-3 py-2.5 px-2 -mx-2 rounded-lg hover:bg-secondary/25 transition-colors border-b border-border/30 last:border-0"
+              >
+                <span className="w-5 text-[11px] font-semibold tabular-nums text-muted-foreground/80 text-right">
+                  {startRank + i}
+                </span>
+                <ProductThumb meta={getProductMeta(p.id, p.name)} size={32} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate text-foreground/90 group-hover:text-foreground transition-colors">
+                    {p.name}
+                  </p>
+                  <div className="mt-1.5 h-1.5 w-full bg-secondary/40 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500 ease-out"
+                      style={{
+                        width: `${widthPct}%`,
+                        background: `linear-gradient(90deg, color-mix(in oklab, ${p.color} 75%, transparent) 0%, ${p.color} 100%)`,
+                        opacity: p.value > 0 ? 1 : 0.45,
+                        boxShadow: p.value > 0 ? `0 0 8px -3px ${p.color}` : undefined,
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-              <span className="text-xs font-semibold tabular-nums shrink-0 ml-2">
-                {fmtMetric(p.value, metric)}
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </section>
+                <span className="text-xs font-semibold tabular-nums shrink-0 ml-2 text-foreground/90">
+                  {fmtMetric(p.value, metric)}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -1078,20 +1122,17 @@ export default function Analytics() {
             />
           </div>
 
-          {/* Top 5 products bar chart */}
-          <div className="mt-6">
+          {/* Unified product analytics card: Top 5 bars + Ranked list */}
+          <section className="mt-6 rounded-2xl bg-card/40 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
             <TopProductsBar
               slots={barSlots}
               metric={metric}
               excludeIds={barIds}
               onSwap={swapSlot}
             />
-          </div>
-
-          {/* Top 10 ranked list */}
-          <div className="mt-4">
+            <div className="h-px bg-gradient-to-r from-transparent via-border/60 to-transparent mx-4 sm:mx-6" />
             <TopProductsList items={listItems} metric={metric} startRank={6} />
-          </div>
+          </section>
         </main>
 
         {/* Right Sales/Profit toggle (desktop) */}
