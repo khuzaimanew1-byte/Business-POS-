@@ -123,8 +123,7 @@ export default function AddProduct() {
   const [price, setPrice] = useState("");
   const [profit, setProfit] = useState("");
   const [stock, setStock] = useState("");
-  const initialCat = useMemo(() => categories.find(c => c !== "All") ?? "", [categories]);
-  const [category, setCategory] = useState<string>(initialCat);
+  const [category, setCategory] = useState<string>("");
   const [image, setImage] = useState<string | null>(null);
 
   // UI state
@@ -190,15 +189,10 @@ export default function AddProduct() {
     quickCodeRaw.length > 0 &&
     !codeIsDuplicate;
 
-  // Sync default category if none yet
-  useEffect(() => {
-    if (!category && initialCat) setCategory(initialCat);
-  }, [initialCat, category]);
-
-  // If selected category gets deleted elsewhere, fall back
+  // If selected category gets deleted elsewhere, clear it (user must re-pick)
   useEffect(() => {
     if (category && !categories.includes(category)) {
-      setCategory(categories.find(c => c !== "All") ?? "");
+      setCategory("");
     }
   }, [categories, category]);
 
@@ -418,9 +412,9 @@ export default function AddProduct() {
 
       {/* Body */}
       <main className="max-w-5xl mx-auto px-3 sm:px-8 pt-6 sm:pt-9 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-[minmax(220px,300px)_minmax(0,1fr)] gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] gap-6 sm:gap-8">
           {/* ── LEFT: IMAGE ─────────────────────────────────────── */}
-          <section className="md:sticky md:top-20 self-start">
+          <section className="md:sticky md:top-20 self-start max-w-[240px] mx-auto md:mx-0 w-full">
             <div
               onClick={() => fileInputRef.current?.click()}
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -528,7 +522,7 @@ export default function AddProduct() {
                     ? <span className="flex items-center gap-1"><X size={11} /> {transientError.quickCode}</span>
                     : codeIsDuplicate
                       ? <span className="flex items-center gap-1"><X size={11} /> This quick code is already in use</span>
-                      : <span className="text-muted-foreground/70">Lowercase, unique. Letters, numbers, hyphen.</span>
+                      : null
                 }
                 inputRef={quickCodeInputRef}
                 testId="input-quickcode"
@@ -563,25 +557,53 @@ export default function AddProduct() {
               <div className="relative">
                 {/* Margin overlay — absolute, floats above Profit when focused */}
                 <div
-                  className={`pointer-events-none absolute left-0 right-0 z-10 transition-all duration-280 ease-out ${
+                  className={`pointer-events-none absolute left-0 right-0 z-10 transition-all duration-300 ease-out ${
                     profitFocused
-                      ? 'opacity-100 -translate-y-1'
-                      : 'opacity-0 translate-y-1.5'
+                      ? 'opacity-100 translate-y-0'
+                      : 'opacity-0 translate-y-2'
                   }`}
-                  style={{ bottom: 'calc(100% + 6px)' }}
+                  style={{ bottom: 'calc(100% + 8px)' }}
                   aria-hidden={!profitFocused}
                 >
-                  <div className="rounded-lg border border-border/50 bg-popover/95 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.35)] px-3 py-2 flex items-center gap-3">
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground shrink-0">Margin</span>
-                    <div className="flex-1 h-1.5 bg-secondary/70 rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-primary/60 to-primary transition-[width] duration-500 ease-out"
-                        style={{ width: `${margin ?? 0}%` }}
-                      />
+                  <div
+                    className="relative overflow-hidden rounded-xl border border-border/50 px-3.5 py-2.5 shadow-[0_10px_30px_rgba(0,0,0,0.4)]"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, hsl(var(--popover)/0.92) 0%, hsl(var(--secondary)/0.6) 100%)',
+                      backdropFilter: 'blur(10px)',
+                      WebkitBackdropFilter: 'blur(10px)',
+                    }}
+                  >
+                    {/* Soft primary glow */}
+                    <div
+                      className="pointer-events-none absolute -inset-px rounded-xl opacity-60"
+                      style={{
+                        background:
+                          'radial-gradient(120% 80% at 100% 0%, hsl(var(--primary)/0.12), transparent 60%)',
+                      }}
+                    />
+                    <div className="relative flex items-center gap-3">
+                      <div className="flex flex-col leading-tight">
+                        <span className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground/85">
+                          Margin
+                        </span>
+                        <span className="text-[18px] font-bold font-mono tabular-nums text-foreground leading-none mt-0.5">
+                          {(margin ?? 0).toFixed(margin && margin >= 10 ? 0 : 1)}
+                          <span className="text-[12px] text-muted-foreground/80 font-semibold ml-0.5">%</span>
+                        </span>
+                      </div>
+                      <div className="flex-1 h-2 bg-secondary/60 rounded-full overflow-hidden shadow-inner">
+                        <div
+                          className="h-full rounded-full transition-[width] duration-700 ease-out"
+                          style={{
+                            width: `${profitFocused ? (margin ?? 0) : 0}%`,
+                            background:
+                              'linear-gradient(90deg, hsl(var(--primary)/0.55) 0%, hsl(var(--primary)) 100%)',
+                            boxShadow: '0 0 12px hsl(var(--primary)/0.45)',
+                          }}
+                        />
+                      </div>
                     </div>
-                    <span className="text-[12px] font-mono tabular-nums text-foreground shrink-0">
-                      {margin === null ? '—' : `${margin.toFixed(1)}%`}
-                    </span>
                   </div>
                 </div>
 
@@ -679,8 +701,8 @@ export default function AddProduct() {
                         <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/95">
                           Category <span className="text-destructive">*</span>
                         </span>
-                        <span className={category ? 'text-foreground text-sm mt-0.5' : 'text-muted-foreground/60 text-sm mt-0.5'}>
-                          {category || 'Select…'}
+                        <span className={category ? 'text-foreground text-sm mt-0.5' : 'text-muted-foreground/55 text-sm mt-0.5 italic'}>
+                          {category || 'Select Category'}
                         </span>
                       </span>
                       <ChevronDown size={15} className={`text-muted-foreground transition-transform duration-200 ${isCatDropdownOpen ? 'rotate-180' : ''}`} />

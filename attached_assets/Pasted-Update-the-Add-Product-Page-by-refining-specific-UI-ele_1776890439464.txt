@@ -1,0 +1,147 @@
+Update the **Add Product Page** by refining specific UI elements, validation rules, and visual components. Keep the existing architecture intact and only apply the following improvements.
+
+You are allowed to enhance visual quality and micro-interactions, but maintain a smooth, fast, non-flashy experience.
+
+---
+
+# 🖼️ IMAGE COMPONENT (SIZE REFINEMENT)
+
+* Reduce the visual size of the product image container slightly
+* Keep it square (fixed ratio)
+* Maintain strong visual presence but avoid it dominating the layout
+
+### Behavior:
+
+* Upload icon remains (not plus icon)
+* Slightly reduce blur on icon for better clarity
+* Keep drag & drop + click upload intact
+
+---
+
+# 🗂️ CATEGORY DROPDOWN (DEFAULT STATE)
+
+* Do NOT pre-select any category
+
+### Default state:
+
+* First option should be:
+  → **“Select Category”** (non-selectable placeholder style)
+
+### Behavior:
+
+* User must manually choose a category
+* This field is **required**
+
+---
+
+# ❗ REQUIRED FIELDS (STRICT VALIDATION)
+
+All inputs must be required:
+
+* Product Name
+* Quick Code
+* Price
+* Profit
+* Stock
+* Category
+* Image (if applicable based on system)
+
+### Behavior:
+
+* If any field is empty:
+
+  * Prevent submission
+  * Trigger:
+
+    * Input shake (subtle)
+    * Inline error message below field
+
+---
+
+# 🔖 QUICK CODE CLEANUP
+
+* Remove any helper text below quick code input
+* Keep input minimal and clean
+
+### Keep:
+
+* Static `#` prefix
+* Uniqueness validation
+* Lowercase restriction
+
+---
+
+# 📊 MARGIN OVERLAY (VISUAL UPGRADE)
+
+Enhance the margin indicator for better clarity and appeal.
+
+---
+
+## 📍 POSITION
+
+* Overlay appears above Profit input (absolute positioned)
+* Does not affect layout spacing
+
+---
+
+## 🎨 DESIGN
+
+* More visually engaging but still minimal
+* Include:
+
+### 1. Percentage Display
+
+* Large, clear margin percentage text
+
+### 2. Animated Bar
+
+* Smooth horizontal bar
+* Fills based on margin value
+
+### 3. Subtle Background
+
+* Soft gradient or glass-like feel (very light)
+
+---
+
+## ⚡ INITIAL STATE
+
+* When no value entered:
+  → Show **0% margin**
+
+---
+
+## 🎬 INTERACTION
+
+### On Profit Focus:
+
+* Overlay fades + slides in smoothly
+* Bar animates from 0 → current value
+
+### On Unfocus:
+
+* Reverse animation (smooth fade out)
+
+---
+
+## 🎯 STYLE RULES
+
+* Smooth transitions only
+* No flashy effects
+* Keep it lightweight and fast
+
+---
+
+# 🎯 FINAL GOAL
+
+* Cleaner, more minimal inputs
+* Better validation clarity
+* Stronger visual feedback (especially margin)
+* More controlled and intentional user interaction
+
+Ensure the experience remains:
+
+* Fast
+* Smooth
+* Professional
+* POS-optimized
