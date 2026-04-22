@@ -1,0 +1,127 @@
+Refine the Quick Code system in the POS product grid to improve readability, usability, and fast interaction flow. Keep the existing layout and functionality intact — only enhance the Quick Code design, input behavior, and cart interaction flow.
+
+---
+
+# 🧾 QUICK CODE SYSTEM — IMPROVEMENTS
+
+## 🔖 FORMAT RULE (IMPORTANT)
+
+* Every Quick Code must:
+
+  * Start with **#**
+  * Be in **lowercase only**
+  * Use **3–4 character segments for readability**
+
+### Example format:
+
+* `#wi-e`
+* `#ap-j`
+* `#co-l`
+
+This ensures:
+
+* Fast typing
+* Easy memorization
+* Clean visual structure
+
+---
+
+## 🎨 QUICK CODE VISIBILITY (CRITICAL FIX)
+
+Improve readability on product images:
+
+### REQUIRED STYLE:
+
+* Use a **high-contrast pill/label background**
+* Add slight **dark translucent background overlay OR solid dark badge**
+* Ensure text is readable on ANY image
+
+### RECOMMENDED DESIGN:
+
+* Background: dark semi-transparent (or solid dark with slight blur)
+* Text color: **bright white or soft neon accent**
+* Font weight: **bold**
+* Slight letter spacing for clarity
+
+### IMPORTANT:
+
+* Must never blend into image
+* Must always remain readable from distance
+* Must feel premium and consistent across all product images
+
+---
+
+## ⚡ ACTIVE STATE (WHEN ADDED TO CART)
+
+When a product is added to cart (via Enter or click):
+
+* Quick code should briefly become:
+
+  * **bold + slightly highlighted**
+  * subtle glow or emphasis effect
+* After animation, return to normal state
+
+---
+
+## 🧠 SEARCH + ENTER BEHAVIOR
+
+When user types quick code in search:
+
+* Best matching product should auto-highlight first
+* Pressing **Enter**:
+
+  * Add product to cart instantly
+  * Clear search bar immediately after successful add
+
+---
+
+## 🧹 SEARCH BAR RESET LOGIC
+
+After product is added to cart:
+
+* Automatically clear:
+
+  * Search input
+  * Highlight state
+* Reset focus to ready state (optional UX improvement)
+
+---
+
+## 📦 QUICK CODE STRUCTURE RULE
+
+* Always generated in format:
+
+  * 3–4 letter shorthand
+  * readable segmentation (optional hyphen)
+* Must represent product initials clearly
+
+---
+
+## 🎯 UX GOAL
+
+* Fast cashier workflow
+* Zero confusion during scanning
+* Instant cart feedback
+* High readability on all images
+
+---
+
+## ⚖️ DESIGN RULES
+
+* Do NOT break product card layout
+* Do NOT overlap other elements
+* Keep badge compact and consistent
+* Maintain dark-mode optimization
+
+---
+
+## 🚀 FINAL RESULT
+
+* Quick code becomes:
+
+  * readable ✔️
+  * fast to type ✔️
+  * visually strong ✔️
+  * POS optimized ✔️
+
+System feels like a **real retail checkout terminal**, not a basic web UI.

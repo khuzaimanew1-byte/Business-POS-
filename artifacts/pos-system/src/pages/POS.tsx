@@ -90,6 +90,9 @@ export default function POS() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [importMenuOpen, setImportMenuOpen] = useState(false);
 
+  // ID of product whose quick code badge should briefly pulse after add-to-cart
+  const [activeQuickCodeId, setActiveQuickCodeId] = useState<string | null>(null);
+
   // ── Search/keyboard refs ───────────────────────────────────────────────
   const searchInputRef = useRef<HTMLInputElement>(null);
   // Long-press tracking (mobile)
@@ -102,25 +105,39 @@ export default function POS() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Quick code = up to 3-char initials from product name (e.g. "Apple Juice" -> "AJ")
+  // Quick code: lowercase, hyphen-segmented shorthand prefixed with "#".
+  // e.g. "Wireless Earbuds" -> "#wi-e", "Apple Juice" -> "#ap-j", "Cola" -> "#co-l"
   const quickCode = useCallback((name: string) => {
-    const parts = name.trim().split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return '';
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return parts.map(p => p[0]).join('').toUpperCase().substring(0, 3);
+    const cleaned = name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+    const parts = cleaned.split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '#';
+    if (parts.length === 1) {
+      const w = parts[0];
+      const head = w.slice(0, 2);
+      const tail = w.length > 2 ? w[2] : (w[1] ?? '');
+      return `#${head}${tail ? '-' + tail : ''}`;
+    }
+    const head = parts[0].slice(0, 2).padEnd(1, '');
+    const tail = parts[1][0];
+    return `#${head}-${tail}`;
   }, []);
+
+  // Normalize a query so "wie", "wi-e", "#wi-e" all match the same code.
+  const normalize = (s: string) => s.toLowerCase().replace(/[#\-\s]/g, '');
 
   // Score a product against query for ranking. Lower = better.
   const scoreMatch = (p: Product, q: string): number => {
     if (!q) return 0;
     const ql = q.toLowerCase();
+    const qn = normalize(q);
     const name = p.name.toLowerCase();
     const code = p.code.toLowerCase();
-    const qc = quickCode(p.name).toLowerCase();
-    if (qc === ql) return 0;
+    const qc = quickCode(p.name);
+    const qcn = normalize(qc);
+    if (qcn === qn) return 0;
     if (name === ql) return 1;
-    if (name.startsWith(ql)) return 2;
-    if (qc.startsWith(ql)) return 3;
+    if (qcn.startsWith(qn)) return 2;
+    if (name.startsWith(ql)) return 3;
     if (code.startsWith('#' + ql) || code.startsWith(ql)) return 4;
     if (name.includes(ql)) return 5 + name.indexOf(ql) / 100;
     if (code.includes(ql)) return 7;
@@ -129,14 +146,16 @@ export default function POS() {
 
   const filteredProducts = useMemo(() => {
     const q = debouncedSearch.toLowerCase();
+    const qn = normalize(q);
     const list = products.filter(p => {
       const matchesCat = selectedCategory === "All" || p.category === selectedCategory;
       if (!matchesCat) return false;
       if (!q) return true;
+      const qcn = normalize(quickCode(p.name));
       return (
         p.name.toLowerCase().includes(q) ||
         p.code.toLowerCase().includes(q) ||
-        quickCode(p.name).toLowerCase().includes(q)
+        (qn && qcn.includes(qn))
       );
     });
     if (q) {
@@ -164,6 +183,9 @@ export default function POS() {
       setCartFlash(true);
       setTimeout(() => setCartFlash(false), 700);
     }));
+    // Briefly emphasize the quick code badge of the just-added product
+    setActiveQuickCodeId(product.id);
+    setTimeout(() => setActiveQuickCodeId(curr => curr === product.id ? null : curr), 650);
   };
 
   const enterEditMode = () => {
@@ -460,6 +482,7 @@ export default function POS() {
                 if (e.key === 'Enter' && topMatchId) {
                   e.preventDefault();
                   addTopMatchToCart();
+                  setSearchQuery('');
                 }
               }}
               className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-9 pr-9 outline-none transition-all duration-250 placeholder:text-muted-foreground text-[14px] sm:text-[16px]"
@@ -717,12 +740,12 @@ export default function POS() {
                       </button>
                     )}
 
-                    {/* Quick code badge — initials of product name (e.g. Apple Juice → AJ) */}
+                    {/* Quick code badge — lowercase, hyphen-segmented (e.g. Apple Juice → #ap-j) */}
                     <div
-                      className="quick-code-badge absolute top-1.5 left-1.5 flex items-center justify-center rounded-md select-none"
+                      className={`quick-code-badge absolute top-1.5 left-1.5 flex items-center justify-center rounded-md select-none${activeQuickCodeId === product.id ? ' quick-code-active' : ''}`}
                       title={`Quick code: ${qc} · ${product.code}`}
                     >
-                      <span className="quick-code-text font-bold tracking-[0.08em] text-white text-[12px] sm:text-[14px] leading-none">
+                      <span className="quick-code-text text-white text-[12px] sm:text-[13px] leading-none">
                         {qc}
                       </span>
                     </div>
@@ -1288,21 +1311,47 @@ export default function POS() {
         [data-radix-dialog-overlay] { animation: backdrop-in 200ms ease both !important; }
         [data-radix-dialog-content] { animation: modal-in 220ms cubic-bezier(0.34,1.1,0.64,1) both !important; }
 
-        /* ── Quick code badge: high contrast over images ── */
+        /* ── Quick code badge: high contrast pill, readable over any image ── */
         .quick-code-badge {
-          padding: 3px 7px;
-          background: linear-gradient(180deg, rgba(0,0,0,0.78), rgba(0,0,0,0.62));
-          border: 1px solid rgba(255,255,255,0.12);
+          padding: 3px 8px;
+          background: rgba(8, 10, 18, 0.86);
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          border-radius: 6px;
           box-shadow:
-            0 1px 0 rgba(255,255,255,0.06) inset,
-            0 1px 4px rgba(0,0,0,0.45);
-          backdrop-filter: blur(8px);
-          -webkit-backdrop-filter: blur(8px);
+            0 1px 0 rgba(255, 255, 255, 0.08) inset,
+            0 2px 6px rgba(0, 0, 0, 0.55);
+          backdrop-filter: blur(10px) saturate(140%);
+          -webkit-backdrop-filter: blur(10px) saturate(140%);
+          transition: transform 220ms cubic-bezier(0.34, 1.4, 0.64, 1),
+                      background 220ms ease, box-shadow 220ms ease;
         }
         .quick-code-text {
-          text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+          font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          color: #ffffff;
+          text-shadow:
+            0 1px 2px rgba(0, 0, 0, 0.7),
+            0 0 1px rgba(0, 0, 0, 0.6);
           font-feature-settings: "tnum" 1, "ss01" 1;
-          letter-spacing: 0.08em;
+        }
+        /* Active pulse when product is added to cart */
+        @keyframes quick-code-active-anim {
+          0%   { transform: scale(1); }
+          35%  { transform: scale(1.12); }
+          100% { transform: scale(1); }
+        }
+        .quick-code-active {
+          background: rgba(99, 102, 241, 0.92);
+          border-color: rgba(165, 180, 252, 0.55);
+          box-shadow:
+            0 0 0 2px rgba(99, 102, 241, 0.35),
+            0 0 14px rgba(99, 102, 241, 0.55),
+            0 1px 0 rgba(255, 255, 255, 0.18) inset;
+          animation: quick-code-active-anim 600ms cubic-bezier(0.34, 1.4, 0.64, 1);
+        }
+        .quick-code-active .quick-code-text {
+          text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
         }
 
         /* ── Top search match: subtle pulsing ring ── */
