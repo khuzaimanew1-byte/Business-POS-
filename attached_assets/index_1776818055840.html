@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sophisticated Line Graph — vanilla</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <article class="card" id="card">
+        <h1 class="card__title" data-card-title>Time Series Analysis</h1>
+        <p class="card__subtitle">
+          Interactive time series visualization with zoom and pan capabilities
+        </p>
+
+        <div class="range-row" id="rangeRow" aria-label="Time range"></div>
+
+        <div class="chart-wrap" id="chartWrap">
+          <div class="loading" id="loading" aria-busy="true" aria-live="polite">
+            <div class="spinner" role="presentation"></div>
+          </div>
+          <svg
+            id="chartSvg"
+            class="chart-svg is-hidden"
+            role="img"
+            aria-label="Price over time"
+          ></svg>
+          <div id="tooltip" class="chart-tooltip" aria-hidden="true">
+            <p class="chart-tooltip__date" data-tip-date></p>
+            <p class="chart-tooltip__price" data-tip-price></p>
+          </div>
+        </div>
+
+        <div class="legend-row">
+          <div class="legend-pill" aria-hidden="true">
+            <span class="legend-dot"></span>
+            <span>Price</span>
+          </div>
+        </div>
+
+        <footer class="card__footer">
+          <p>Hover over the chart to see date and price</p>
+        </footer>
+      </article>
+    </main>
+
+    <script src="chart.js" defer></script>
+  </body>
+</html>

@@ -1,0 +1,228 @@
+Create a new **Analytics Page** for the POS system that integrates with the existing structure and follows the same design language. This page should open when the user clicks the “Analytics” option from the main navigation. Keep the UI consistent with the main POS page while introducing data visualization and insights.
+
+You may enhance the design where needed, but do not break the existing system consistency.
+
+---
+
+# 🧭 GLOBAL STRUCTURE
+
+* Reuse the **same left navigation bar** (global sidebar)
+* Keep the **top bar fixed**
+* Maintain overall layout consistency with the main POS page
+
+---
+
+# 🔝 TOP BAR (ANALYTICS CONTROLS)
+
+In the top bar:
+
+### 🕒 Time Filter System
+
+Add a time range switcher with options:
+
+* Daily
+* Weekly
+* Monthly
+* Yearly
+* Custom
+
+Behavior:
+
+* Switching between these should update the graph dynamically
+* Active state should be clearly visible
+* Transitions between states should be smooth
+
+---
+
+# 📊 DATA LOGIC (IMPORTANT)
+
+Analytics data must be based on **real POS interactions**:
+
+* Every time a product is:
+
+  * Added to cart **and confirmed (sale/submit)**
+
+→ A **sale event** is created
+
+Each sale event should include:
+
+* Timestamp (exact time of sale)
+* Product quantity
+* Profit value
+
+### 💰 PROFIT CALCULATION
+
+* Profit should be calculated using the **product-level profit field**
+* This profit field comes from **edit mode in product cards**
+
+---
+
+# 📈 GRAPH MODE SWITCH (RIGHT SIDE)
+
+On the right side of the analytics section:
+
+Add two fixed toggle options:
+
+* **Sales**
+* **Profit**
+
+Behavior:
+
+* Switching between them updates the graph
+* Sales = number of products sold
+* Profit = total profit amount
+
+---
+
+# 📉 GRAPH BEHAVIOR & DESIGN
+
+### 🎬 ANIMATION
+
+* Every time graph data changes:
+
+  * Animate the graph from start
+  * Smooth line drawing animation
+  * No sharp or flashy transitions
+
+---
+
+### 📍 LINE STYLE (IMPORTANT CHANGES)
+
+* Remove visible joint dots on the line
+* Keep the line clean and smooth
+
+Instead:
+
+* Show only **one active point indicator**
+* This point follows cursor/touch
+
+---
+
+### 📌 INTERACTION LINE
+
+* Add a **vertical dotted line** from the active point
+* This line moves with cursor
+* Helps user track exact position
+
+---
+
+### 💬 TOOLTIP SYSTEM
+
+Tooltip design:
+
+* Horizontal bar style (not boxy popup)
+* Show:
+
+  * Date/Time
+  * Value (sales count OR profit)
+
+Both should appear in **one clean row**
+
+---
+
+### ⚠️ TOOLTIP COLLISION HANDLING
+
+* If tooltip is near top (high Y-level):
+
+  * Prevent overflow
+  * Fix tooltip position slightly lower (around 10% from top)
+* Apply this only when collision happens
+
+---
+
+# ⏱️ DAILY MODE (DETAILED LOGIC)
+
+* X-axis should represent **time (hours)**
+* Divide graph into hourly segments
+* Each sale event is mapped using timestamp
+
+Tooltip should show:
+
+* Exact time of sale (not just index)
+
+---
+
+# 📉 NO ACTIVITY STATE
+
+If there is no data:
+
+* Show a flat line at 0
+* As soon as activity occurs:
+
+  * Line should rise naturally from baseline
+
+---
+
+# 🧠 DATA FLOW
+
+* Track all sale events in a structured format
+* Aggregate data based on selected time filter
+* Re-render graph dynamically on:
+
+  * Time filter change
+  * Mode switch (sales/profit)
+
+---
+
+# 🧪 DEMO DATA
+
+For now:
+
+* Populate graph with **realistic demo data**
+* Simulate:
+
+  * Different sale times
+  * Varying profit values
+* Ensure graph looks meaningful during development
+
+---
+
+# 📂 FILE-BASED IMPLEMENTATION (IMPORTANT)
+
+I will upload some files that contain:
+
+* Graph implementation
+* Design references
+* Possibly complex logic
+
+Before generating final code:
+
+* Deeply analyze those files
+* Reuse useful logic and structure
+* Improve where necessary
+
+Important:
+
+* Some requirements (like tooltip behavior, line style, etc.) may NOT exist in those files
+* Combine:
+
+  * File logic
+  * AND the requirements defined in this prompt
+
+---
+
+# ⚡ PERFORMANCE & UX
+
+* Keep animations smooth and lightweight
+* Avoid heavy re-renders
+* Ensure smooth scrolling and interaction
+* Maintain responsiveness across devices
+
+---
+
+# 🎯 FINAL GOAL
+
+The analytics page should feel:
+
+* Professional and data-driven
+* Smooth and responsive
+* Visually clean and modern
+* Fully integrated with POS workflow
+
+It should clearly answer:
+
+* How many products sold?
+* How much profit generated?
+* When activity happened?
+
+While maintaining speed, clarity, and usability.

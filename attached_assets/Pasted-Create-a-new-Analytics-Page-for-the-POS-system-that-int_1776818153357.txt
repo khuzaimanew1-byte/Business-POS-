@@ -1,0 +1,217 @@
+Create a new **Analytics Page** for the POS system that integrates seamlessly with the existing application. This page should open when the user clicks the Analytics option from the main navigation. Maintain consistency with the current UI system while introducing data visualization and interaction logic.
+
+---
+
+# 🧭 GLOBAL LAYOUT (CONSISTENCY)
+
+* Keep the **left navigation bar** exactly the same as the main POS page (global navigation)
+* Maintain same styling, icons, and behavior
+
+---
+
+# 🔝 TOP BAR (FIXED)
+
+The top bar should remain fixed and include:
+
+### ⏱️ TIME FILTER SWITCHER
+
+Provide options:
+
+* Daily
+* Weekly
+* Monthly
+* Yearly
+* Custom
+
+Behavior:
+
+* Switching between these should update the graph dynamically
+* Active state should be visually clear
+* Keep interaction smooth and fast
+
+---
+
+# 📊 DATA LOGIC (IMPORTANT)
+
+Data should be based on **real sales flow logic**:
+
+* Every time a product is:
+
+  * Added to cart
+  * AND sale is confirmed (submit action)
+
+👉 Create a **sale event**
+
+Each sale event should include:
+
+* Timestamp (date + time)
+* Product quantity sold
+* Profit (calculated using product-level profit field from edit mode)
+
+---
+
+# 📈 GRAPH SECTION (CORE FEATURE)
+
+## 🔁 TOGGLE OPTIONS (RIGHT SIDE)
+
+Provide two fixed options:
+
+* **Sales**
+* **Profit**
+
+Behavior:
+
+* Switching between them updates the graph
+* Sales → show number of products sold
+* Profit → show total profit amount
+
+---
+
+## 🎬 GRAPH ANIMATION
+
+* Every time data or mode changes:
+
+  * Graph should animate smoothly from start
+  * Avoid flashy or aggressive motion
+  * Keep animation clean and professional
+
+---
+
+## 📉 GRAPH DESIGN REFINEMENT
+
+Based on your requirements:
+
+### ❌ REMOVE:
+
+* Line joints / visible point markers on every data point
+
+### ✅ ADD:
+
+* A **single active point indicator**
+* This point should:
+
+  * Follow cursor movement
+  * Connect to a **vertical dotted line**
+  * The dotted line should extend to the x-axis
+
+---
+
+## 🧠 TOOLTIP BEHAVIOR
+
+Tooltip should be:
+
+* Bar-style (horizontal layout)
+* Show:
+
+  * Date/Time
+  * Value (sales count or profit)
+* Both should appear in **one clean row**
+
+### ⚠️ COLLISION HANDLING
+
+* If tooltip is about to collide with top boundary:
+
+  * Fix its position at approximately **top 10% of graph area**
+  * Apply this only when needed (dynamic adjustment)
+
+---
+
+## 📊 X-AXIS LOGIC
+
+### DAILY MODE:
+
+* Divide into **hours**
+* Each data point reflects activity in that hour
+
+### BEHAVIOR:
+
+* Tooltip shows exact timestamp
+* Graph reflects time-based progression
+
+---
+
+## 📉 ZERO ACTIVITY HANDLING
+
+* If no sales occur:
+
+  * Graph should display a **flat line at 0**
+* When activity starts:
+
+  * Line should rise naturally from 0
+
+This ensures:
+
+* No empty or broken graphs
+* Clear visual continuity
+
+---
+
+# 🎨 GRAPH INTERACTION
+
+* Smooth hover interaction
+* No jitter or sharp transitions
+* Micro animations only
+* Clean and premium feel
+
+---
+
+# 📂 EXTERNAL FILE INTEGRATION (VERY IMPORTANT)
+
+You will upload HTML, CSS, and JS files for graph reference.
+
+Before generating or modifying code:
+
+* Carefully **analyze those files deeply**
+* Understand:
+
+  * Graph structure
+  * Logic implementation
+  * Animation flow
+  * Interaction handling
+
+Then:
+
+* Reuse and adapt logic where useful
+* Improve where necessary based on this prompt
+* Do not blindly copy — refine intelligently
+
+---
+
+# 🧪 DEMO DATA
+
+* Use realistic demo data initially
+* Simulate:
+
+  * Sales events over time
+  * Profit calculations
+* Ensure graph behaves correctly with sample data
+
+---
+
+# ⚡ PERFORMANCE & UX
+
+* Keep rendering efficient
+* Avoid heavy re-renders
+* Ensure smooth transitions even with frequent updates
+
+---
+
+# 🎯 FINAL GOAL
+
+The analytics page should feel:
+
+* Integrated with the POS system
+* Data-driven and realistic
+* Smooth, clean, and professional
+* Easy to read and interact with
+* Scalable for future analytics features
+
+---
+
+### 🧠 FLEXIBILITY NOTE
+
+If you identify missing UX improvements, edge cases, or better interaction patterns while implementing:
+
+* Feel free to refine and enhance them
+* Keep everything aligned with the current design language
+* Prioritize clarity, performance, and usability

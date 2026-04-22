@@ -247,7 +247,7 @@ export default function POS() {
         <div className="flex flex-col gap-6">
           <TooltipProvider delayDuration={100}>
             <TooltipItem icon={<Home size={20} />} label="Home" active />
-            <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" />
+            <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" onClick={() => setLocation("/analytics")} />
             <div onClick={() => setIsAddProductModalOpen(true)}>
               <TooltipItem icon={<Plus size={20} />} label="Add Product" />
             </div>
@@ -627,7 +627,7 @@ export default function POS() {
         <MobileNavBtn icon={<Home size={20} />} label="Home" active />
 
         {/* Analytics */}
-        <MobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" />
+        <MobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" onClick={() => setLocation("/analytics")} />
 
         {/* Add Product — center, prominent */}
         <button
