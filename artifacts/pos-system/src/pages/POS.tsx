@@ -147,7 +147,7 @@ export default function POS() {
     }));
     // Briefly emphasize the quick code badge of the just-added product
     setActiveQuickCodeId(product.id);
-    setTimeout(() => setActiveQuickCodeId(curr => curr === product.id ? null : curr), 650);
+    setTimeout(() => setActiveQuickCodeId(curr => curr === product.id ? null : curr), 220);
   };
 
   const enterEditMode = () => {
@@ -425,7 +425,7 @@ export default function POS() {
       {/* ── DESKTOP LEFT SIDEBAR (hidden on mobile) ────────────────────── */}
       <aside className="hidden sm:flex w-[60px] shrink-0 border-r border-border bg-sidebar flex-col items-center py-4 z-20">
         <div className="flex flex-col gap-6">
-          <TooltipProvider delayDuration={100}>
+          <TooltipProvider delayDuration={250}>
             <TooltipItem icon={<Home size={20} />} label="Home" active />
             <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" onClick={() => setLocation("/analytics")} />
             <div onClick={() => setLocation("/add-product")}>
@@ -522,7 +522,7 @@ export default function POS() {
             {/* Normal mode controls */}
             <div className={`flex items-center gap-1 transition-all duration-300 ease-in-out ${isEditMode || isSelectMode ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}>
               {/* Pencil — always visible */}
-              <TooltipProvider delayDuration={100}>
+              <TooltipProvider delayDuration={250}>
                 <TooltipItem
                   icon={<Pencil className="text-muted-foreground" size={16} />}
                   label="Edit Products"
@@ -533,7 +533,7 @@ export default function POS() {
               {/* Bell — desktop only (mobile has it in bottom nav) */}
               <div className="hidden sm:block">
                 <Popover>
-                  <TooltipProvider delayDuration={100}>
+                  <TooltipProvider delayDuration={250}>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <PopoverTrigger asChild>
@@ -1283,23 +1283,23 @@ export default function POS() {
             0 0 1px rgba(0, 0, 0, 0.6);
           font-feature-settings: "tnum" 1, "ss01" 1;
         }
-        /* Active pulse when product is added to cart */
+        /* Active micro-pulse when product is added to cart */
         @keyframes quick-code-active-anim {
           0%   { transform: scale(1); }
-          35%  { transform: scale(1.12); }
+          50%  { transform: scale(1.06); }
           100% { transform: scale(1); }
         }
         .quick-code-active {
-          background: rgba(99, 102, 241, 0.92);
-          border-color: rgba(165, 180, 252, 0.55);
+          background: rgba(212, 175, 90, 0.92);
+          border-color: rgba(232, 205, 130, 0.6);
           box-shadow:
-            0 0 0 2px rgba(99, 102, 241, 0.35),
-            0 0 14px rgba(99, 102, 241, 0.55),
+            0 0 0 1px rgba(212, 175, 90, 0.35),
+            0 0 10px rgba(212, 175, 90, 0.45),
             0 1px 0 rgba(255, 255, 255, 0.18) inset;
-          animation: quick-code-active-anim 600ms cubic-bezier(0.34, 1.4, 0.64, 1);
+          animation: quick-code-active-anim 200ms cubic-bezier(0.34, 1.2, 0.64, 1);
         }
         .quick-code-active .quick-code-text {
-          text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+          text-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
         }
 
         /* ── Top search match: subtle golden highlight (premium, no harsh glow) ── */

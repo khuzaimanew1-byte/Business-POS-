@@ -1,0 +1,137 @@
+Apply targeted UI/UX refinements across the POS system focusing on tooltip behavior and cart feedback animations. Keep all existing architecture intact and only enhance interaction smoothness, timing, and responsiveness.
+
+---
+
+# 🖱️ TOOLTIP HOVER BEHAVIOR (IMPORTANT UX FIX)
+
+## 🎯 Goal:
+
+Prevent accidental tooltip flicker and improve click accuracy.
+
+---
+
+## ⏱️ DELAYED TOOLTIP APPEARANCE
+
+### Behavior:
+
+* Tooltip must NOT appear instantly on hover
+* Introduce a **small delay before showing tooltip**
+
+### Timing:
+
+* On hover → wait **200ms to 300ms**
+* If cursor remains → show tooltip smoothly
+* If cursor leaves before delay → do nothing
+
+---
+
+## 🎬 TOOLTIP DISAPPEAR BEHAVIOR
+
+* On mouse leave → tooltip disappears immediately OR within very fast fade (100ms max)
+* No lingering delay on exit
+
+---
+
+## 🎨 VISUAL STYLE
+
+* Fade-in animation (not slide-heavy)
+* Soft opacity transition
+* No jitter or flicker
+* Must feel stable during fast cursor movement
+
+---
+
+## ⚡ IMPACT
+
+* Reduces accidental tooltip triggering
+* Improves click accuracy on product cards
+* Eliminates UI disturbance during fast navigation
+
+---
+
+# 🛒 QUICK CODE CART ADD ANIMATION (IMPROVED)
+
+## 🎯 Goal:
+
+Make cart feedback faster, smoother, and less distracting.
+
+---
+
+## ⚡ ANIMATION TIMING CHANGE
+
+### Current issue:
+
+* Animation feels slightly slow or heavy during cart add
+
+### Fix:
+
+* Reduce animation duration to:
+
+  * **150ms – 220ms max**
+
+---
+
+## 🎬 NEW ANIMATION BEHAVIOR
+
+When product is added to cart:
+
+### Quick Code visual effect:
+
+* Immediate highlight flash (very subtle)
+* Slight scale or glow pulse
+* Then return to normal state quickly
+
+---
+
+## 🧠 SMOOTHNESS RULE
+
+* No long bounce or exaggerated motion
+* Only micro feedback animation
+* Must feel instant but still noticeable
+
+---
+
+## 🔄 FLOW
+
+1. Click add to cart
+2. Quick code reacts instantly
+3. Micro animation plays (short duration)
+4. Returns to idle state quickly
+
+---
+
+## 🎨 VISUAL STYLE
+
+* Soft glow / pulse
+* Minimal movement
+* No flashy effects
+* Performance-friendly
+
+---
+
+# 🧠 FINAL RESULT
+
+After applying these updates:
+
+### ✔ Tooltip system:
+
+* Stable
+* No flicker
+* No accidental triggers
+
+### ✔ Cart feedback:
+
+* Faster response
+* Cleaner micro animation
+* Better UX during fast POS usage
+
+---
+
+# 🚀 DESIGN INTENT
+
+These changes aim to:
+
+* Improve click precision
+* Reduce UI noise
+* Make system feel more “professional POS terminal”
+* Keep interactions fast and predictable
