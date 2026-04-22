@@ -51,12 +51,12 @@ const TraceField = React.forwardRef<HTMLInputElement, TraceFieldProps>(function 
   const localRef = useRef<HTMLInputElement>(null);
   const ref = (inputRef as React.RefObject<HTMLInputElement>) ?? localRef;
 
-  const lifted = focused || value.length > 0 || !!placeholder;
+  const lifted = focused || value.length > 0;
 
   return (
     <div className="trace-wrap">
       <div
-        className={`trace-field ${focused ? 'is-focused' : ''} ${invalid ? 'is-invalid' : ''}`}
+        className={`trace-field ${focused ? 'is-focused' : ''} ${invalid ? 'is-invalid' : ''} ${prefix ? 'has-prefix' : ''}`}
         onClick={() => ref.current?.focus()}
       >
         {/* Animated SVG border */}
@@ -88,7 +88,7 @@ const TraceField = React.forwardRef<HTMLInputElement, TraceFieldProps>(function 
             onChange={e => onChange(e.target.value)}
             onFocus={() => { setFocused(true); onFocus?.(); }}
             onBlur={() => { setFocused(false); onBlur?.(); }}
-            placeholder={focused ? placeholder : ''}
+            placeholder={lifted ? placeholder : ''}
             inputMode={inputMode}
             step={step}
             min={min}
@@ -726,7 +726,7 @@ export default function AddProduct() {
           line-height: 1;
           display: inline-flex;
           align-items: center;
-          padding-top: 14px;  /* visually centered with input baseline (label takes top) */
+          height: 100%;
         }
         .trace-input {
           flex: 1;
@@ -735,42 +735,60 @@ export default function AddProduct() {
           background: transparent;
           border: 0;
           outline: 0;
-          padding: 18px 0 6px;
+          padding: 0;
           font-size: 14px;
           color: hsl(var(--foreground));
           font-variant-numeric: tabular-nums;
         }
-        .trace-input::placeholder { color: hsl(var(--muted-foreground) / 0.55); }
+        .trace-input::placeholder {
+          color: hsl(var(--muted-foreground) / 0.4);
+          opacity: 0;
+          transition: opacity 220ms ease 120ms;
+        }
+        .trace-field.is-focused .trace-input::placeholder { opacity: 1; }
 
         .trace-label {
           position: absolute;
-          left: 12px;
+          left: 14px;
           top: 50%;
-          transform: translateY(-50%);
-          font-size: 13px;
-          color: hsl(var(--muted-foreground));
+          transform-origin: 0 50%;
+          transform: translateY(-50%) translateZ(0) scale(1);
+          font-size: 14px;
+          font-weight: 400;
+          letter-spacing: 0;
+          color: hsl(var(--muted-foreground) / 0.55);
           pointer-events: none;
           padding: 0 4px;
+          margin-left: -4px;       /* visually align text with input padding when unlifted */
           background: transparent;
+          will-change: transform, color, background;
           transition:
-            top 220ms cubic-bezier(0.65, 0, 0.35, 1),
-            font-size 220ms cubic-bezier(0.65, 0, 0.35, 1),
-            color 220ms ease,
-            background 200ms ease;
-          letter-spacing: 0.01em;
+            transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+            color 240ms ease,
+            background-color 240ms ease,
+            letter-spacing 360ms cubic-bezier(0.22, 1, 0.36, 1);
           z-index: 2;
           white-space: nowrap;
+          line-height: 1;
         }
         .trace-label.is-lifted {
-          top: 0;
-          transform: translateY(-50%);
-          font-size: 10.5px;
+          /* Lift to the top border line and shrink to a chip */
+          transform: translateY(calc(-50% - 28px)) translateZ(0) scale(0.78);
           font-weight: 600;
-          letter-spacing: 0.06em;
+          letter-spacing: 0.08em;
           text-transform: uppercase;
-          color: hsl(var(--muted-foreground) / 0.85);
-          background: hsl(var(--background));
+          color: hsl(var(--muted-foreground) / 0.95);
+          background-color: hsl(var(--background));
         }
+        /* When a prefix exists, push label right while unlifted so it doesn't sit on top of the prefix */
+        .trace-field.has-prefix .trace-label {
+          left: 36px;
+        }
+        /* But on lift, snap back to the start of the border line */
+        .trace-field.has-prefix .trace-label.is-lifted {
+          left: 14px;
+        }
+
         .trace-field.is-focused .trace-label.is-lifted {
           color: hsl(var(--primary));
         }
