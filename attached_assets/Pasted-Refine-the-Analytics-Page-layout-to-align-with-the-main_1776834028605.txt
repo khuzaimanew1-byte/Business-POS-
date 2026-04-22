@@ -1,0 +1,95 @@
+Refine the Analytics Page layout to align with the main POS UI structure and improve control placement. Keep existing functionality intact — only adjust layout, positioning, and visibility of specific elements.
+
+---
+
+# 🧭 NAVIGATION CONSISTENCY (IMPORTANT)
+
+* Add the **same left navigation bar** used in the main POS page
+* Ensure it behaves as a **global navigation system**
+* Keep:
+
+  * Same icons
+  * Same styling
+  * Same interactions
+
+---
+
+# 📱 MOBILE NAVIGATION (BOTTOM)
+
+* Maintain the mobile bottom navigation (already implemented)
+* Ensure it stays:
+
+  * Fixed at bottom
+  * Consistent with main page
+* Include:
+
+  * Analytics, Home, Add Product, Settings, Notifications
+* Center the **Add Product icon** (slightly prominent)
+
+---
+
+# 🔁 REMOVE UNNECESSARY HEADER ELEMENTS
+
+From the Analytics page header/top area, remove:
+
+* “Analytics” title text
+* Date text (if separately shown)
+* Back arrow
+
+Reason:
+
+* Navigation is already handled globally
+* Page should feel part of the system, not a separate screen
+
+---
+
+# 🎛️ SALES / PROFIT TOGGLE (REPOSITION)
+
+Move the **Sales / Profit toggle**:
+
+* From current position → to **right side of the page**
+* Vertically align it to the **center of the main analytics content area**
+
+Behavior:
+
+* It should feel like a floating control aligned with graphs
+* Not part of the top bar
+* Always visible while interacting with analytics
+
+---
+
+# ⚖️ POSITIONING RULES
+
+* Keep spacing clean and balanced
+* Do not overlap with graphs or content
+* Maintain responsiveness:
+
+  * On smaller screens, adjust position without breaking layout
+
+---
+
+# 🎯 DESIGN INTENT
+
+* Cleaner, less cluttered header
+* Stronger focus on analytics visuals
+* Better accessibility of main toggle control
+* Consistent navigation across entire app
+
+---
+
+# ⚡ FLEXIBILITY
+
+While implementing:
+
+* You may refine spacing and alignment
+* Ensure the toggle feels naturally placed
+* Keep UI minimal, smooth, and professional
+
+---
+
+# 🎯 FINAL GOAL
+
+* Analytics page feels fully integrated into POS system
+* Navigation consistent across all pages
+* Controls positioned logically for fast interaction
+* Clean, distraction-free layout

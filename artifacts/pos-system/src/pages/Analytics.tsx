@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Calendar as CalendarIcon, Search, Check } from "lucide-react";
+import { Home, BarChart2, Plus, Settings, Bell, Calendar as CalendarIcon, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSaleEvents, type SaleEvent, type SaleItem } from "@/lib/analytics-store";
 import { PRODUCTS_META, getProductMeta, colorForProduct, type ProductMeta } from "@/lib/products-meta";
 
@@ -915,57 +916,27 @@ export default function Analytics() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-background/90 backdrop-blur-md border-b border-border">
-        <div className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 h-14">
-          {/* Back */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 shrink-0"
-            onClick={() => setLocation("/")}
-            aria-label="Back"
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
 
-          {/* Title */}
-          <div className="min-w-0 shrink-0">
-            <h1 className="text-base font-semibold leading-tight">Analytics</h1>
-            <p className="text-[10px] text-muted-foreground truncate max-w-[120px] sm:max-w-none">{rangeLabel}</p>
-          </div>
+      {/* ── DESKTOP LEFT SIDEBAR ─────────────────────────────────────────── */}
+      <aside className="hidden sm:flex w-[60px] shrink-0 border-r border-border bg-sidebar flex-col items-center py-4 z-20">
+        <div className="flex flex-col gap-6">
+          <AnalyticsTooltipItem icon={<Home size={20} />} label="Home" onClick={() => setLocation("/")} />
+          <AnalyticsTooltipItem icon={<BarChart2 size={20} />} label="Analytics" active />
+          <AnalyticsTooltipItem icon={<Plus size={20} />} label="Add Product" />
+          <AnalyticsTooltipItem icon={<Settings size={20} />} label="Settings" />
+        </div>
+      </aside>
 
-          {/* Sales / Profit toggle — centered */}
-          <div className="flex-1 flex justify-center">
-            <div className="flex items-center p-0.5 bg-card border border-card-border rounded-full gap-0.5">
-              <button
-                onClick={() => setMetric("sales")}
-                className={`px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 ${
-                  metric === "sales"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <span className="hidden sm:inline">Sales</span>
-                <span className="sm:hidden">$</span>
-              </button>
-              <button
-                onClick={() => setMetric("profit")}
-                className={`px-3 py-1 rounded-full text-[11px] sm:text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 ${
-                  metric === "profit"
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <span className="hidden sm:inline">Profit</span>
-                <span className="sm:hidden">%</span>
-              </button>
-            </div>
-          </div>
+      {/* ── MAIN COLUMN ──────────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        {/* Minimal header — just range label + time mode pills */}
+        <header className="sticky top-0 z-20 bg-background/90 backdrop-blur-md border-b border-border h-14 flex items-center px-3 sm:px-5 gap-3">
+          <p className="text-[11px] text-muted-foreground/70 flex-1 hidden sm:block">{rangeLabel}</p>
 
           {/* Time mode pills */}
-          <div className="flex items-center gap-0.5 p-0.5 bg-card border border-card-border rounded-full overflow-x-auto shrink-0">
+          <div className="flex items-center gap-0.5 p-0.5 bg-card border border-card-border rounded-full overflow-x-auto">
             {MODES.map((m) => {
               if (m.id === "custom") {
                 return (
@@ -1018,57 +989,198 @@ export default function Analytics() {
               );
             })}
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Body */}
-      <main className="flex-1 min-w-0 p-3 sm:p-5 max-w-5xl w-full mx-auto">
-        {/* Summary */}
-        <div className="mb-4 flex items-end gap-4">
-          <div>
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
-              {metric === "sales" ? "Total items sold" : "Total profit"}
-            </p>
-            <p className="text-3xl sm:text-4xl font-bold tracking-tight mt-0.5">
-              {fmtMetric(totalValue, metric)}
-            </p>
-          </div>
-          <p className="text-[11px] text-muted-foreground/60 pb-1">
-            {visibleBins.length} data point{visibleBins.length === 1 ? "" : "s"}
-          </p>
-        </div>
+        {/* Content row: scrollable body + right Sales/Profit toggle */}
+        <div className="flex-1 flex overflow-hidden">
 
-        {/* Line chart */}
-        <div className="relative mb-6">
-          {isLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-card/40 backdrop-blur-[2px]">
-              <div className="w-5 h-5 rounded-full border-2 border-secondary border-t-primary animate-spin" />
+          {/* Scrollable analytics content */}
+          <main className="flex-1 overflow-y-auto p-3 sm:p-5 pb-[76px] sm:pb-5">
+            <div className="max-w-4xl w-full mx-auto">
+
+              {/* Summary */}
+              <div className="mb-4 flex items-end gap-4">
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
+                    {metric === "sales" ? "Total items sold" : "Total profit"}
+                  </p>
+                  <p className="text-3xl sm:text-4xl font-bold tracking-tight mt-0.5">
+                    {fmtMetric(totalValue, metric)}
+                  </p>
+                </div>
+                <p className="text-[11px] text-muted-foreground/60 pb-1">
+                  {visibleBins.length} data point{visibleBins.length === 1 ? "" : "s"}
+                </p>
+              </div>
+
+              {/* Line chart */}
+              <div className="relative mb-6">
+                {isLoading && (
+                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl bg-card/40 backdrop-blur-[2px]">
+                    <div className="w-5 h-5 rounded-full border-2 border-secondary border-t-primary animate-spin" />
+                  </div>
+                )}
+                <Chart
+                  data={data}
+                  metric={metric}
+                  mode={mode}
+                  loadingKey={`${mode}-${metric}-${custom?.from ?? 0}-${custom?.to ?? 0}`}
+                />
+              </div>
+
+              {/* Product analytics card */}
+              <section className="rounded-2xl bg-card/35 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
+                <TopProductsBar
+                  slots={barSlots}
+                  metric={metric}
+                  excludeIds={new Set()}
+                  onSwap={swapSlot}
+                />
+                {listItems.length > 0 && (
+                  <>
+                    <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent mx-5 sm:mx-6" />
+                    <TopProductsList items={listItems} metric={metric} />
+                  </>
+                )}
+              </section>
+
             </div>
-          )}
-          <Chart
-            data={data}
-            metric={metric}
-            mode={mode}
-            loadingKey={`${mode}-${metric}-${custom?.from ?? 0}-${custom?.to ?? 0}`}
-          />
-        </div>
+          </main>
 
-        {/* Product analytics card */}
-        <section className="rounded-2xl bg-card/35 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
-          <TopProductsBar
-            slots={barSlots}
-            metric={metric}
-            excludeIds={new Set()}
-            onSwap={swapSlot}
-          />
-          {listItems.length > 0 && (
-            <>
-              <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent mx-5 sm:mx-6" />
-              <TopProductsList items={listItems} metric={metric} />
-            </>
-          )}
-        </section>
-      </main>
+          {/* ── RIGHT SALES/PROFIT TOGGLE (desktop only) ─────────────────── */}
+          <div className="hidden sm:flex w-[72px] shrink-0 items-center justify-center border-l border-border/40">
+            <div className="flex flex-col gap-1 p-1 bg-card border border-card-border rounded-2xl">
+              <button
+                onClick={() => setMetric("sales")}
+                className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl text-[10px] font-semibold transition-all duration-200 ${
+                  metric === "sales"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                }`}
+              >
+                <span className="text-base leading-none">$</span>
+                <span>Sales</span>
+              </button>
+              <button
+                onClick={() => setMetric("profit")}
+                className={`flex flex-col items-center gap-1 px-3 py-2.5 rounded-xl text-[10px] font-semibold transition-all duration-200 ${
+                  metric === "profit"
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+                }`}
+              >
+                <span className="text-base leading-none">%</span>
+                <span>Profit</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── MOBILE BOTTOM NAV ──────────────────────────────────────────────── */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 h-[60px] bg-sidebar border-t border-border flex items-center justify-around px-2 z-30">
+        <AnalyticsMobileNavBtn icon={<Home size={20} />} label="Home" onClick={() => setLocation("/")} />
+        <AnalyticsMobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" active />
+
+        {/* Add Product — center prominent */}
+        <button
+          className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all duration-200 -mt-4"
+          aria-label="Add Product"
+        >
+          <Plus size={22} />
+        </button>
+
+        {/* Notifications */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 text-muted-foreground" aria-label="Notifications">
+              <Bell size={20} />
+              <span className="absolute top-1.5 right-2.5 w-2 h-2 bg-primary rounded-full border border-background" />
+              <span className="text-[9px]">Alerts</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-72 p-0 mb-2 border-border shadow-xl rounded-xl overflow-hidden" align="center" side="top">
+            <div className="p-3 border-b border-border/50">
+              <h4 className="font-medium text-sm">Notifications</h4>
+            </div>
+            <div className="divide-y divide-border/50">
+              <div className="p-3 hover:bg-secondary/50 transition-colors duration-200 cursor-pointer">
+                <p className="font-medium text-xs">Low stock alert</p>
+                <p className="text-muted-foreground text-xs mt-0.5">Salad Bowl (#1013) is running low (15 remaining).</p>
+              </div>
+              <div className="p-3 hover:bg-secondary/50 transition-colors duration-200 cursor-pointer">
+                <p className="font-medium text-xs">System Update</p>
+                <p className="text-muted-foreground text-xs mt-0.5">POS system updated to v2.4.1.</p>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <AnalyticsMobileNavBtn icon={<Settings size={20} />} label="Settings" />
+      </nav>
+
+      {/* ── MOBILE SALES/PROFIT TOGGLE — floating above bottom nav ──────── */}
+      <div className="sm:hidden fixed bottom-[68px] right-3 z-20">
+        <div className="flex gap-1 p-0.5 bg-card/90 backdrop-blur-md border border-card-border rounded-full shadow-lg">
+          <button
+            onClick={() => setMetric("sales")}
+            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 ${
+              metric === "sales"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Sales
+          </button>
+          <button
+            onClick={() => setMetric("profit")}
+            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 ${
+              metric === "profit"
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Profit
+          </button>
+        </div>
+      </div>
+
     </div>
+  );
+}
+
+// ── Desktop sidebar tooltip button ───────────────────────────────────────────
+function AnalyticsTooltipItem({ icon, label, active = false, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={onClick}
+          className={`relative p-3 rounded-xl transition-all duration-250 ease-in-out group ${active ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
+        >
+          {icon}
+          {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-md" />}
+          <div className="absolute inset-0 rounded-xl bg-primary/0 group-hover:bg-primary/5 transition-colors duration-250" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right" className="ml-2 font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: '12px' }}>
+        {label}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+// ── Mobile bottom nav button ──────────────────────────────────────────────────
+function AnalyticsMobileNavBtn({ icon, label, active = false, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-lg transition-colors duration-200 ${active ? 'text-primary' : 'text-muted-foreground'}`}
+      aria-label={label}
+    >
+      {icon}
+      <span className="text-[9px] font-medium">{label}</span>
+    </button>
   );
 }
