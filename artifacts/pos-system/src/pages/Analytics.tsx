@@ -1044,7 +1044,7 @@ export default function Analytics() {
           <TopProductsBar
             slots={barSlots}
             metric={metric}
-            excludeIds={barIds}
+            excludeIds={new Set()}
             onSwap={swapSlot}
           />
           {listItems.length > 0 && (
