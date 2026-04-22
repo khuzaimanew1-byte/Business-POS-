@@ -1,0 +1,197 @@
+Refine and update the analytics graph logic to accurately represent real POS transaction activity with improved consistency, clearer rules, and corrected data handling behavior. Keep the existing graph design, layout, styling, and animations unchanged — only improve data processing, point generation, and continuity rules.
+
+---
+
+# 🧠 CORE DATA PRINCIPLE (FINAL + CORRECTED)
+
+The graph must represent **real sales activity only**, with a strict separation between:
+
+* Raw data (all sales events stored permanently)
+* Processed data (used for graph rendering)
+
+👉 Graph should never rely on artificial or fake evenly spaced data.
+
+---
+
+# 📊 DAILY MODE — TIME-BASED (FINAL RULE)
+
+In **Daily mode**, the graph works with high precision time tracking:
+
+* Each sale event is recorded with an exact timestamp:
+
+  * Hours
+  * Minutes (mandatory)
+
+### ✔️ DATA POINT RULE:
+
+* Every sale generates a valid data point at its exact timestamp
+* Multiple sales can exist at the same time or close intervals
+* There is **no artificial limit on number of points**
+
+---
+
+## ⚠️ UPDATED ZERO-ACTIVITY LOGIC (IMPORTANT FIX)
+
+If no sales occur between two time intervals:
+
+* Do NOT leave gaps in the graph
+* Instead, internally generate **implicit zero values**
+
+### BUT IMPORTANT:
+
+* These zero values must be **non-visible (no markers)**
+* They exist only to maintain:
+
+  * Line continuity
+  * Smooth graph rendering
+
+👉 Result:
+
+* Continuous line always
+* No visual gaps
+* No fake visible points
+
+---
+
+# 📆 WEEKLY / MONTHLY / YEARLY MODE (UPDATED RULE)
+
+In all non-daily modes:
+
+* Data must be grouped by **day only**
+* No time (hours/minutes) should be used
+
+---
+
+## ✔️ DAY-LEVEL RULE
+
+Each day becomes one data unit:
+
+* Value = total sales OR total profit of that day
+
+---
+
+## ⚠️ UPDATED MISSING DAY HANDLING
+
+If a day has no sales:
+
+* Do NOT create a visible data point
+* BUT internally treat it as:
+
+  * value = 0
+
+### IMPORTANT VISUAL RULE:
+
+* Graph line must remain continuous
+* No breaks or missing segments
+
+👉 This ensures:
+
+* Clean visual timeline
+* No broken graph structure
+
+---
+
+# 📈 GRAPH CONTINUITY SYSTEM (FINAL FIXED MODEL)
+
+The graph must always behave as a continuous timeline:
+
+* No gaps in line rendering
+* No discontinuous segments
+* No sudden jumps without base values
+
+Even when:
+
+* No activity exists → line stays at 0
+* Activity resumes → line rises naturally
+
+---
+
+# 📍 TOOLTIP BEHAVIOR (UPDATED FINAL RULE)
+
+### X-Axis:
+
+* Tooltip follows cursor or active point horizontally
+
+### Y-Axis:
+
+* Tooltip remains **stable in top-safe zone**
+* Does NOT follow vertical movement freely
+
+---
+
+## ⚠️ SMART COLLISION HANDLING
+
+If tooltip risks going out of bounds:
+
+* Lock it within **top 10% safe area**
+* Adjust position dynamically only when required
+
+---
+
+# 🧪 DEMO DATA GENERATION (EXPANDED & REALISTIC)
+
+Generate realistic and diverse dataset:
+
+* Multiple sales within same hour
+* Random gaps between transactions
+* Peak activity periods
+* Low activity periods
+* Fully inactive days
+
+Ensure:
+
+* Graph correctly handles all edge cases
+* Time-based accuracy is maintained
+
+---
+
+# 🚫 STRICT RULES (NO CHANGE ZONE)
+
+Do NOT modify:
+
+* Graph design
+* Colors
+* Layout structure
+* Animation style
+
+---
+
+# ⚙️ ALLOWED CHANGES ONLY
+
+You may only modify:
+
+* Data generation logic
+* Point placement strategy
+* Continuity handling system
+* Tooltip positioning logic
+
+---
+
+# 📂 FILE INTEGRATION RULE (IMPORTANT)
+
+Before implementing:
+
+* Deeply analyze uploaded graph files (HTML, CSS, JS)
+* Understand:
+
+  * Existing rendering logic
+  * Data structure
+  * Interaction system
+
+Then:
+
+* Extend existing logic (do not rewrite blindly)
+* Apply improvements modularly
+* Preserve current design behavior
+
+---
+
+# 🎯 FINAL GOAL
+
+The analytics graph should behave like a real POS system:
+
+* Fully accurate transaction representation
+* Daily mode = precise time-based activity
+* Other modes = clean daily aggregation
+* No fake or misleading data points
+* Continuous, smooth, and professional visual experience

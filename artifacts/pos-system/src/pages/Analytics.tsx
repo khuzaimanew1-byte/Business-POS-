@@ -29,127 +29,172 @@ function startOfYear(d: Date) {
   return new Date(d.getFullYear(), 0, 1).getTime();
 }
 
-type Bin = { ts: number; label: string; value: number };
+type Bin = { ts: number; value: number; visible: boolean };
+type XTick = { ts: number; label: string };
+type ChartData = {
+  bins: Bin[];
+  rangeStart: number;
+  rangeEnd: number;
+  rangeLabel: string;
+  xTicks: XTick[];
+};
 
-function buildBins(
+/**
+ * Insert invisible zero anchors around inactive periods so the line stays
+ * continuous and drops to 0 between real activity, without ever showing fake
+ * markers. Visible points = real activity only.
+ */
+function withZeroAnchors(
+  realPoints: Bin[],
+  rangeStart: number,
+  rangeEnd: number,
+  anchorOffsetMs: number,
+): Bin[] {
+  if (realPoints.length === 0) {
+    return [
+      { ts: rangeStart, value: 0, visible: false },
+      { ts: rangeEnd, value: 0, visible: false },
+    ];
+  }
+  const out: Bin[] = [{ ts: rangeStart, value: 0, visible: false }];
+  for (let i = 0; i < realPoints.length; i++) {
+    const cur = realPoints[i];
+    const prevTs = i === 0 ? rangeStart : realPoints[i - 1].ts;
+    const nextTs = i === realPoints.length - 1 ? rangeEnd : realPoints[i + 1].ts;
+    if (cur.ts - prevTs > 2 * anchorOffsetMs) {
+      out.push({ ts: cur.ts - anchorOffsetMs, value: 0, visible: false });
+    }
+    out.push(cur);
+    if (nextTs - cur.ts > 2 * anchorOffsetMs) {
+      out.push({ ts: cur.ts + anchorOffsetMs, value: 0, visible: false });
+    }
+  }
+  out.push({ ts: rangeEnd, value: 0, visible: false });
+  // Ensure strict monotonic ts (drop accidental dupes that share a ts)
+  out.sort((a, b) => a.ts - b.ts);
+  return out;
+}
+
+function buildChartData(
   mode: Mode,
   events: SaleEvent[],
   metric: Metric,
   custom: { from: number; to: number } | null,
-): { bins: Bin[]; rangeLabel: string } {
+): ChartData {
   const now = new Date();
   const valueOf = (e: SaleEvent) => (metric === "sales" ? e.totalQty : e.totalProfit);
 
   if (mode === "daily") {
-    // 24 hourly bins for today
-    const start = startOfDay(now);
-    const bins: Bin[] = Array.from({ length: 24 }, (_, h) => ({
-      ts: start + h * 3600000,
-      label: `${h.toString().padStart(2, "0")}:00`,
-      value: 0,
-    }));
+    const rangeStart = startOfDay(now);
+    const rangeEnd = rangeStart + 86400000;
+    // Group sales by minute — multiple sales at the same minute add up
+    const byMinute = new Map<number, number>();
     for (const e of events) {
-      if (e.ts < start || e.ts >= start + 86400000) continue;
-      const h = new Date(e.ts).getHours();
-      bins[h].value += valueOf(e);
+      if (e.ts < rangeStart || e.ts >= rangeEnd) continue;
+      const k = Math.floor(e.ts / 60000) * 60000;
+      byMinute.set(k, (byMinute.get(k) ?? 0) + valueOf(e));
+    }
+    const real: Bin[] = Array.from(byMinute.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([ts, value]) => ({ ts, value, visible: true }));
+    const xTicks: XTick[] = [];
+    for (let h = 0; h <= 24; h += 3) {
+      xTicks.push({
+        ts: rangeStart + h * 3600000,
+        label: h === 24 ? "24:00" : `${String(h).padStart(2, "0")}:00`,
+      });
     }
     return {
-      bins,
+      bins: withZeroAnchors(real, rangeStart, rangeEnd, 2 * 60000), // 2-minute anchor offset
+      rangeStart,
+      rangeEnd,
       rangeLabel: now.toLocaleDateString(undefined, {
         weekday: "long",
         month: "short",
         day: "numeric",
       }),
+      xTicks,
     };
   }
+
+  // ── Day-aggregated modes ────────────────────────────────────────────────
+  let rangeStart: number;
+  let rangeEnd: number;
+  let rangeLabel: string;
+  let xTicks: XTick[] = [];
 
   if (mode === "weekly") {
-    const start = startOfDay(now) - 6 * 86400000;
-    const bins: Bin[] = Array.from({ length: 7 }, (_, d) => {
-      const ts = start + d * 86400000;
-      return {
+    rangeStart = startOfDay(now) - 6 * 86400000;
+    rangeEnd = startOfDay(now) + 86400000;
+    rangeLabel = "Last 7 days";
+    for (let d = 0; d < 7; d++) {
+      const ts = rangeStart + d * 86400000 + 43200000; // noon
+      xTicks.push({
         ts,
         label: new Date(ts).toLocaleDateString(undefined, { weekday: "short" }),
-        value: 0,
-      };
-    });
-    for (const e of events) {
-      if (e.ts < start || e.ts >= start + 7 * 86400000) continue;
-      const idx = Math.floor((startOfDay(new Date(e.ts)) - start) / 86400000);
-      if (idx >= 0 && idx < 7) bins[idx].value += valueOf(e);
+      });
     }
-    return { bins, rangeLabel: "Last 7 days" };
-  }
-
-  if (mode === "monthly") {
-    const start = startOfMonth(now);
+  } else if (mode === "monthly") {
+    rangeStart = startOfMonth(now);
     const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const bins: Bin[] = Array.from({ length: days }, (_, d) => {
-      const ts = new Date(now.getFullYear(), now.getMonth(), d + 1).getTime();
-      return { ts, label: String(d + 1), value: 0 };
-    });
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
-    for (const e of events) {
-      if (e.ts < start || e.ts >= end) continue;
-      const idx = new Date(e.ts).getDate() - 1;
-      if (idx >= 0 && idx < days) bins[idx].value += valueOf(e);
+    rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
+    rangeLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    const stride = days <= 14 ? 2 : days <= 21 ? 3 : 4;
+    for (let d = 1; d <= days; d += stride) {
+      const ts = new Date(now.getFullYear(), now.getMonth(), d, 12, 0, 0).getTime();
+      xTicks.push({ ts, label: String(d) });
     }
-    return {
-      bins,
-      rangeLabel: now.toLocaleDateString(undefined, { month: "long", year: "numeric" }),
-    };
-  }
-
-  if (mode === "yearly") {
-    // Daily bins for the entire current year
+  } else if (mode === "yearly") {
     const yr = now.getFullYear();
-    const start = startOfYear(now);
-    const end = new Date(yr + 1, 0, 1).getTime();
-    const totalDays = Math.round((end - start) / 86400000);
-    const bins: Bin[] = Array.from({ length: totalDays }, (_, d) => {
-      const ts = start + d * 86400000;
-      const dt = new Date(ts);
-      return {
+    rangeStart = startOfYear(now);
+    rangeEnd = new Date(yr + 1, 0, 1).getTime();
+    rangeLabel = String(yr);
+    for (let m = 0; m < 12; m++) {
+      const ts = new Date(yr, m, 15, 0, 0, 0).getTime(); // mid-month for visual centering
+      xTicks.push({
         ts,
-        label: dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-        value: 0,
-      };
-    });
-    for (const e of events) {
-      if (e.ts < start || e.ts >= end) continue;
-      const idx = Math.floor((startOfDay(new Date(e.ts)) - start) / 86400000);
-      if (idx >= 0 && idx < totalDays) bins[idx].value += valueOf(e);
+        label: new Date(yr, m, 1).toLocaleDateString(undefined, { month: "short" }),
+      });
     }
-    return { bins, rangeLabel: String(yr) };
+  } else {
+    // custom
+    const range = custom ?? {
+      from: startOfDay(now) - 6 * 86400000,
+      to: startOfDay(now) + 86400000,
+    };
+    rangeStart = range.from;
+    rangeEnd = range.to;
+    rangeLabel = `${new Date(rangeStart).toLocaleDateString()} – ${new Date(rangeEnd).toLocaleDateString()}`;
+    const span = rangeEnd - rangeStart;
+    const tickCount = 6;
+    for (let i = 0; i <= tickCount; i++) {
+      const ts = rangeStart + (span * i) / tickCount;
+      xTicks.push({
+        ts,
+        label:
+          span <= 2 * 86400000
+            ? new Date(ts).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+            : new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
+      });
+    }
   }
 
-  // Custom
-  const range = custom ?? { from: startOfDay(now) - 6 * 86400000, to: startOfDay(now) + 86400000 };
-  const span = Math.max(1, range.to - range.from);
-  const days = Math.max(1, Math.round(span / 86400000));
-  const useHours = days <= 2;
-  const stepMs = useHours ? 3600000 : 86400000;
-  const count = Math.max(2, Math.min(120, Math.ceil(span / stepMs)));
-  const actualStep = span / count;
-  const bins: Bin[] = Array.from({ length: count }, (_, i) => {
-    const ts = range.from + i * actualStep;
-    return {
-      ts,
-      label: useHours
-        ? new Date(ts).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-        : new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-      value: 0,
-    };
-  });
+  // Aggregate sales by day for non-daily modes
+  const byDay = new Map<number, number>();
   for (const e of events) {
-    if (e.ts < range.from || e.ts > range.to) continue;
-    const idx = Math.min(count - 1, Math.floor((e.ts - range.from) / actualStep));
-    bins[idx].value += valueOf(e);
+    if (e.ts < rangeStart || e.ts >= rangeEnd) continue;
+    const dayStart = startOfDay(new Date(e.ts));
+    byDay.set(dayStart, (byDay.get(dayStart) ?? 0) + valueOf(e));
   }
-  return {
-    bins,
-    rangeLabel: `${new Date(range.from).toLocaleDateString()} – ${new Date(range.to).toLocaleDateString()}`,
-  };
+  const real: Bin[] = Array.from(byDay.entries())
+    .sort((a, b) => a[0] - b[0])
+    // place point at noon of that day for visual centering
+    .map(([dayStart, value]) => ({ ts: dayStart + 43200000, value, visible: true }));
+
+  // Anchor offset: ~12 hours so the line drops fully back to 0 between active days
+  const bins = withZeroAnchors(real, rangeStart, rangeEnd, 12 * 3600000);
+
+  return { bins, rangeStart, rangeEnd, rangeLabel, xTicks };
 }
 
 // ── Y axis helpers (from reference) ───────────────────────────────────────
@@ -173,19 +218,6 @@ function computeYTicks(minVal: number, maxVal: number, maxTicks = 5): number[] {
   }
   if (ticks.length === 0) ticks.push(minVal, maxVal);
   return ticks;
-}
-
-function pickXTicks<T>(arr: T[], maxLabels: number): { i: number; item: T }[] {
-  const n = arr.length;
-  if (n === 0) return [];
-  if (n <= maxLabels) return arr.map((item, i) => ({ i, item }));
-  const out: { i: number; item: T }[] = [];
-  const step = (n - 1) / (maxLabels - 1);
-  for (let k = 0; k < maxLabels; k++) {
-    const i = Math.min(n - 1, Math.round(k * step));
-    out.push({ i, item: arr[i] });
-  }
-  return out;
 }
 
 function smoothPath(pts: { x: number; y: number }[]): string {
@@ -251,16 +283,17 @@ function fmtYTick(v: number, metric: Metric) {
 //  CHART
 // ──────────────────────────────────────────────────────────────────────────
 function Chart({
-  bins,
+  data,
   metric,
   loadingKey,
   mode,
 }: {
-  bins: Bin[];
+  data: ChartData;
   metric: Metric;
   loadingKey: string;
   mode: Mode;
 }) {
+  const { bins, rangeStart, rangeEnd, xTicks } = data;
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 360 });
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
@@ -302,36 +335,46 @@ function Chart({
   const plotH = Math.max(10, size.h - margin.top - margin.bottom);
   const baseY = margin.top + plotH;
 
-  const n = bins.length;
-  const xAt = (i: number) => margin.left + (plotW * i) / Math.max(1, n - 1);
+  // Time-based X positioning (preserves smooth continuity across irregular points)
+  const span = Math.max(1, rangeEnd - rangeStart);
+  const xAt = (ts: number) =>
+    margin.left + (plotW * (ts - rangeStart)) / span;
   const yAt = (v: number) =>
     margin.top + plotH * (1 - (v - yMin) / Math.max(1e-6, yMax - yMin));
 
-  const pts = bins.map((b, i) => ({ x: xAt(i), y: yAt(b.value) }));
+  const pts = bins.map((b) => ({ x: xAt(b.ts), y: yAt(b.value) }));
   const lineD = smoothPath(pts);
   const areaD =
     pts.length > 0
-      ? `${lineD} L ${pts[n - 1].x} ${baseY} L ${pts[0].x} ${baseY} Z`
+      ? `${lineD} L ${pts[pts.length - 1].x} ${baseY} L ${pts[0].x} ${baseY} Z`
       : "";
 
-  const xTicks = pickXTicks(bins, Math.min(12, Math.max(5, Math.floor(plotW / 80))));
-
+  // Hover snaps to nearest *visible* (real activity) bin only
   const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
-    if (n === 0) return;
+    if (bins.length === 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const rel = (x / rect.width) * plotW;
-    let idx = Math.round((rel / plotW) * (n - 1));
-    idx = Math.max(0, Math.min(n - 1, idx));
-    setHoverIdx(idx);
+    const rel = x / rect.width;
+    const ts = rangeStart + rel * span;
+    let bestIdx = -1;
+    let bestDist = Infinity;
+    for (let i = 0; i < bins.length; i++) {
+      if (!bins[i].visible) continue;
+      const d = Math.abs(bins[i].ts - ts);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    }
+    setHoverIdx(bestIdx >= 0 ? bestIdx : null);
   };
   const handleLeave = () => setHoverIdx(null);
 
   // Tooltip — fixed at top of chart, only moves horizontally
   const TT_W_EST = metric === "profit" ? 180 : 200;
   const hover = hoverIdx !== null ? bins[hoverIdx] : null;
-  const hoverPx = hoverIdx !== null ? xAt(hoverIdx) : 0;
-  const hoverPy = hoverIdx !== null ? yAt(hover!.value) : 0;
+  const hoverPx = hover ? xAt(hover.ts) : 0;
+  const hoverPy = hover ? yAt(hover.value) : 0;
 
   let ttLeft = 0;
   const ttTop = 8; // locked near the top of the chart
@@ -412,16 +455,16 @@ function Chart({
         })}
 
         {/* X labels */}
-        {xTicks.map(({ i, item }) => (
+        {xTicks.map((t, i) => (
           <text
             key={i}
-            x={xAt(i)}
+            x={xAt(t.ts)}
             y={baseY + 18}
             fontSize="11"
             fill="hsl(240 5% 60%)"
             textAnchor="middle"
           >
-            {item.label}
+            {t.label}
           </text>
         ))}
 
@@ -530,12 +573,17 @@ export default function Analytics() {
     return () => clearTimeout(t);
   }, [mode, metric, custom?.from, custom?.to]);
 
-  const { bins, rangeLabel } = useMemo(
-    () => buildBins(mode, events, metric, custom),
+  const data = useMemo(
+    () => buildChartData(mode, events, metric, custom),
     [mode, events, metric, custom],
   );
+  const { bins, rangeLabel } = data;
 
-  const totalValue = useMemo(() => bins.reduce((s, b) => s + b.value, 0), [bins]);
+  const visibleBins = useMemo(() => bins.filter((b) => b.visible), [bins]);
+  const totalValue = useMemo(
+    () => visibleBins.reduce((s, b) => s + b.value, 0),
+    [visibleBins],
+  );
 
   const applyCustom = () => {
     const f = new Date(fromStr).getTime();
@@ -644,7 +692,7 @@ export default function Analytics() {
               </p>
             </div>
             <div className="text-[11px] text-muted-foreground hidden sm:block">
-              {bins.length} data point{bins.length === 1 ? "" : "s"}
+              {visibleBins.length} data point{visibleBins.length === 1 ? "" : "s"}
             </div>
           </div>
 
@@ -656,7 +704,7 @@ export default function Analytics() {
               </div>
             )}
             <Chart
-              bins={bins}
+              data={data}
               metric={metric}
               mode={mode}
               loadingKey={`${mode}-${metric}-${custom?.from ?? 0}-${custom?.to ?? 0}`}
