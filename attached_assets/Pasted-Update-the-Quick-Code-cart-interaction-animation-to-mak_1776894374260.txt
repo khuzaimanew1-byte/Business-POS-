@@ -1,0 +1,109 @@
+Update the **Quick Code cart interaction animation** to make it more subtle, professional, and micro-based. Remove all flash-like or aggressive visual effects and replace them with soft, controlled feedback.
+
+---
+
+# 🛒 QUICK CODE — CART ADD ANIMATION (FINAL REFINEMENT)
+
+## 🎯 CORE GOAL:
+
+Make cart feedback feel **instant, calm, and premium**, without any flash or distraction.
+
+---
+
+# ⚡ ANIMATION STYLE RULE (IMPORTANT)
+
+### ❌ REMOVE:
+
+* Flash effects
+* Bright blinking
+* Harsh color bursts
+* Over-saturated highlights
+* Strong scale bounce
+
+### ✅ KEEP:
+
+* Micro interaction only
+* Smooth transitions
+* Subtle feedback
+* Performance-friendly motion
+
+---
+
+# 🔵 VISUAL FEEDBACK SYSTEM (NEW)
+
+## 💡 BLUE HIGHLIGHT BEHAVIOR
+
+When product is added to cart:
+
+### Step 1 — Instant state change
+
+* Quick Code receives a **soft blue highlight**
+* Color is muted, not bright neon
+* No flashing effect
+
+---
+
+### Step 2 — Micro pulse (NOT FLASH)
+
+* Very light **opacity pulse (1 cycle only)**
+* Duration: **150ms – 200ms max**
+* No repeated animation loop
+
+---
+
+### Step 3 — Return to normal state
+
+* Smooth fade back to default text color
+* No abrupt transition
+
+---
+
+# 🎨 STYLE CHARACTERISTICS
+
+* Blue highlight should be:
+
+  * soft
+  * low intensity
+  * professional UI tone
+* No glow bursts
+* No blinking
+* No attention-grabbing animation
+
+---
+
+# 🧠 INTERACTION FEEL
+
+User perception should be:
+
+✔ “Item added”
+NOT
+❌ “something flashed on screen”
+
+---
+
+# ⚡ PERFORMANCE RULE
+
+* Animation must be GPU-light
+* No layout shift
+* No reflow impact
+* Must feel instant even on low-end devices
+
+---
+
+# 🔄 FINAL FLOW
+
+1. Product added to cart
+2. Quick code turns soft blue
+3. Micro pulse plays once
+4. Smooth return to normal state
+
+---
+
+# 🎯 FINAL RESULT
+
+This update ensures:
+
+* Clean POS experience
+* No visual distraction during fast usage
+* Premium, enterprise-level micro interaction design
+* Stable UI feedback without flash effects

@@ -1283,23 +1283,22 @@ export default function POS() {
             0 0 1px rgba(0, 0, 0, 0.6);
           font-feature-settings: "tnum" 1, "ss01" 1;
         }
-        /* Active micro-pulse when product is added to cart */
+        /* Soft blue micro-feedback when product is added to cart */
         @keyframes quick-code-active-anim {
-          0%   { transform: scale(1); }
-          50%  { transform: scale(1.06); }
-          100% { transform: scale(1); }
+          0%   { opacity: 0.85; }
+          50%  { opacity: 1; }
+          100% { opacity: 0.95; }
         }
         .quick-code-active {
-          background: rgba(212, 175, 90, 0.92);
-          border-color: rgba(232, 205, 130, 0.6);
+          background: rgba(59, 110, 165, 0.78);
+          border-color: rgba(120, 165, 210, 0.45);
           box-shadow:
-            0 0 0 1px rgba(212, 175, 90, 0.35),
-            0 0 10px rgba(212, 175, 90, 0.45),
-            0 1px 0 rgba(255, 255, 255, 0.18) inset;
-          animation: quick-code-active-anim 200ms cubic-bezier(0.34, 1.2, 0.64, 1);
+            0 0 0 1px rgba(80, 130, 185, 0.28) inset,
+            0 1px 0 rgba(255, 255, 255, 0.12) inset;
+          animation: quick-code-active-anim 180ms ease-out;
         }
         .quick-code-active .quick-code-text {
-          text-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
         }
 
         /* ── Top search match: subtle golden highlight (premium, no harsh glow) ── */
