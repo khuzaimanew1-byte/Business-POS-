@@ -662,10 +662,6 @@ export default function Analytics() {
               loadingKey={`${mode}-${metric}-${custom?.from ?? 0}-${custom?.to ?? 0}`}
             />
           </div>
-
-          <p className="mt-3 text-[11px] text-muted-foreground">
-            Hover the chart to see the exact value at that point in time.
-          </p>
         </main>
 
         {/* Right Sales/Profit toggle (desktop) */}
