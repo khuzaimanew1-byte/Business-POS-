@@ -1,8 +1,9 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { 
   Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
-  ShoppingCart, Trash2, Minus, Check, Camera
+  ShoppingCart, Trash2, Minus, Check, Camera, MousePointer,
+  FolderInput, FolderPlus, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +13,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  ContextMenu, ContextMenuTrigger, ContextMenuContent, ContextMenuItem,
+  ContextMenuSub, ContextMenuSubTrigger, ContextMenuSubContent, ContextMenuSeparator
+} from "@/components/ui/context-menu";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem
+} from "@/components/ui/dropdown-menu";
 
 // Types
 type Category = string;
@@ -77,19 +85,67 @@ export default function POS() {
   type DeleteConfirm = { open: boolean; message: string; onConfirm: () => void };
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm>({ open: false, message: '', onConfirm: () => {} });
 
+  // ── Selection mode state ────────────────────────────────────────────────
+  const [isSelectMode, setIsSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [importMenuOpen, setImportMenuOpen] = useState(false);
+
+  // ── Search/keyboard refs ───────────────────────────────────────────────
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  // Long-press tracking (mobile)
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFired = useRef(false);
+
   // Debounce search
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 150);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const filteredProducts = useMemo(() => products.filter(p => {
-    const matchesCat = selectedCategory === "All" || p.category === selectedCategory;
-    const matchesSearch =
-      p.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-      p.code.toLowerCase().includes(debouncedSearch.toLowerCase());
-    return matchesCat && matchesSearch;
-  }), [products, selectedCategory, debouncedSearch]);
+  // Quick code = up to 3-char initials from product name (e.g. "Apple Juice" -> "AJ")
+  const quickCode = useCallback((name: string) => {
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return parts.map(p => p[0]).join('').toUpperCase().substring(0, 3);
+  }, []);
+
+  // Score a product against query for ranking. Lower = better.
+  const scoreMatch = (p: Product, q: string): number => {
+    if (!q) return 0;
+    const ql = q.toLowerCase();
+    const name = p.name.toLowerCase();
+    const code = p.code.toLowerCase();
+    const qc = quickCode(p.name).toLowerCase();
+    if (qc === ql) return 0;
+    if (name === ql) return 1;
+    if (name.startsWith(ql)) return 2;
+    if (qc.startsWith(ql)) return 3;
+    if (code.startsWith('#' + ql) || code.startsWith(ql)) return 4;
+    if (name.includes(ql)) return 5 + name.indexOf(ql) / 100;
+    if (code.includes(ql)) return 7;
+    return 99;
+  };
+
+  const filteredProducts = useMemo(() => {
+    const q = debouncedSearch.toLowerCase();
+    const list = products.filter(p => {
+      const matchesCat = selectedCategory === "All" || p.category === selectedCategory;
+      if (!matchesCat) return false;
+      if (!q) return true;
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.code.toLowerCase().includes(q) ||
+        quickCode(p.name).toLowerCase().includes(q)
+      );
+    });
+    if (q) {
+      list.sort((a, b) => scoreMatch(a, q) - scoreMatch(b, q));
+    }
+    return list;
+  }, [products, selectedCategory, debouncedSearch, quickCode]);
+
+  const topMatchId = debouncedSearch ? filteredProducts[0]?.id : null;
 
   const cartTotal = useMemo(() => cartItems.reduce((s, i) => s + i.product.price * i.quantity, 0), [cartItems]);
   const cartCount = useMemo(() => cartItems.reduce((s, i) => s + i.quantity, 0), [cartItems]);
@@ -236,6 +292,134 @@ export default function POS() {
   const renderInitials = (name: string) =>
     name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
 
+  // ── Selection / category move helpers ──────────────────────────────────
+  const enterSelectMode = (initialId?: string) => {
+    setIsSelectMode(true);
+    setSelectedIds(initialId ? new Set([initialId]) : new Set());
+  };
+
+  const exitSelectMode = () => {
+    setIsSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const moveProductToCategory = (productId: string, cat: Category) => {
+    if (cat === 'All') return;
+    setProducts(prev => prev.map(p => p.id === productId ? { ...p, category: cat } : p));
+    toast.success(`Moved to "${cat}"`);
+  };
+
+  const importProductsToCategory = (ids: string[], cat: Category) => {
+    if (cat === 'All' || ids.length === 0) return;
+    setProducts(prev => prev.map(p => ids.includes(p.id) ? { ...p, category: cat } : p));
+    toast.success(`${ids.length} item${ids.length > 1 ? 's' : ''} imported to "${cat}"`);
+    exitSelectMode();
+  };
+
+  // Best match for current search (for Enter shortcut)
+  const addTopMatchToCart = () => {
+    if (!topMatchId) return;
+    const p = products.find(x => x.id === topMatchId);
+    if (p) addToCart(p);
+  };
+
+  // ── Long-press helpers (mobile context menu trigger) ───────────────────
+  const startLongPress = (e: React.TouchEvent, onFire: () => void) => {
+    if (isEditMode) return;
+    longPressFired.current = false;
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      onFire();
+    }, 480);
+  };
+  const cancelLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  // ── KEYBOARD SHORTCUTS ─────────────────────────────────────────────────
+  // C+digit hold then ArrowUp/Down to adjust quantity of cart item by index (1-based)
+  const cKeyDown = useRef(false);
+  const heldDigit = useRef<number | null>(null);
+
+  useEffect(() => {
+    const isTypingTarget = (t: EventTarget | null) => {
+      const el = t as HTMLElement | null;
+      if (!el) return false;
+      const tag = el.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      // Ctrl + ` (backtick) → focus search (allow even when typing elsewhere)
+      if (e.ctrlKey && e.key === '`') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+
+      // Track C key & digit holds for cart qty adjust (do NOT block typing fields)
+      if (!isTypingTarget(e.target)) {
+        if (e.key === 'c' || e.key === 'C') {
+          if (!e.shiftKey) cKeyDown.current = true;
+        }
+        if (cKeyDown.current && /^[0-9]$/.test(e.key)) {
+          heldDigit.current = parseInt(e.key, 10);
+        }
+        if (cKeyDown.current && heldDigit.current !== null && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+          e.preventDefault();
+          const idx = heldDigit.current - 1;
+          const item = cartItems[idx];
+          if (item) {
+            const delta = e.key === 'ArrowUp' ? 1 : -1;
+            updateCartQty(item.product.id, item.quantity + delta);
+          }
+          return;
+        }
+      }
+
+      // Shift + C → open cart
+      if (e.shiftKey && (e.key === 'C' || e.key === 'c') && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        setIsCartOpen(o => !o);
+        return;
+      }
+      // Shift + E → enter edit mode
+      if (e.shiftKey && (e.key === 'E' || e.key === 'e') && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        if (!isEditMode) enterEditMode();
+        return;
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'c' || e.key === 'C') {
+        cKeyDown.current = false;
+        heldDigit.current = null;
+      }
+      if (/^[0-9]$/.test(e.key)) {
+        heldDigit.current = null;
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, [cartItems, isEditMode]);
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground dark">
@@ -267,10 +451,17 @@ export default function POS() {
           <div className="relative flex-1 max-w-xl group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-[14px] h-[14px]" />
             <input
+              ref={searchInputRef}
               type="text"
-              placeholder="Search products or #code…"
+              placeholder="Search products, quick-code or #code…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && topMatchId) {
+                  e.preventDefault();
+                  addTopMatchToCart();
+                }
+              }}
               className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-9 pr-9 outline-none transition-all duration-250 placeholder:text-muted-foreground text-[14px] sm:text-[16px]"
               data-testid="input-search"
             />
@@ -283,13 +474,56 @@ export default function POS() {
 
           {/* Right controls */}
           <div className="flex items-center gap-1.5 ml-3">
+            {/* Selection mode toolbar — overrides other controls when active */}
+            {isSelectMode && (
+              <div className="flex items-center gap-1.5 sm:gap-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                <button
+                  onClick={exitSelectMode}
+                  className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors duration-200"
+                  aria-label="Exit selection"
+                  data-testid="btn-exit-select"
+                >
+                  <X size={16} />
+                </button>
+                <span className="text-xs sm:text-sm font-semibold text-foreground whitespace-nowrap">
+                  <span className="text-primary tabular-nums">{selectedIds.size}</span>
+                  <span className="text-muted-foreground"> selected</span>
+                </span>
+                <DropdownMenu open={importMenuOpen} onOpenChange={setImportMenuOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      disabled={selectedIds.size === 0}
+                      className="ml-1 px-3 py-1.5 rounded-full bg-primary text-primary-foreground text-xs sm:text-sm font-medium hover:brightness-110 active:scale-[0.97] transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+                      data-testid="btn-selection-import"
+                    >
+                      <FolderInput size={14} />
+                      Import
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    {categories.filter(c => c !== 'All').map(c => (
+                      <DropdownMenuItem
+                        key={c}
+                        onSelect={() => importProductsToCategory(Array.from(selectedIds), c)}
+                      >
+                        {c}
+                      </DropdownMenuItem>
+                    ))}
+                    {categories.length <= 1 && (
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground">No categories</div>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+
             {/* Editing indicator — desktop only, hidden on mobile to keep top bar clean */}
-            <div className={`hidden sm:block overflow-hidden transition-all duration-300 ease-in-out ${isEditMode ? 'max-w-[90px] opacity-100 mr-1' : 'max-w-0 opacity-0'}`}>
+            <div className={`hidden sm:block overflow-hidden transition-all duration-300 ease-in-out ${isEditMode && !isSelectMode ? 'max-w-[90px] opacity-100 mr-1' : 'max-w-0 opacity-0'}`}>
               <span className="text-primary font-semibold tracking-widest uppercase whitespace-nowrap" style={{ fontSize: '10px' }}>● Editing</span>
             </div>
 
             {/* Normal mode controls */}
-            <div className={`flex items-center gap-1 transition-all duration-300 ease-in-out ${isEditMode ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}>
+            <div className={`flex items-center gap-1 transition-all duration-300 ease-in-out ${isEditMode || isSelectMode ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}>
               {/* Pencil — always visible */}
               <TooltipProvider delayDuration={100}>
                 <TooltipItem
@@ -426,16 +660,32 @@ export default function POS() {
           >
             {filteredProducts.map(product => {
               const currentImage = isEditMode ? (editDrafts[product.id]?.image ?? product.image) : product.image;
-              return (
-                <div
-                  key={product.id}
-                  className={`group relative bg-card rounded-xl overflow-hidden transition-all duration-250 ease-in-out flex flex-col ${
-                    isEditMode
-                      ? 'border border-primary/20 cursor-default'
-                      : 'border border-card-border hover:-translate-y-0.5 hover:shadow-md cursor-pointer'
-                  }`}
-                  data-testid={`card-product-${product.id}`}
-                >
+              const qc = quickCode(product.name);
+              const isTopMatch = product.id === topMatchId;
+              const isSelected = selectedIds.has(product.id);
+              const cardCommonProps = {
+                'data-testid': `card-product-${product.id}`,
+                className: `group relative bg-card rounded-xl overflow-hidden transition-all duration-250 ease-in-out flex flex-col ${
+                  isEditMode
+                    ? 'border border-primary/20 cursor-default'
+                    : isSelectMode
+                      ? `border-2 ${isSelected ? 'border-primary shadow-[0_0_0_3px_rgba(99,102,241,0.18)]' : 'border-card-border hover:border-primary/40'} cursor-pointer`
+                      : `border ${isTopMatch ? 'border-primary/70 shadow-[0_0_0_2px_rgba(99,102,241,0.18)] top-match-pulse' : 'border-card-border'} hover:-translate-y-0.5 hover:shadow-md cursor-pointer`
+                }`,
+                onClick: () => {
+                  if (isEditMode) return;
+                  if (isSelectMode) { toggleSelected(product.id); return; }
+                  if (longPressFired.current) { longPressFired.current = false; return; }
+                  addToCart(product);
+                },
+                onTouchStart: (e: React.TouchEvent) => startLongPress(e, () => enterSelectMode(product.id)),
+                onTouchMove: cancelLongPress,
+                onTouchEnd: cancelLongPress,
+                onTouchCancel: cancelLongPress,
+              };
+
+              const cardBody = (
+                <div {...cardCommonProps}>
                   {/* Image area */}
                   <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1/1' }}>
                     {currentImage ? (
@@ -467,25 +717,48 @@ export default function POS() {
                       </button>
                     )}
 
-                    {/* Code badge */}
+                    {/* Quick code badge — initials of product name (e.g. Apple Juice → AJ) */}
                     <div
-                      className="absolute top-1.5 left-1.5 flex items-center font-mono font-semibold leading-none text-white rounded-md"
-                      style={{ background: 'rgba(0,0,0,0.78)', backdropFilter: 'blur(6px)', padding: '2px 5px' }}
+                      className="quick-code-badge absolute top-1.5 left-1.5 flex items-center justify-center rounded-md select-none"
+                      title={`Quick code: ${qc} · ${product.code}`}
                     >
-                      <span className="text-[11px] sm:text-[13px] leading-none">#</span>
-                      {isEditMode ? (
+                      <span className="quick-code-text font-bold tracking-[0.08em] text-white text-[12px] sm:text-[14px] leading-none">
+                        {qc}
+                      </span>
+                    </div>
+
+                    {/* Numeric code (small, edit mode only — keeps editing flow intact) */}
+                    {isEditMode && (
+                      <div
+                        className="absolute top-1.5 right-9 flex items-center font-mono leading-none text-white rounded-md"
+                        style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', padding: '2px 5px' }}
+                      >
+                        <span className="text-[10px] leading-none">#</span>
                         <input
                           type="text"
                           value={(editDrafts[product.id]?.code ?? product.code).replace(/^#/, '')}
                           onChange={e => updateDraft(product.id, 'code', '#' + e.target.value)}
                           onClick={e => e.stopPropagation()}
-                          className="bg-transparent focus:outline-none text-white font-mono font-semibold text-[11px] leading-none"
-                          style={{ width: '2.8rem' }}
+                          className="bg-transparent focus:outline-none text-white font-mono text-[10px] leading-none"
+                          style={{ width: '2.4rem' }}
                         />
-                      ) : (
-                        <span className="text-[11px] sm:text-[13px] leading-none">{product.code.replace(/^#/, '')}</span>
-                      )}
-                    </div>
+                      </div>
+                    )}
+
+                    {/* Selection checkbox — selection mode */}
+                    {isSelectMode && !isEditMode && (
+                      <div
+                        className={`absolute top-1.5 right-1.5 flex items-center justify-center rounded-full transition-all duration-200 ${
+                          isSelected
+                            ? 'bg-primary text-primary-foreground shadow-md'
+                            : 'bg-black/55 text-white/85 backdrop-blur-sm border border-white/30'
+                        }`}
+                        style={{ width: 22, height: 22 }}
+                        aria-label={isSelected ? 'Selected' : 'Not selected'}
+                      >
+                        {isSelected && <Check style={{ width: 13, height: 13 }} strokeWidth={3} />}
+                      </div>
+                    )}
 
                     {/* Delete button — edit mode */}
                     {isEditMode && (
@@ -585,6 +858,57 @@ export default function POS() {
                     </div>
                   )}
                 </div>
+              );
+
+              if (isEditMode) {
+                return <React.Fragment key={product.id}>{cardBody}</React.Fragment>;
+              }
+
+              return (
+                <ContextMenu key={product.id}>
+                  <ContextMenuTrigger asChild>
+                    {cardBody}
+                  </ContextMenuTrigger>
+                  <ContextMenuContent className="w-44">
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger>
+                        <FolderInput className="mr-2 h-3.5 w-3.5" /> Move To
+                      </ContextMenuSubTrigger>
+                      <ContextMenuSubContent className="w-40">
+                        {categories.filter(c => c !== 'All' && c !== product.category).map(c => (
+                          <ContextMenuItem key={c} onSelect={() => moveProductToCategory(product.id, c)}>
+                            {c}
+                          </ContextMenuItem>
+                        ))}
+                        {categories.filter(c => c !== 'All' && c !== product.category).length === 0 && (
+                          <div className="px-2 py-1.5 text-xs text-muted-foreground">No other categories</div>
+                        )}
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                    <ContextMenuItem onSelect={() => enterSelectMode(product.id)}>
+                      <MousePointer className="mr-2 h-3.5 w-3.5" /> Select
+                    </ContextMenuItem>
+                    <ContextMenuSub>
+                      <ContextMenuSubTrigger>
+                        <FolderPlus className="mr-2 h-3.5 w-3.5" /> Import
+                      </ContextMenuSubTrigger>
+                      <ContextMenuSubContent className="w-40">
+                        {categories.filter(c => c !== 'All').map(c => (
+                          <ContextMenuItem key={c} onSelect={() => importProductsToCategory([product.id], c)}>
+                            {c}
+                          </ContextMenuItem>
+                        ))}
+                      </ContextMenuSubContent>
+                    </ContextMenuSub>
+                    <ContextMenuSeparator />
+                    <ContextMenuItem
+                      className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                      onSelect={() => confirmAction(`Delete "${product.name}"? This cannot be undone.`, () => deleteProduct(product.id))}
+                    >
+                      <Trash2 className="mr-2 h-3.5 w-3.5" /> Delete
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               );
             })}
 
@@ -963,6 +1287,32 @@ export default function POS() {
         }
         [data-radix-dialog-overlay] { animation: backdrop-in 200ms ease both !important; }
         [data-radix-dialog-content] { animation: modal-in 220ms cubic-bezier(0.34,1.1,0.64,1) both !important; }
+
+        /* ── Quick code badge: high contrast over images ── */
+        .quick-code-badge {
+          padding: 3px 7px;
+          background: linear-gradient(180deg, rgba(0,0,0,0.78), rgba(0,0,0,0.62));
+          border: 1px solid rgba(255,255,255,0.12);
+          box-shadow:
+            0 1px 0 rgba(255,255,255,0.06) inset,
+            0 1px 4px rgba(0,0,0,0.45);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+        }
+        .quick-code-text {
+          text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+          font-feature-settings: "tnum" 1, "ss01" 1;
+          letter-spacing: 0.08em;
+        }
+
+        /* ── Top search match: subtle pulsing ring ── */
+        @keyframes top-match-pulse-anim {
+          0%, 100% { box-shadow: 0 0 0 2px rgba(99,102,241,0.18); }
+          50%      { box-shadow: 0 0 0 3px rgba(99,102,241,0.32); }
+        }
+        .top-match-pulse {
+          animation: top-match-pulse-anim 1.6s ease-in-out infinite;
+        }
 
         /* ── Cart flash ── */
         @keyframes cart-flash-anim {

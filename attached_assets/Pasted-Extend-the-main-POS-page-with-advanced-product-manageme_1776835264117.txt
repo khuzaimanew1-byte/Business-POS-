@@ -1,0 +1,158 @@
+Extend the main POS page with advanced product management interactions, improved product categorization flow, better quick-code visibility, and full keyboard shortcut support. Keep the existing UI structure intact and enhance functionality in a natural, non-intrusive way. All interactions should feel smooth, modern, and consistent with a professional POS system.
+
+---
+
+# 🧠 1. PRODUCT CATEGORY MANAGEMENT (DESKTOP / LAPTOP)
+
+## 📦 RIGHT CLICK PRODUCT ACTIONS
+
+On desktop and laptop screens:
+
+When user **right-clicks on a product card**, show a contextual menu with:
+
+### Options:
+
+* **Move To**
+
+  * On hover → show list of all categories
+  * Selecting a category → instantly move/import product into that category
+
+* **Select**
+
+  * Activates selection mode
+  * Product cards show checkboxes
+  * Multiple products can be selected
+
+* **Import**
+
+  * Opens dropdown list of categories
+  * Selecting category → imports selected products into that category
+
+* **Delete**
+
+  * Removes product (with confirmation popup before action)
+
+---
+
+## 🧩 SELECTION ENVIRONMENT
+
+When “Select” mode is active:
+
+* Top bar changes dynamically:
+
+  * Show **selected items count**
+  * Show **cross icon to exit selection mode**
+  * Show **Import action button**
+
+### Import behavior:
+
+* Clicking import opens category dropdown
+* Selected products are added to chosen category
+
+---
+
+# 📱 MOBILE BEHAVIOR
+
+* Replace right-click with **long press (hold gesture)**
+* Long press on product opens same contextual menu system
+* Selection mode behaves same as desktop
+
+---
+
+# ⚡ QUICK CODE SYSTEM IMPROVEMENT
+
+## 🧾 QUICK CODE LOGIC CHANGE
+
+* Quick code should use:
+
+  * Product initials (e.g., “Apple Juice” → AJ)
+
+### Improvements:
+
+* Make quick code **clearly readable**
+* Fix issue where letters appear merged or unclear
+
+---
+
+## 🎨 QUICK CODE VISIBILITY FIX
+
+* Improve font clarity and spacing
+* Ensure:
+
+  * High contrast on product images
+  * No blending or overlapping
+  * Clear separation between characters
+
+---
+
+# 🔍 SEARCH ENHANCEMENT
+
+* When searching:
+
+  * Best matching product appears first
+  * Highlight top match visually
+* Pressing **Enter**:
+
+  * Automatically adds highlighted product to cart
+
+---
+
+# ⌨️ KEYBOARD SHORTCUTS (IMPORTANT)
+
+Implement global shortcuts:
+
+* **Shift + C**
+
+  * Open cart instantly
+
+* **C + Number (hold) + Up/Down**
+
+  * Adjust quantity of cart item dynamically
+
+* **Ctrl + ` (backtick)**
+
+  * Focus search bar immediately
+
+* **Shift + E**
+
+  * Open edit environment mode
+
+---
+
+# 🎯 DESIGN ENHANCEMENTS (FREE WILL ALLOWED)
+
+You are allowed to enhance UI/UX where needed:
+
+* Improve contextual menu design
+* Add subtle animations (smooth, not flashy)
+* Improve spacing and hover feedback
+* Make selection mode visually distinct but clean
+
+Ensure everything remains:
+
+* Fast
+* Minimal
+* Professional POS-style
+
+---
+
+# ⚖️ CONSISTENCY RULES
+
+* Do NOT break existing layout
+* Do NOT introduce heavy animations
+* Keep interactions micro and smooth
+* Ensure desktop + mobile parity where required
+
+---
+
+# 🚀 FINAL GOAL
+
+Transform the POS into a **fully interactive retail system** with:
+
+* Smart category management (move/import/select)
+* Context-aware product controls
+* Fast keyboard-driven workflow
+* Improved quick-code readability
+* Smooth, modern POS-grade UX
+
+All enhancements should feel natural, not added as separate features.
