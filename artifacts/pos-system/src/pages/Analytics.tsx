@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, Calendar as CalendarIcon, ChevronDown, Search, Check } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, Search, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSaleEvents, type SaleEvent, type SaleItem } from "@/lib/analytics-store";
@@ -636,101 +636,115 @@ function TopProductsBar({
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-2 sm:gap-4 items-end">
-        {slots.map((p, i) => {
-          const isZero = p.value === 0;
-          const pct = isZero ? 0 : (p.value / max) * 100;
-          const barH = isZero ? 4 : Math.max(8, (pct / 100) * BAR_CHART_H);
-          const isHover = hoverIdx === i;
-          const color = p.color;
+      {/* Wrapper gives us a coordinate system for the full-width grid lines */}
+      <div className="relative">
+        {/* Full-width horizontal grid lines — rendered above bars so they're
+            always visible regardless of bar height.
+            Value label is ~22px tall (text + mb-1.5), so bar area starts at top:22. */}
+        <div
+          className="absolute inset-x-0 pointer-events-none z-20"
+          style={{ top: 22, height: BAR_CHART_H }}
+        >
+          {[0, 25, 50, 75, 100].map((pct) => (
+            <div
+              key={pct}
+              className="absolute inset-x-0"
+              style={{
+                top: `${100 - pct}%`,
+                borderTop:
+                  pct === 0
+                    ? "1px solid hsla(240,6%,35%,0.85)"
+                    : "1px dashed hsla(240,6%,50%,0.22)",
+              }}
+            />
+          ))}
+        </div>
 
-          return (
-            <Popover
-              key={`${i}-${p.id}`}
-              open={openIdx === i}
-              onOpenChange={(o) => setOpenIdx(o ? i : null)}
-            >
-              <PopoverTrigger asChild>
-                <button
-                  onMouseEnter={() => setHoverIdx(i)}
-                  onMouseLeave={() => setHoverIdx((c) => (c === i ? null : c))}
-                  className="flex flex-col items-center gap-0 focus:outline-none group"
-                  style={{ minWidth: 0 }}
-                >
-                  {/* Value label */}
-                  <span
-                    className={`text-[10px] sm:text-[11px] font-semibold tabular-nums mb-1.5 transition-colors duration-150 ${
-                      isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
-                    }`}
+        <div className="grid grid-cols-5 gap-2 sm:gap-4 items-end relative z-10">
+          {slots.map((p, i) => {
+            const isZero = p.value === 0;
+            const pct = isZero ? 0 : (p.value / max) * 100;
+            const barH = isZero ? 4 : Math.max(8, (pct / 100) * BAR_CHART_H);
+            const isHover = hoverIdx === i;
+            const color = p.color;
+
+            return (
+              <Popover
+                key={`${i}-${p.id}`}
+                open={openIdx === i}
+                onOpenChange={(o) => setOpenIdx(o ? i : null)}
+              >
+                <PopoverTrigger asChild>
+                  <button
+                    onMouseEnter={() => setHoverIdx(i)}
+                    onMouseLeave={() => setHoverIdx((c) => (c === i ? null : c))}
+                    className="flex flex-col items-center gap-0 focus:outline-none group"
+                    style={{ minWidth: 0 }}
                   >
-                    {isZero ? "—" : fmtBarLabel(p.value, metric)}
-                  </span>
-
-                  {/* Bar container */}
-                  <div
-                    className="relative w-full flex items-end"
-                    style={{ height: BAR_CHART_H }}
-                  >
-                    {/* Grid lines inside bar area */}
-                    {[25, 50, 75].map((pctLine) => (
-                      <div
-                        key={pctLine}
-                        className="absolute left-0 right-0 border-t border-dashed border-white/5"
-                        style={{ bottom: `${pctLine}%` }}
-                      />
-                    ))}
-
-                    {/* The bar itself */}
-                    <div
-                      className="relative w-full transition-all duration-500 ease-out rounded-t-sm"
-                      style={{
-                        height: barH,
-                        background: isZero
-                          ? "hsl(240 6% 20%)"
-                          : `linear-gradient(180deg, ${color} 0%, color-mix(in oklab, ${color} 50%, hsl(240 10% 8%)) 100%)`,
-                        boxShadow: isHover && !isZero
-                          ? `0 0 20px -4px ${color}88, inset 0 1px 0 rgba(255,255,255,0.2)`
-                          : !isZero
-                          ? `inset 0 1px 0 rgba(255,255,255,0.12)`
-                          : undefined,
-                      }}
+                    {/* Value label */}
+                    <span
+                      className={`text-[10px] sm:text-[11px] font-semibold tabular-nums mb-1.5 transition-colors duration-150 ${
+                        isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
+                      }`}
                     >
-                      {/* Top glow / highlight stripe */}
-                      {!isZero && (
-                        <div
-                          className="absolute top-0 left-0 right-0 h-[3px] rounded-t-sm transition-opacity duration-300"
-                          style={{
-                            background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-                            opacity: isHover ? 1 : 0.7,
-                            boxShadow: `0 0 8px 1px ${color}`,
-                          }}
-                        />
-                      )}
-                    </div>
-                  </div>
+                      {isZero ? "—" : fmtBarLabel(p.value, metric)}
+                    </span>
 
-                  {/* Label: image + name + chevron */}
-                  <div className="mt-2.5 flex flex-col items-center gap-1 w-full">
-                    <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
-                    <div className="flex items-center gap-0.5 max-w-full px-0.5">
-                      <span className="text-[10px] truncate text-muted-foreground/80 group-hover:text-foreground transition-colors leading-tight text-center">
+                    {/* Bar container */}
+                    <div
+                      className="relative w-full flex items-end"
+                      style={{ height: BAR_CHART_H }}
+                    >
+                      {/* The bar itself */}
+                      <div
+                        className="relative w-full transition-all duration-500 ease-out rounded-t-sm"
+                        style={{
+                          height: barH,
+                          background: isZero
+                            ? "hsl(240 6% 20%)"
+                            : `linear-gradient(180deg, ${color} 0%, color-mix(in oklab, ${color} 50%, hsl(240 10% 8%)) 100%)`,
+                          boxShadow:
+                            isHover && !isZero
+                              ? `0 0 20px -4px ${color}88, inset 0 1px 0 rgba(255,255,255,0.2)`
+                              : !isZero
+                              ? `inset 0 1px 0 rgba(255,255,255,0.12)`
+                              : undefined,
+                        }}
+                      >
+                        {/* Top glow stripe */}
+                        {!isZero && (
+                          <div
+                            className="absolute top-0 left-0 right-0 h-[3px] rounded-t-sm transition-opacity duration-300"
+                            style={{
+                              background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
+                              opacity: isHover ? 1 : 0.7,
+                              boxShadow: `0 0 8px 1px ${color}`,
+                            }}
+                          />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Label: image + name */}
+                    <div className="mt-2.5 flex flex-col items-center gap-1 w-full">
+                      <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
+                      <span className="text-[10px] truncate text-muted-foreground/80 group-hover:text-foreground transition-colors leading-tight text-center w-full px-0.5">
                         {p.name}
                       </span>
-                      <ChevronDown className="w-2.5 h-2.5 text-muted-foreground/40 shrink-0" />
                     </div>
-                  </div>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="center" side="top" className="p-2 border-border">
-                <ProductPicker
-                  currentId={p.id}
-                  excludeIds={excludeIds}
-                  onPick={(id) => { onSwap(i, id); setOpenIdx(null); }}
-                />
-              </PopoverContent>
-            </Popover>
-          );
-        })}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="center" side="top" className="p-2 border-border">
+                  <ProductPicker
+                    currentId={p.id}
+                    excludeIds={excludeIds}
+                    onPick={(id) => { onSwap(i, id); setOpenIdx(null); }}
+                  />
+                </PopoverContent>
+              </Popover>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
