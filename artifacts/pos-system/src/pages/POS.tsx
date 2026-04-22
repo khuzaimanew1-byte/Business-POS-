@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { 
   Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
   ShoppingCart, Trash2, Minus, Check, Camera, MousePointer,
-  FolderInput, FolderPlus, ChevronRight
+  FolderInput, FolderPlus, ChevronRight, LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,7 @@ export default function POS() {
 
   type DeleteConfirm = { open: boolean; message: string; onConfirm: () => void };
   const [deleteConfirm, setDeleteConfirm] = useState<DeleteConfirm>({ open: false, message: '', onConfirm: () => {} });
+  const [exitConfirm, setExitConfirm] = useState(false);
 
   // ── Selection mode state ────────────────────────────────────────────────
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -382,10 +383,16 @@ export default function POS() {
         setLocation('/add-product');
         return;
       }
-      // Shift + A → Analytics page
+      // Shift + A → Home (POS) page
       if (e.shiftKey && (e.key === 'A' || e.key === 'a') && !isTypingTarget(e.target)) {
         e.preventDefault();
-        setLocation('/analytics');
+        setLocation('/');
+        return;
+      }
+      // Shift + Backspace → on Home, prompt exit; elsewhere, go back
+      if (e.shiftKey && e.key === 'Backspace' && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        setExitConfirm(true);
         return;
       }
     };
@@ -1090,26 +1097,32 @@ export default function POS() {
       </Dialog>
 
       {/* ── DELETE CONFIRM MODAL ──────────────────────────────────────────── */}
-      {deleteConfirm.open && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-[200] modal-backdrop"
-          onClick={() => setDeleteConfirm(d => ({ ...d, open: false }))}
-        >
-          <div className="bg-card border border-border rounded-2xl p-6 w-80 shadow-2xl modal-content" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-full bg-destructive/15 flex items-center justify-center shrink-0">
-                <Trash2 className="w-4 h-4 text-destructive" />
-              </div>
-              <h3 className="font-semibold text-foreground">Are you sure?</h3>
-            </div>
-            <p className="text-muted-foreground text-sm mb-6 leading-relaxed">{deleteConfirm.message}</p>
-            <div className="flex gap-2">
-              <Button variant="ghost" className="flex-1" onClick={() => setDeleteConfirm(d => ({ ...d, open: false }))}>Cancel</Button>
-              <Button variant="destructive" className="flex-1" onClick={() => { deleteConfirm.onConfirm(); setDeleteConfirm(d => ({ ...d, open: false })); }}>Delete</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        open={deleteConfirm.open}
+        title="Are you sure?"
+        message={deleteConfirm.message}
+        icon={<Trash2 className="w-4 h-4 text-destructive" />}
+        confirmLabel="Delete"
+        confirmVariant="destructive"
+        onCancel={() => setDeleteConfirm(d => ({ ...d, open: false }))}
+        onConfirm={() => { deleteConfirm.onConfirm(); setDeleteConfirm(d => ({ ...d, open: false })); }}
+      />
+
+      {/* ── EXIT CONFIRM MODAL ───────────────────────────────────────────── */}
+      <ConfirmModal
+        open={exitConfirm}
+        title="Exit application?"
+        message="Close the POS system and leave this page?"
+        icon={<LogOut className="w-4 h-4 text-destructive" />}
+        confirmLabel="Exit"
+        confirmVariant="destructive"
+        onCancel={() => setExitConfirm(false)}
+        onConfirm={() => {
+          setExitConfirm(false);
+          try { window.close(); } catch {}
+          setTimeout(() => { try { window.location.href = 'about:blank'; } catch {} }, 80);
+        }}
+      />
 
       <style>{`
         /* ── CSS custom property for bottom offset ── */
@@ -1336,5 +1349,51 @@ function MobileNavBtn({ icon, label, active = false, onClick }: { icon: React.Re
       {icon}
       <span className="text-[9px] font-medium">{label}</span>
     </button>
+  );
+}
+
+// ── Reusable Confirm Modal (Enter to confirm, Esc to cancel, fade+scale) ────
+function ConfirmModal({
+  open, title, message, icon, confirmLabel, confirmVariant = 'destructive',
+  onConfirm, onCancel,
+}: {
+  open: boolean;
+  title: string;
+  message: string;
+  icon?: React.ReactNode;
+  confirmLabel: string;
+  confirmVariant?: 'default' | 'destructive';
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); onConfirm(); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); onCancel(); }
+    };
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [open, onConfirm, onCancel]);
+
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-[200] modal-backdrop" onClick={onCancel}>
+      <div className="bg-card border border-border rounded-2xl p-6 w-80 shadow-2xl modal-content" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center gap-3 mb-3">
+          {icon && (
+            <div className="w-9 h-9 rounded-full bg-destructive/15 flex items-center justify-center shrink-0">
+              {icon}
+            </div>
+          )}
+          <h3 className="font-semibold text-foreground">{title}</h3>
+        </div>
+        <p className="text-muted-foreground text-sm mb-6 leading-relaxed">{message}</p>
+        <div className="flex gap-2">
+          <Button variant="ghost" className="flex-1" onClick={onCancel}>Cancel</Button>
+          <Button variant={confirmVariant} className="flex-1" onClick={onConfirm} autoFocus>{confirmLabel}</Button>
+        </div>
+      </div>
+    </div>
   );
 }

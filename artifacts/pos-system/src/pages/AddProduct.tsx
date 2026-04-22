@@ -77,7 +77,7 @@ const TraceField = React.forwardRef<HTMLInputElement, TraceFieldProps>(function 
           htmlFor={id}
           className={`trace-label ${lifted ? 'is-lifted' : ''} ${invalid ? 'is-invalid' : ''}`}
         >
-          {label}{required && <span className="text-destructive ml-0.5">*</span>}
+          {label}
         </label>
 
         <div className="trace-row">
@@ -378,11 +378,30 @@ export default function AddProduct() {
       if (e.key === 'Escape' && pendingDelete) {
         e.preventDefault();
         setPendingDelete(null);
+        return;
+      }
+      const el = e.target as HTMLElement | null;
+      const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+      // Enter while a delete is pending → confirm
+      if (e.key === 'Enter' && pendingDelete) {
+        e.preventDefault();
+        confirmDelete(pendingDelete);
+        return;
+      }
+      if (e.shiftKey && (e.key === 'A' || e.key === 'a') && !typing) {
+        e.preventDefault();
+        setLocation('/');
+        return;
+      }
+      if (e.shiftKey && e.key === 'Backspace' && !typing) {
+        e.preventDefault();
+        setLocation('/');
+        return;
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [pendingDelete]);
+  }, [pendingDelete, setLocation]);
 
   // ── render ────────────────────────────────────────────────────────────
   return (
@@ -412,9 +431,9 @@ export default function AddProduct() {
 
       {/* Body */}
       <main className="max-w-5xl mx-auto px-3 sm:px-8 pt-6 sm:pt-9 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-[minmax(180px,240px)_minmax(0,1fr)] gap-6 sm:gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(160px,200px)_minmax(0,1fr)] gap-6 sm:gap-8">
           {/* ── LEFT: IMAGE ─────────────────────────────────────── */}
-          <section className="md:sticky md:top-20 self-start max-w-[240px] mx-auto md:mx-0 w-full">
+          <section className="md:sticky md:top-20 self-start max-w-[200px] mx-auto md:mx-0 w-full">
             <div
               onClick={() => fileInputRef.current?.click()}
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -661,7 +680,7 @@ export default function AddProduct() {
                   : null}
               />
 
-              <div className={shake.category ? 'shake-anim-input' : ''}>
+              <div className="trace-wrap">
                 <DropdownMenu
                   open={isCatDropdownOpen}
                   onOpenChange={open => {
@@ -675,37 +694,40 @@ export default function AddProduct() {
                       type="button"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
-                          // Pre-empt Radix open if our flow says submit
                           if (!isFieldFilled('category')) {
                             e.preventDefault();
                             setError('category', 'Please select a category');
                             triggerShake('category');
                             return;
                           }
-                          if (e.shiftKey) {
-                            e.preventDefault();
-                            trySubmitOrFocusFirstError();
-                            return;
-                          }
-                          // Last field → submit
                           e.preventDefault();
                           trySubmitOrFocusFirstError();
                         }
                       }}
-                      className={`w-full h-[56px] bg-secondary/32 hover:bg-secondary/45 border ${
-                        transientError.category ? 'border-destructive' : 'border-border/60'
-                      } rounded-[10px] px-3.5 text-sm flex items-center justify-between text-left transition-colors duration-200 focus:outline-none focus:border-primary/60 focus:shadow-[0_0_0_3px_hsl(var(--primary)/0.18)]`}
+                      className={`trace-field trace-field-button w-full ${transientError.category ? 'is-invalid' : ''} ${shake.category ? 'shake-anim-input' : ''} ${isCatDropdownOpen ? 'is-focused' : ''}`}
                       data-testid="btn-category"
                     >
-                      <span className="flex flex-col items-start leading-tight">
-                        <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/95">
-                          Category <span className="text-destructive">*</span>
-                        </span>
-                        <span className={category ? 'text-foreground text-sm mt-0.5' : 'text-muted-foreground/55 text-sm mt-0.5 italic'}>
+                      {/* Animated SVG border (matches TraceField) */}
+                      <svg className="trace-svg" aria-hidden="true">
+                        <rect x="0.75" y="0.75" rx="10" ry="10"
+                          width="calc(100% - 1.5px)" height="calc(100% - 1.5px)"
+                          pathLength={100}
+                          className="trace-rect-bg" />
+                        <rect x="0.75" y="0.75" rx="10" ry="10"
+                          width="calc(100% - 1.5px)" height="calc(100% - 1.5px)"
+                          pathLength={100}
+                          className="trace-rect-fg" />
+                      </svg>
+                      {/* Always-lifted label */}
+                      <label className={`trace-label is-lifted ${transientError.category ? 'is-invalid' : ''}`}>
+                        Category
+                      </label>
+                      <div className="trace-row">
+                        <span className={category ? 'flex-1 text-foreground text-[14px]' : 'flex-1 text-muted-foreground/55 text-[14px] italic'}>
                           {category || 'Select Category'}
                         </span>
-                      </span>
-                      <ChevronDown size={15} className={`text-muted-foreground transition-transform duration-200 ${isCatDropdownOpen ? 'rotate-180' : ''}`} />
+                        <ChevronDown size={15} className={`text-muted-foreground transition-transform duration-200 ${isCatDropdownOpen ? 'rotate-180' : ''}`} />
+                      </div>
                     </button>
                   </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)] sm:w-60 max-h-72 overflow-y-auto">
@@ -981,6 +1003,23 @@ export default function AddProduct() {
           line-height: 1.35;
         }
         .trace-hint.is-invalid { color: hsl(var(--destructive)); }
+
+        /* Button variant of trace-field (Category) */
+        .trace-field-button {
+          cursor: pointer;
+          text-align: left;
+          width: 100%;
+          border: 0;
+          font: inherit;
+          color: inherit;
+          appearance: none;
+          -webkit-appearance: none;
+        }
+        .trace-field-button:focus { outline: none; }
+        .trace-field-button:focus-visible .trace-rect-fg {
+          stroke-dashoffset: 0;
+          filter: drop-shadow(0 0 4px hsl(var(--primary) / 0.35));
+        }
 
         @keyframes shake-anim-input {
           0%, 100% { transform: translateX(0); }

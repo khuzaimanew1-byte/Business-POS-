@@ -1,0 +1,140 @@
+Refine the POS system with focused updates across the Add Product Page, Analytics Page, and global interaction behavior. Maintain the existing system but improve specific UI/UX details and keyboard flows for a cleaner, faster experience.
+
+All animations must remain smooth, minimal, and non-flashy.
+
+---
+
+# 🏷️ INPUT LABEL SYSTEM UPDATE
+
+* Remove all **red asterisk (*) indicators** from labels
+* Required fields should NOT visually rely on star indicators
+
+### Floating Label Behavior:
+
+* Labels should sit cleanly within the input
+* On focus → move above border smoothly (as already defined)
+
+---
+
+# 🗂️ CATEGORY LABEL SPECIAL BEHAVIOR
+
+* Unlike other inputs, the **Category label should always remain overlaid on the border**
+* It should NOT animate from inside → outside
+* It should:
+
+  * Start in elevated position
+  * Stay fixed above the border at all times
+
+### Visual:
+
+* Clean overlay on border line
+* Consistent with border trace system
+
+---
+
+# 🖼️ IMAGE COMPONENT SIZE UPDATE
+
+* Slightly reduce image container size (compared to previous)
+* Maintain square ratio
+* Keep it visually balanced with input section
+
+### Icon:
+
+* Use upload icon (not plus)
+* Reduce blur slightly for better clarity
+* Keep icon visible and clean
+
+---
+
+# 📊 ANALYTICS PAGE NAVIGATION UPDATE
+
+* Remove global navigation bar from Analytics page
+
+### Add minimal header:
+
+* **Back arrow (top-left)**
+* Text: “Analytics” next to it
+
+### Behavior:
+
+* Clicking back → navigates to Home (Main POS page)
+* No heavy header design
+* No borders or separators
+
+---
+
+# ⌨️ KEYBOARD SHORTCUT UPDATES
+
+## 🔁 Navigation Shortcuts
+
+### Shift + A
+
+* Open **Home (Main POS Page)**
+
+---
+
+### Shift + Backspace
+
+#### Behavior:
+
+* If user is on any page:
+  → Navigate back to previous page
+
+* If user is already on Home page:
+  → Show confirmation popup:
+  “Do you want to exit the website?”
+
+---
+
+## 🪟 CONFIRMATION POPUP SHORTCUT
+
+Apply globally to ALL confirmation dialogs:
+
+### Enter Key:
+
+* Confirms action
+
+### Applies to:
+
+* Delete confirmations
+* Exit confirmation
+* Category delete
+* Product delete
+* Any system confirmation popup
+
+---
+
+# 🎬 CONFIRMATION POPUP BEHAVIOR
+
+* Smooth fade + scale animation
+* Centered modal
+* Background slightly dimmed
+
+### Interaction:
+
+* Enter → confirm
+* Escape (optional) → cancel
+
+### Visual:
+
+* Clean minimal design
+* No harsh borders
+* Soft shadow
+
+---
+
+# 🎯 FINAL GOAL
+
+These updates should:
+
+* Reduce visual clutter (no red stars)
+* Improve label consistency (category special behavior)
+* Balance layout (smaller image)
+* Simplify navigation (analytics page clean header)
+* Speed up workflow (keyboard shortcuts + enter confirm)
+
+Maintain:
+
+* Smooth UX
+* Fast interaction
+* Clean professional POS feel

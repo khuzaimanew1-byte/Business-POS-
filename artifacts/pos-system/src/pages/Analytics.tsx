@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { Home, BarChart2, Plus, Settings, Bell, Calendar as CalendarIcon, Check, Search } from "lucide-react";
+import { Home, BarChart2, Plus, Settings, Bell, Calendar as CalendarIcon, Check, Search, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -834,6 +834,23 @@ export default function Analytics() {
     return () => clearTimeout(t);
   }, [mode, metric, custom?.from, custom?.to]);
 
+  // Global navigation shortcuts: Shift+A → Home, Shift+Backspace → back
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+      if (typing) return;
+      if (e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault(); setLocation('/'); return;
+      }
+      if (e.shiftKey && e.key === 'Backspace') {
+        e.preventDefault(); setLocation('/'); return;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [setLocation]);
+
   const data = useMemo(
     () => buildChartData(mode, events, metric, custom),
     [mode, events, metric, custom],
@@ -918,21 +935,22 @@ export default function Analytics() {
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
 
-      {/* ── DESKTOP LEFT SIDEBAR ─────────────────────────────────────────── */}
-      <aside className="hidden sm:flex w-[60px] shrink-0 border-r border-border bg-sidebar flex-col items-center py-4 z-20">
-        <div className="flex flex-col gap-6">
-          <AnalyticsTooltipItem icon={<Home size={20} />} label="Home" onClick={() => setLocation("/")} />
-          <AnalyticsTooltipItem icon={<BarChart2 size={20} />} label="Analytics" active />
-          <AnalyticsTooltipItem icon={<Plus size={20} />} label="Add Product" />
-          <AnalyticsTooltipItem icon={<Settings size={20} />} label="Settings" />
-        </div>
-      </aside>
-
       {/* ── MAIN COLUMN ──────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-        {/* Minimal header — time mode pills right-aligned */}
-        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md h-14 flex items-center justify-center px-3 sm:px-5 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)]">
+        {/* Minimal header — back arrow + title + time mode pills */}
+        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md h-14 flex items-center gap-3 px-3 sm:px-5">
+
+          {/* Back arrow + title */}
+          <button
+            onClick={() => setLocation("/")}
+            className="flex items-center justify-center w-8 h-8 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+            aria-label="Back to POS"
+          >
+            <ArrowLeft size={18} />
+          </button>
+          <h1 className="text-[15px] font-semibold tracking-tight">Analytics</h1>
+          <div className="flex-1" />
 
           {/* Time mode pills — natural, no card border */}
           <div className="flex items-center gap-0.5">
@@ -994,7 +1012,7 @@ export default function Analytics() {
         <div className="flex-1 flex overflow-hidden">
 
           {/* Scrollable analytics content */}
-          <main className="flex-1 overflow-y-auto p-3 sm:p-5 pb-[76px] sm:pb-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div className="max-w-4xl w-full mx-auto">
 
               {/* Summary */}
@@ -1077,50 +1095,8 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* ── MOBILE BOTTOM NAV ──────────────────────────────────────────────── */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 h-[60px] bg-sidebar border-t border-border flex items-center justify-around px-2 z-30">
-        <AnalyticsMobileNavBtn icon={<Home size={20} />} label="Home" onClick={() => setLocation("/")} />
-        <AnalyticsMobileNavBtn icon={<BarChart2 size={20} />} label="Analytics" active />
-
-        {/* Add Product — center prominent */}
-        <button
-          className="flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg hover:brightness-110 active:scale-95 transition-all duration-200 -mt-4"
-          aria-label="Add Product"
-        >
-          <Plus size={22} />
-        </button>
-
-        {/* Notifications */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 text-muted-foreground" aria-label="Notifications">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-2.5 w-2 h-2 bg-primary rounded-full border border-background" />
-              <span className="text-[9px]">Alerts</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-72 p-0 mb-2 border-border shadow-xl rounded-xl overflow-hidden" align="center" side="top">
-            <div className="p-3 border-b border-border/50">
-              <h4 className="font-medium text-sm">Notifications</h4>
-            </div>
-            <div className="divide-y divide-border/50">
-              <div className="p-3 hover:bg-secondary/50 transition-colors duration-200 cursor-pointer">
-                <p className="font-medium text-xs">Low stock alert</p>
-                <p className="text-muted-foreground text-xs mt-0.5">Salad Bowl (#1013) is running low (15 remaining).</p>
-              </div>
-              <div className="p-3 hover:bg-secondary/50 transition-colors duration-200 cursor-pointer">
-                <p className="font-medium text-xs">System Update</p>
-                <p className="text-muted-foreground text-xs mt-0.5">POS system updated to v2.4.1.</p>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        <AnalyticsMobileNavBtn icon={<Settings size={20} />} label="Settings" />
-      </nav>
-
-      {/* ── MOBILE SALES/PROFIT TOGGLE — floating above bottom nav ──────── */}
-      <div className="sm:hidden fixed bottom-[68px] right-3 z-20">
+      {/* ── MOBILE SALES/PROFIT TOGGLE — floating bottom-right ──────── */}
+      <div className="sm:hidden fixed bottom-3 right-3 z-20">
         <div className="flex gap-1 p-0.5 bg-card/90 backdrop-blur-md border border-card-border rounded-full shadow-lg">
           <button
             onClick={() => setMetric("sales")}
