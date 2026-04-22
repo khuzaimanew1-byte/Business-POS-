@@ -1,0 +1,95 @@
+Refine the bar graph scaling and visual system to ensure accurate data representation while keeping even the smallest values visible and understandable. Maintain the existing layout and structure — only enhance scaling logic and visual clarity.
+
+---
+
+# 📊 BAR GRAPH — FINAL VISUAL SCALING SYSTEM
+
+Implement a **balanced, truth-preserving scaling system** with enhanced visual signals.
+
+---
+
+## 🎯 1. PRIMARY SCALE (REAL DATA)
+
+* Bar height must always be based on **true relative values**
+* Do NOT artificially inflate small values to match larger ones
+* Maintain proportional differences across all bars
+
+---
+
+## ⚠️ 2. LOW VALUE HANDLING (OPTION A — SELECTED)
+
+For very small values:
+
+* Keep bar height minimal (based on real scale)
+* Add a **subtle highlight/glow at the top of the bar** to indicate presence
+
+This ensures:
+
+* Small values remain visible
+* Data is not visually misleading
+
+---
+
+## 📏 3. MINIMUM VISIBILITY RULE
+
+* Apply a very small minimum height so bars are never fully invisible
+* This should be subtle (just enough to be seen)
+* Must not distort the perception of scale
+
+---
+
+## 📉 4. ZERO VALUE HANDLING
+
+* For zero values:
+
+  * Show a **thin baseline bar**
+  * No glow or highlight
+* Clearly distinguish zero from low values
+
+---
+
+## 🔢 5. VALUE DISPLAY (IMPORTANT)
+
+* Show the **exact value on top of each bar**
+* Position:
+
+  * Centered horizontally above the bar
+* Behavior:
+
+  * Should always be visible (not only on hover)
+  * Must remain readable even for small bars
+
+---
+
+## 🎨 6. COLOR & VISUAL CLARITY
+
+* Maintain unique color per product (persistent across renders)
+* Ensure colors work well on dark background
+* Glow/highlight should be subtle and match bar color tone
+
+---
+
+## 🧠 7. USER UNDERSTANDING SUPPORT
+
+Even if bar is small:
+
+* Value on top ensures clarity
+* Tooltip (if present) reinforces exact data
+* List section provides additional confirmation
+
+---
+
+## ⚡ 8. INTERACTION & PERFORMANCE
+
+* Smooth transitions when data changes
+* No sudden jumps in height
+* Maintain micro-animation style (not flashy)
+
+---
+
+## 🎯 FINAL GOAL
+
+* Data remains 100% truthful
+* Small values are still visible and noticeable
+* Users can easily compare products
+* Visualization feels clean, premium, and reliable
