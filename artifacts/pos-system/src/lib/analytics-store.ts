@@ -17,7 +17,15 @@ export type SaleEvent = {
   totalProfit: number;
 };
 
-const LS_KEY = "pos.analytics.events.v2";
+const LS_KEY = "pos.analytics.events.v3";
+
+// Clean up legacy seed buckets so users see the upgraded dataset
+try {
+  localStorage.removeItem("pos.analytics.events.v2");
+  localStorage.removeItem("pos.analytics.events");
+} catch {
+  /* noop */
+}
 
 function load(): SaleEvent[] {
   try {
@@ -93,17 +101,48 @@ export function seedDemoIfEmpty() {
   if (load().length > 0) return;
   const now = Date.now();
   const events: SaleEvent[] = [];
-  // Generate ~14 months of activity, more density in recent months
+
+  // Day-of-week multipliers (0=Sun … 6=Sat) — captures realistic weekly rhythm
+  const dowMul = [0.7, 1.05, 1.0, 1.05, 1.15, 1.4, 1.25];
+
+  // Hourly density curve for a typical retail/cafe day (24 entries, sums roughly to 1)
+  const hourCurve = [
+    0.005, 0.003, 0.002, 0.002, 0.003, 0.008, // 0-5 night
+    0.02, 0.04, 0.07, 0.085, 0.075, 0.065,    // 6-11 morning rush
+    0.085, 0.09, 0.07, 0.055, 0.05, 0.06,     // 12-17 lunch + afternoon
+    0.075, 0.065, 0.04, 0.025, 0.015, 0.008,  // 18-23 evening
+  ];
+
+  // ~14 months of history with denser recent activity
   for (let daysAgo = 420; daysAgo >= 0; daysAgo--) {
-    const recencyBoost = Math.max(0.3, 1 - daysAgo / 420);
-    const base = daysAgo === 0 ? rand(2, 6) : rand(1, 7);
-    const eventsToday = Math.max(0, Math.round(base * recencyBoost * (0.6 + Math.random() * 0.9)));
+    const dt0 = new Date(now - daysAgo * 86400000);
+    const recencyBoost = Math.max(0.35, 1 - daysAgo / 420);
+
+    // Random "closed" / no-activity days — ~7% chance, slightly higher on Sundays
+    const dow = dt0.getDay();
+    const closedChance = dow === 0 ? 0.18 : 0.07;
+    if (Math.random() < closedChance && daysAgo > 1) continue;
+
+    // Average events for the day (skew higher recent + by weekday)
+    const baseEvents = rand(8, 22) * recencyBoost * dowMul[dow];
+    const eventsToday = Math.max(0, Math.round(baseEvents * (0.7 + Math.random() * 0.6)));
+
+    // Pre-pick which hours fire today, weighted by hourCurve
     for (let k = 0; k < eventsToday; k++) {
-      // Hour skewed toward business hours (8–20)
-      const hour = Math.min(23, Math.max(0, Math.round(rand(8, 20) + rand(-2, 2))));
-      const minute = Math.floor(rand(0, 60));
-      const dt = new Date(now - daysAgo * 86400000);
-      dt.setHours(hour, minute, Math.floor(rand(0, 60)), 0);
+      // Weighted hour pick
+      let r = Math.random();
+      let hour = 12;
+      for (let h = 0; h < 24; h++) {
+        if (r < hourCurve[h]) { hour = h; break; }
+        r -= hourCurve[h];
+      }
+      const minute = Math.floor(Math.random() * 60);
+      const second = Math.floor(Math.random() * 60);
+      const dt = new Date(dt0);
+      dt.setHours(hour, minute, second, 0);
+      // Don't generate future events on the current day
+      if (daysAgo === 0 && dt.getTime() > now) continue;
+
       const itemCount = Math.max(1, Math.round(rand(1, 4)));
       const items: SaleItem[] = [];
       for (let i = 0; i < itemCount; i++) {

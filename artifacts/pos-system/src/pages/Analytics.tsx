@@ -101,21 +101,24 @@ function buildBins(
   }
 
   if (mode === "yearly") {
-    const start = startOfYear(now);
+    // Daily bins for the entire current year
     const yr = now.getFullYear();
-    const bins: Bin[] = Array.from({ length: 12 }, (_, m) => {
-      const ts = new Date(yr, m, 1).getTime();
+    const start = startOfYear(now);
+    const end = new Date(yr + 1, 0, 1).getTime();
+    const totalDays = Math.round((end - start) / 86400000);
+    const bins: Bin[] = Array.from({ length: totalDays }, (_, d) => {
+      const ts = start + d * 86400000;
+      const dt = new Date(ts);
       return {
         ts,
-        label: new Date(yr, m, 1).toLocaleDateString(undefined, { month: "short" }),
+        label: dt.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
         value: 0,
       };
     });
-    const end = new Date(yr + 1, 0, 1).getTime();
     for (const e of events) {
       if (e.ts < start || e.ts >= end) continue;
-      const m = new Date(e.ts).getMonth();
-      bins[m].value += valueOf(e);
+      const idx = Math.floor((startOfDay(new Date(e.ts)) - start) / 86400000);
+      if (idx >= 0 && idx < totalDays) bins[idx].value += valueOf(e);
     }
     return { bins, rangeLabel: String(yr) };
   }
@@ -251,10 +254,12 @@ function Chart({
   bins,
   metric,
   loadingKey,
+  mode,
 }: {
   bins: Bin[];
   metric: Metric;
   loadingKey: string;
+  mode: Mode;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 800, h: 360 });
@@ -322,29 +327,47 @@ function Chart({
   };
   const handleLeave = () => setHoverIdx(null);
 
-  // Tooltip (bar-style horizontal). Collision: clamp under top boundary.
+  // Tooltip — fixed at top of chart, only moves horizontally
   const TT_W_EST = metric === "profit" ? 180 : 200;
-  const TT_H = 36;
   const hover = hoverIdx !== null ? bins[hoverIdx] : null;
   const hoverPx = hoverIdx !== null ? xAt(hoverIdx) : 0;
   const hoverPy = hoverIdx !== null ? yAt(hover!.value) : 0;
 
   let ttLeft = 0;
-  let ttTop = 0;
+  const ttTop = 8; // locked near the top of the chart
   if (hover) {
     ttLeft = Math.max(
       margin.left + 4,
       Math.min(size.w - TT_W_EST - 4, hoverPx - TT_W_EST / 2),
     );
-    // Default: above the point
-    let preferred = hoverPy - TT_H - 14;
-    const topLimit = margin.top + plotH * 0.1; // ~top 10% of plot area
-    if (preferred < margin.top + 4) {
-      // collision with top → fix at top 10% line
-      preferred = topLimit;
-    }
-    ttTop = preferred;
   }
+
+  const fmtTooltipTime = (ts: number) => {
+    const d = new Date(ts);
+    if (mode === "daily") {
+      return d.toLocaleTimeString(undefined, {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    }
+    if (mode === "yearly") {
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+    if (mode === "weekly") {
+      return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+    }
+    if (mode === "monthly") {
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
 
   return (
     <div
@@ -464,17 +487,10 @@ function Chart({
       {/* Bar-style tooltip (horizontal row) */}
       {hover && (
         <div
-          className="pointer-events-none absolute z-10 px-3 py-1.5 rounded-full border border-border bg-popover/95 backdrop-blur-md shadow-xl text-xs flex items-center gap-3 whitespace-nowrap transition-[left,top] duration-100 ease-out"
+          className="pointer-events-none absolute z-10 px-3 py-1.5 rounded-full border border-border bg-popover/95 backdrop-blur-md shadow-xl text-xs flex items-center gap-3 whitespace-nowrap transition-[left] duration-100 ease-out"
           style={{ left: ttLeft, top: ttTop }}
         >
-          <span className="text-muted-foreground">
-            {new Date(hover.ts).toLocaleString(undefined, {
-              month: "short",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
+          <span className="text-muted-foreground">{fmtTooltipTime(hover.ts)}</span>
           <span className="w-px h-3 bg-border" />
           <span className="font-semibold text-foreground">
             {fmtMetric(hover.value, metric)}
@@ -639,7 +655,12 @@ export default function Analytics() {
                 <div className="w-6 h-6 rounded-full border-2 border-secondary border-t-primary animate-spin" />
               </div>
             )}
-            <Chart bins={bins} metric={metric} loadingKey={`${mode}-${metric}-${custom?.from ?? 0}-${custom?.to ?? 0}`} />
+            <Chart
+              bins={bins}
+              metric={metric}
+              mode={mode}
+              loadingKey={`${mode}-${metric}-${custom?.from ?? 0}-${custom?.to ?? 0}`}
+            />
           </div>
 
           <p className="mt-3 text-[11px] text-muted-foreground">

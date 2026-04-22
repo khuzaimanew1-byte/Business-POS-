@@ -1,0 +1,122 @@
+Refine the analytics graph behavior with more precise control over tooltip movement, data logic, and time handling. Keep the existing graph design, layout, and structure unchanged — only adjust the specific behaviors mentioned below.
+
+---
+
+### 📍 TOOLTIP MOVEMENT (STRICT CONTROL)
+
+Update tooltip behavior:
+
+* Fix the tooltip position on the **Y-axis (vertical)**
+* Tooltip should always stay near the **top area of the graph**
+* It should **NOT move up and down** based on data points
+
+Only allow movement on:
+
+* **X-axis (horizontal movement only)** following cursor or active point
+
+This ensures:
+
+* Stable tooltip position
+* Cleaner and less distracting interaction
+
+---
+
+### 📆 YEARLY DATA LOGIC (IMPORTANT CHANGE)
+
+Update yearly mode behavior:
+
+* Data should be based on **daily records (each day as a unit)**
+* Do NOT group by months
+
+If no sales occur on a specific day:
+
+* Do NOT generate a data point for that day
+
+However:
+
+* The timeline (x-axis) should still include that day
+* This creates natural gaps or flat continuity instead of fake data
+
+---
+
+### 📊 DAILY MODE — TIME PRECISION
+
+Improve daily tracking:
+
+* Graph should track **time-based activity (hour + minutes)**
+* Each sale event must include:
+
+  * Exact timestamp (hour + minute)
+
+Tooltip should show:
+
+* Exact time of sale (including minutes)
+
+Example:
+
+* 10:35 AM
+* 02:12 PM
+
+---
+
+### 📉 NO ACTIVITY HANDLING
+
+* If no activity occurs:
+
+  * Graph should remain at **0 level (flat line)**
+* When a sale happens:
+
+  * Line should rise from that point naturally
+
+No artificial smoothing or fake interpolation.
+
+---
+
+### 🧪 DEMO DATA (EXPAND)
+
+* Increase demo dataset size
+* Include:
+
+  * Multiple timestamps across the day
+  * Some gaps (no sales periods)
+  * Different sale densities (peak & low times)
+
+Ensure:
+
+* Graph reflects realistic usage patterns
+* Data helps test all edge cases
+
+---
+
+### 🚫 NO OTHER CHANGES
+
+* Do NOT modify graph design
+* Do NOT change layout, colors, or structure
+* Do NOT add new visual elements
+
+Only refine:
+
+* Tooltip behavior
+* Data logic
+* Time handling
+
+---
+
+### 📂 FILE REFERENCE (IMPORTANT)
+
+You will provide external graph files.
+
+Before implementing:
+
+* Deeply analyze uploaded HTML, CSS, and JS files
+* Reuse logic where useful
+* Apply these refinements on top of that structure
+
+---
+
+### 🎯 FINAL GOAL
+
+* Stable, non-jittery tooltip (X-axis only movement)
+* Accurate time-based data (down to minutes)
+* Realistic yearly and daily data behavior
+* Clean, professional analytics experience without visual noise
