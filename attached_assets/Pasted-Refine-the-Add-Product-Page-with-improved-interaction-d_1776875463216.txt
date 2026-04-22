@@ -1,0 +1,198 @@
+Refine the **Add Product Page** with improved interaction design, layout consistency, and modern input behavior. Keep the system clean, fast, and production-ready. Focus on seamless UX rather than adding visual clutter.
+
+---
+
+# 🧭 NAVIGATION RULE
+
+* No global navigation bar on this page
+* Add a simple **back arrow (top-left)**
+
+  * Returns user to main POS page
+* Keep it minimal and lightweight (no header bar)
+
+---
+
+# 🖥️ DESKTOP / LAPTOP LAYOUT (FIXED STRUCTURE)
+
+Use a **clean 3-zone vertical structure**, but optimized for fast entry:
+
+### 📸 TOP — IMAGE UPLOAD
+
+* Square image upload area at top center
+* Plus icon always visible (even after image upload)
+* Clicking plus replaces image (no extra icons)
+
+---
+
+### 📊 MIDDLE — INPUT GRID (2 COLUMNS)
+
+Create a structured **two-column input layout**:
+
+#### Left Column:
+
+* Product Name
+* Price
+* Stock
+
+#### Right Column:
+
+* Quick Code (# static prefix)
+* Profit
+* Category dropdown
+
+---
+
+# 🏷️ INPUT DESIGN SYSTEM (IMPORTANT UPGRADE)
+
+Replace traditional input labels with **floating overlay labels + border animation system**
+
+---
+
+## ✨ FLOATING LABEL BEHAVIOR
+
+* Label appears inside input by default (placeholder style)
+* On focus OR when typing:
+
+  * Label smoothly moves upward
+  * Shrinks slightly
+  * Locks above input border
+
+---
+
+## 🎬 BORDER ANIMATION (KEY FEATURE)
+
+Instead of static borders:
+
+### Behavior:
+
+* Input border is drawn dynamically on focus
+* Animation looks like:
+
+  * a line gradually traces the outline of the input field
+* On blur:
+
+  * border gently fades back
+
+### Result:
+
+* Modern, premium interaction feel
+* Clear focus feedback without clutter
+
+---
+
+# 📊 MARGIN INDICATOR (ABOVE PROFIT INPUT)
+
+### Placement:
+
+* Small indicator above Profit field
+
+### Design:
+
+* Compact horizontal bar + text
+* Shows:
+
+  * “Margin %”
+
+### Behavior:
+
+* Fills based on Price vs Profit
+* Smooth animation on value change
+* Never blocks input
+
+---
+
+# 🔖 QUICK CODE INPUT
+
+* Static `#` prefix only
+* No auto-generation
+* User must manually define code
+* Must remain unique and lowercase
+
+---
+
+# 🗂️ CATEGORY DROPDOWN
+
+* Standard dropdown
+* Includes “Add Category” option
+* Newly added categories:
+
+  * can be deleted from dropdown (with soft confirm)
+  * updates instantly
+
+---
+
+# 📸 IMAGE COMPONENT RULE (FINAL)
+
+* No replace/delete icons
+* Only one plus icon always visible
+* After image upload:
+
+  * image remains clickable via plus icon overlay
+  * same icon acts as replace trigger
+
+---
+
+# 🔻 BOTTOM ACTION BUTTONS (IMPORTANT FIX)
+
+## 🚫 DO NOT CREATE SEPARATE BAR
+
+* Do NOT wrap buttons in a separate bottom action bar
+* Buttons must feel like **natural continuation of form**
+
+---
+
+## 🔘 BUTTON DESIGN RULE
+
+* Place buttons directly below inputs
+* Same background flow as page (no boxed section)
+* Just spacing separation, not container separation
+
+### Buttons:
+
+* Create (primary)
+* Create & Add Another (secondary)
+
+---
+
+## 🎬 BUTTON BEHAVIOR
+
+* Smooth press animation
+* Subtle hover lift
+* Loading state on submit
+* Success feedback before redirect/reset
+
+---
+
+# 📱 MOBILE ADAPTATION
+
+* Stack layout vertically
+* Inputs full width
+* Buttons stacked (no grouping bar)
+* Image remains top
+
+---
+
+# ⚡ ANIMATION SYSTEM (GLOBAL RULE)
+
+* All animations must be:
+
+  * smooth
+  * fast
+  * non-flashy
+
+### Included:
+
+* Input border draw animation
+* Label float transition
+* Margin fill animation
+* Button press feedback
+
+---
+
+# 🎯 FINAL GOAL
+
+* Clean, modern product creation flow
+* Fast POS-style interaction
+* No visual clutter or extra containers
+* Premium input experience with animated borders
+* Seamless desktop + mobile consistency
