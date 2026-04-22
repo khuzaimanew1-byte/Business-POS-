@@ -3,8 +3,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft, DollarSign, TrendingUp, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useSaleEvents, type SaleEvent, type SaleItem } from "@/lib/analytics-store";
-import { getProductMeta, colorForProduct } from "@/lib/products-meta";
+import { useSaleEvents, type SaleEvent } from "@/lib/analytics-store";
 
 type Mode = "daily" | "weekly" | "monthly" | "yearly" | "custom";
 type Metric = "sales" | "profit";
@@ -270,40 +269,6 @@ function fmtMetric(v: number, metric: Metric) {
   }
   const n = Math.round(v);
   return `${n} item${n === 1 ? "" : "s"}`;
-}
-
-// ── Product aggregation ───────────────────────────────────────────────────
-type ProductAgg = {
-  id: string;
-  name: string;
-  color: string;
-  value: number;
-};
-
-function aggregateProducts(
-  events: SaleEvent[],
-  metric: Metric,
-  rangeStart: number,
-  rangeEnd: number,
-): ProductAgg[] {
-  const totals = new Map<string, { name: string; value: number }>();
-  const valueOf = (it: SaleItem) =>
-    metric === "sales" ? it.qty : it.profit * it.qty;
-  for (const e of events) {
-    if (e.ts < rangeStart || e.ts >= rangeEnd) continue;
-    for (const it of e.items) {
-      const cur = totals.get(it.productId) ?? { name: it.name, value: 0 };
-      cur.value += valueOf(it);
-      cur.name = it.name;
-      totals.set(it.productId, cur);
-    }
-  }
-  return Array.from(totals.entries())
-    .map(([id, v]) => {
-      const meta = getProductMeta(id, v.name);
-      return { id, name: meta.name, color: colorForProduct(id), value: v.value };
-    })
-    .sort((a, b) => b.value - a.value);
 }
 
 function fmtYTick(v: number, metric: Metric) {
@@ -587,89 +552,6 @@ function Chart({
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-//  TOP PRODUCTS BAR CHART
-// ──────────────────────────────────────────────────────────────────────────
-const TRACK_H = 176; // px — h-44
-const MIN_BAR_H = 3; // px — minimum visibility for non-zero values
-
-function TopProductsBar({
-  slots,
-  metric,
-}: {
-  slots: ProductAgg[];
-  metric: Metric;
-}) {
-  const max = Math.max(1, ...slots.map((s) => s.value));
-
-  return (
-    <div className="px-4 sm:px-6 pt-5 pb-6">
-      <div className="mb-5">
-        <h3 className="text-sm font-semibold tracking-tight">Top products</h3>
-        <p className="text-[11px] text-muted-foreground mt-0.5">
-          Highest performers in this period
-        </p>
-      </div>
-
-      <div className="grid grid-cols-5 gap-3 sm:gap-5">
-        {slots.map((p) => {
-          const isZero = p.value === 0;
-          const isLow = !isZero && p.value / max < 0.12;
-
-          // True proportional height — no inflation
-          const barH = isZero
-            ? 0
-            : Math.max(MIN_BAR_H, (p.value / max) * TRACK_H);
-
-          return (
-            <div key={p.id} className="flex flex-col items-center gap-2">
-              {/* Fixed-height container keeps all columns aligned */}
-              <div className="relative w-full" style={{ height: TRACK_H }}>
-                {/* Always-visible value label — pinned to top of container */}
-                <div className="absolute top-0 inset-x-0 text-center">
-                  <span
-                    className="text-[10px] font-semibold tabular-nums leading-none"
-                    style={{ color: isZero ? "hsl(240 5% 38%)" : p.color }}
-                  >
-                    {fmtMetric(p.value, metric)}
-                  </span>
-                </div>
-
-                {/* Track — starts below the label */}
-                <div
-                  className="absolute inset-x-0 bottom-0 rounded-lg bg-secondary/30 overflow-hidden"
-                  style={{ top: 18 }}
-                >
-                  {isZero ? (
-                    /* Thin baseline for zero — clearly different from low */
-                    <div className="absolute bottom-0 inset-x-0 h-[2px] bg-secondary/60 rounded-full" />
-                  ) : (
-                    <div
-                      className="absolute bottom-0 inset-x-0 rounded-t-lg transition-all duration-500 ease-out"
-                      style={{
-                        height: barH,
-                        background: `linear-gradient(180deg, ${p.color} 0%, color-mix(in oklab, ${p.color} 50%, transparent) 100%)`,
-                        boxShadow: isLow
-                          ? `0 -6px 16px -2px ${p.color}80, 0 0 8px -4px ${p.color}, inset 0 1px 0 rgba(255,255,255,0.22)`
-                          : `0 0 14px -6px ${p.color}, inset 0 1px 0 rgba(255,255,255,0.1)`,
-                      }}
-                    />
-                  )}
-                </div>
-              </div>
-
-              {/* Product name */}
-              <span className="text-[11px] text-muted-foreground text-center leading-tight truncate w-full px-1">
-                {p.name}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ──────────────────────────────────────────────────────────────────────────
 //  PAGE
 // ──────────────────────────────────────────────────────────────────────────
 export default function Analytics() {
@@ -702,13 +584,6 @@ export default function Analytics() {
     () => visibleBins.reduce((s, b) => s + b.value, 0),
     [visibleBins],
   );
-
-  const ranked = useMemo(
-    () => aggregateProducts(events, metric, data.rangeStart, data.rangeEnd),
-    [events, metric, data.rangeStart, data.rangeEnd],
-  );
-
-  const barSlots = useMemo<ProductAgg[]>(() => ranked.slice(0, 5), [ranked]);
 
   const applyCustom = () => {
     const f = new Date(fromStr).getTime();
@@ -835,13 +710,6 @@ export default function Analytics() {
               loadingKey={`${mode}-${metric}-${custom?.from ?? 0}-${custom?.to ?? 0}`}
             />
           </div>
-
-          {/* Top products bar chart */}
-          {barSlots.length > 0 && (
-            <section className="mt-6 rounded-2xl bg-card/40 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
-              <TopProductsBar slots={barSlots} metric={metric} />
-            </section>
-          )}
 
         </main>
 
