@@ -262,7 +262,7 @@ export default function POS() {
       >
 
         {/* TOP BAR */}
-        <header className={`h-14 sm:h-16 border-b flex items-center justify-between px-3 sm:px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-colors duration-400 ${isEditMode ? 'border-primary/25 bg-primary/5' : 'border-border bg-background/80'}`}>
+        <header className={`h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-all duration-400 ${isEditMode ? 'border-b border-primary/25 bg-primary/5 shadow-none' : 'bg-background/90 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)]'}`}>
           {/* Search */}
           <div className="relative flex-1 max-w-xl group">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-[14px] h-[14px]" />

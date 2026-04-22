@@ -932,7 +932,7 @@ export default function Analytics() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Minimal header — time mode pills right-aligned */}
-        <header className="sticky top-0 z-20 bg-background/90 backdrop-blur-md border-b border-border h-14 flex items-center justify-center px-3 sm:px-5">
+        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md h-14 flex items-center justify-center px-3 sm:px-5 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)]">
 
           {/* Time mode pills — natural, no card border */}
           <div className="flex items-center gap-0.5">
