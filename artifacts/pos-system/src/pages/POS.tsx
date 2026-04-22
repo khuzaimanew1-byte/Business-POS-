@@ -454,10 +454,19 @@ export default function POS() {
         <header className={`h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-all duration-400 ${isEditMode ? 'border-b border-primary/25 bg-primary/5 shadow-none' : 'bg-background/90 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)]'}`}>
           {/* Search — hidden during selection mode */}
           {isSelectMode ? (
-            <div className="flex items-center flex-1 min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+              <button
+                onClick={exitSelectMode}
+                className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-white/[0.04] active:scale-[0.96] transition-all duration-200 shrink-0"
+                aria-label="Exit selection"
+                data-testid="btn-exit-select"
+              >
+                <X size={17} strokeWidth={1.75} />
+              </button>
               <span className="text-[13px] sm:text-sm text-muted-foreground font-medium whitespace-nowrap tracking-tight">
+                <span className="text-foreground">Selected: </span>
                 <span className="text-foreground tabular-nums font-semibold">{selectedIds.size}</span>
-                <span className="ml-1">selected</span>
+                <span className="ml-1">item{selectedIds.size === 1 ? '' : 's'}</span>
               </span>
             </div>
           ) : (
@@ -492,14 +501,6 @@ export default function POS() {
             {/* Selection mode toolbar — overrides other controls when active */}
             {isSelectMode && (
               <div className="flex items-center gap-2 sm:gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                <button
-                  onClick={exitSelectMode}
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-white/[0.04] active:scale-[0.96] transition-all duration-200"
-                  aria-label="Exit selection"
-                  data-testid="btn-exit-select"
-                >
-                  <X size={17} strokeWidth={1.75} />
-                </button>
                 <button
                   disabled={selectedIds.size === 0}
                   onClick={() => {
