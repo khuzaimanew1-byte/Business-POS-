@@ -276,31 +276,118 @@ function CurrencySection() {
           />
         </Row>
       </Block>
-      <Block label="Exchange rates" desc="USD is the base. All product prices are stored in USD and converted on display.">
-        <Row label="1 USD = ? PKR" desc="Pakistani Rupee conversion rate.">
-          <NumberInput
-            value={String(settings.rates.PKR)}
-            onChange={v => update("rates", { ...settings.rates, PKR: Number(v) || 0 })}
-            placeholder="280"
-          />
-        </Row>
-        <Row label="1 USD = ? OMR" desc="Omani Rial conversion rate.">
-          <NumberInput
-            value={String(settings.rates.OMR)}
-            onChange={v => update("rates", { ...settings.rates, OMR: Number(v) || 0 })}
-            placeholder="0.385"
-          />
-        </Row>
-        <div className="pt-2">
-          <button
-            onClick={() => { update("rates", DEFAULT_RATES); toast.success("Exchange rates reset to defaults"); }}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 inline-flex items-center gap-1.5"
-          >
-            <RotateCcw size={12} /> Reset to defaults
-          </button>
-        </div>
+      <Block label="Exchange rates" desc="USD is the base. All values derive from USD — no direct PKR ↔ OMR relationship.">
+        <ExchangeRatesInline />
       </Block>
     </>
+  );
+}
+
+function ExchangeRatesInline() {
+  const { settings, update } = useSettings();
+  const [editing, setEditing] = useState(false);
+  const [pkr, setPkr] = useState(String(settings.rates.PKR));
+  const [omr, setOmr] = useState(String(settings.rates.OMR));
+
+  const enterEdit = () => {
+    setPkr(String(settings.rates.PKR));
+    setOmr(String(settings.rates.OMR));
+    setEditing(true);
+  };
+
+  const save = () => {
+    const nextPkr = Number(pkr) || 0;
+    const nextOmr = Number(omr) || 0;
+    if (nextPkr <= 0 || nextOmr <= 0) {
+      toast.error("Rates must be greater than zero");
+      return;
+    }
+    update("rates", { PKR: nextPkr, OMR: nextOmr });
+    setEditing(false);
+    toast.success("Exchange rates updated");
+  };
+
+  return (
+    <div className="flex items-center gap-3 sm:gap-5 flex-nowrap overflow-x-auto py-1">
+      {/* USD (locked, base) */}
+      <div className="shrink-0 flex flex-col gap-1">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium">USD · base</div>
+        <div className="relative h-10 min-w-[110px] px-3 rounded-lg border border-primary/30 bg-primary/[0.06] flex items-center justify-between gap-2">
+          <span className="text-sm font-mono font-semibold text-foreground">1</span>
+          <span className="text-xs font-medium text-primary/80">$</span>
+        </div>
+      </div>
+
+      {/* Arrow USD → PKR */}
+      <div className="shrink-0 text-muted-foreground/60 text-lg leading-none pt-5 select-none">→</div>
+
+      {/* PKR */}
+      <div className="shrink-0 flex flex-col gap-1">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium">PKR</div>
+        {editing ? (
+          <div className="relative h-10 min-w-[130px]">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={pkr}
+              onChange={e => setPkr(e.target.value.replace(/[^0-9.]/g, ''))}
+              className="w-full h-full pl-3 pr-9 rounded-lg bg-input/50 border border-border/60 text-sm font-mono text-foreground outline-none focus:border-ring/60 focus:ring-1 focus:ring-ring/20 transition-all duration-200"
+              autoFocus
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground pointer-events-none">₨</span>
+          </div>
+        ) : (
+          <div className="relative h-10 min-w-[130px] px-3 rounded-lg border border-border/50 bg-white/[0.02] flex items-center justify-between gap-2">
+            <span className="text-sm font-mono font-semibold text-foreground">{settings.rates.PKR}</span>
+            <span className="text-xs font-medium text-muted-foreground">₨</span>
+          </div>
+        )}
+      </div>
+
+      {/* Spacer between PKR and OMR — no arrow, no direct relationship */}
+      <div className="shrink-0 w-3 sm:w-6" />
+
+      {/* OMR (derived from USD, not from PKR) */}
+      <div className="shrink-0 flex flex-col gap-1">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium">OMR</div>
+        {editing ? (
+          <div className="relative h-10 min-w-[140px]">
+            <input
+              type="text"
+              inputMode="decimal"
+              value={omr}
+              onChange={e => setOmr(e.target.value.replace(/[^0-9.]/g, ''))}
+              className="w-full h-full pl-3 pr-12 rounded-lg bg-input/50 border border-border/60 text-sm font-mono text-foreground outline-none focus:border-ring/60 focus:ring-1 focus:ring-ring/20 transition-all duration-200"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-muted-foreground pointer-events-none">OMR</span>
+          </div>
+        ) : (
+          <div className="relative h-10 min-w-[140px] px-3 rounded-lg border border-border/50 bg-white/[0.02] flex items-center justify-between gap-2">
+            <span className="text-sm font-mono font-semibold text-foreground">{settings.rates.OMR}</span>
+            <span className="text-[10px] font-semibold text-muted-foreground">OMR</span>
+          </div>
+        )}
+      </div>
+
+      {/* Action button */}
+      <div className="shrink-0 ml-auto pt-5">
+        {editing ? (
+          <button
+            onClick={save}
+            className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
+          >
+            Save
+          </button>
+        ) : (
+          <button
+            onClick={enterEdit}
+            className="h-10 px-4 rounded-lg border border-border/60 bg-secondary/40 text-sm font-medium text-foreground hover:border-border hover:bg-secondary/60 transition-all duration-200"
+          >
+            Change
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

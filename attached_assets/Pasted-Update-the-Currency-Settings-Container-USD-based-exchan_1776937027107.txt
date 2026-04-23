@@ -1,0 +1,182 @@
+Update the **Currency Settings Container (USD-based exchange system)** with a refined single-line layout and corrected relationship logic between currencies. Maintain simplicity, premium UI feel, and strict USD-based conversion structure.
+
+---
+
+# 💱 CURRENCY SYSTEM — FINAL INLINE STRUCTURE (UPDATED)
+
+## 🌍 CORE RULE (UNCHANGED)
+
+* **USD is the only base currency (locked)**
+* All conversions derive ONLY from USD:
+
+  * 1 USD = X PKR
+  * 1 USD = X OMR
+
+No direct PKR ↔ OMR relationship exists.
+
+---
+
+# 📊 DEFAULT VIEW STATE (READ ONLY)
+
+Display currencies in a **single horizontal line**:
+
+```text id="c8v1a2"
+USD (locked) → PKR   OMR
+```
+
+---
+
+## 💵 USD (BASE)
+
+* Fixed: `1 USD`
+* Locked (non-editable)
+* Visually primary reference point
+
+---
+
+## 🇵🇰 PKR (derived)
+
+* Display:
+
+  * `1 USD = 280`
+* ₨ symbol shown on right side of value
+
+---
+
+## 🇴🇲 OMR (derived)
+
+* Display:
+
+  * `1 USD = 0.38`
+* “OMR” label shown on right side of value
+
+---
+
+# 🔁 FLOW INDICATOR (CORRECTED LOGIC)
+
+## IMPORTANT CHANGE:
+
+* Arrow ONLY exists:
+
+  * **USD → PKR**
+  * **USD → OMR**
+
+* NO arrow between PKR and OMR
+
+### Visual structure:
+
+```text id="u3k9pd"
+USD → PKR   OMR
+      ↑      ↑
+   derived from USD
+```
+
+(visual cue only from USD as origin)
+
+---
+
+# ✏️ EDIT MODE (SAME LINE STRUCTURE)
+
+On clicking action button, layout becomes:
+
+```text id="m7xq22"
+[ USD (locked) ] → [ PKR input ]   [ OMR input ]
+```
+
+---
+
+## 💵 USD FIELD
+
+* Always first
+* Locked input
+* Non-editable
+
+---
+
+## 🇵🇰 PKR FIELD
+
+* Editable input
+* ₨ symbol inside field (right aligned)
+
+---
+
+## 🇴🇲 OMR FIELD
+
+* Editable input
+* “OMR” label inside field (right aligned)
+
+---
+
+# 🔘 BUTTON LOGIC (UNCHANGED STRUCTURE)
+
+Single button controls both states:
+
+---
+
+## VIEW MODE:
+
+* Label: **Change**
+* Action:
+
+  * Switch to edit mode
+
+---
+
+## EDIT MODE:
+
+* Label: **Save**
+* Action:
+
+  * Save updated exchange rates
+  * Apply globally
+
+---
+
+# ⚙️ SAVE BEHAVIOR (GLOBAL SYNC RULE)
+
+On Save:
+
+* Recalculate all system values using USD base
+* Update instantly across:
+
+  * POS page
+  * Cart system
+  * Product cards
+  * Add Product page
+  * Analytics page
+
+No reload required.
+
+---
+
+# 🎨 UI RULES
+
+* Maintain strict **single-line layout**
+* No vertical stacking allowed
+* Smooth transition between view ↔ edit mode
+* No layout shift on state change
+
+---
+
+# 🚫 CONSTRAINTS
+
+* USD remains locked always
+* No PKR ↔ OMR relationship or conversion logic
+* No arrows between secondary currencies
+* Only USD acts as origin reference
+* No additional buttons allowed
+
+---
+
+# 🎯 FINAL RESULT
+
+This component becomes:
+
+> “A single-line USD-origin currency engine with clean derived values and strict hierarchical conversion logic.”
+
+It ensures:
+
+* Correct financial hierarchy
+* Clean visual interpretation
+* Zero misleading currency relationships
+* Fast global updates across system
