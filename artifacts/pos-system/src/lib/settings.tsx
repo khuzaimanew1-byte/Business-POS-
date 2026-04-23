@@ -4,7 +4,7 @@ export type PerformanceMode = "smooth" | "fast" | "ultra";
 export type CurrencyCode = "PKR" | "USD" | "OMR";
 export type RoundingMode = "standard" | "floor" | "ceiling";
 export type RetentionMode = "7d" | "30d" | "all";
-export type DecimalPrecision = 1 | 2 | 3;
+export type DecimalPrecision = 0 | 1 | 2 | 3;
 
 // ── Shortcuts ─────────────────────────────────────────────────────────────
 export type ShortcutAction =

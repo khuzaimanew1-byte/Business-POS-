@@ -8,10 +8,10 @@ import {
   useSettings,
   type PerformanceMode, type CurrencyCode, type RoundingMode, type RetentionMode, type DecimalPrecision,
   type ShortcutAction, type ShortcutBinding,
-  SHORTCUT_LABELS, DEFAULT_SHORTCUTS, DEFAULT_RATES,
+  SHORTCUT_LABELS, DEFAULT_RATES,
   shortcutToString, detectConflicts, bindingFromKeyEvent,
 } from "@/lib/settings";
-import { AlertTriangle, RotateCcw } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { toast } from "sonner";
 
@@ -248,6 +248,7 @@ function CurrencySection() {
             value={String(settings.decimals)}
             onChange={v => update("decimals", Number(v) as DecimalPrecision)}
             options={[
+              { value: "0", label: "0 (e.g. 12)" },
               { value: "1", label: "1 (e.g. 12.3)" },
               { value: "2", label: "2 (e.g. 12.34)" },
               { value: "3", label: "3 (e.g. 12.345)" },
@@ -491,15 +492,6 @@ function ShortcutsSection() {
     }
   };
 
-  const resetOne = (action: ShortcutAction) => {
-    update("shortcuts", { ...settings.shortcuts, [action]: DEFAULT_SHORTCUTS[action] });
-  };
-
-  const resetAll = () => {
-    update("shortcuts", DEFAULT_SHORTCUTS);
-    toast.success("All shortcuts reset to defaults");
-  };
-
   return (
     <>
       <SectionHeader title="Keyboard Shortcuts" desc="Speed up your most common actions. Click any binding to reassign — changes apply instantly." />
@@ -507,25 +499,11 @@ function ShortcutsSection() {
         <Toggle checked={settings.shortcutsEnabled} onChange={v => update("shortcutsEnabled", v)} label="Enable keyboard shortcuts" desc="Master switch for all global hotkeys." />
       </Block>
       <Block>
-        <div className="flex items-center justify-end mb-1">
-          <button
-            onClick={resetAll}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
-          >
-            <RotateCcw size={12} /> Reset all
-          </button>
-        </div>
         <div className={`flex flex-col divide-y divide-border/30 ${settings.shortcutsEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
           {actions.map(action => {
             const binding = settings.shortcuts[action];
             const isRecording = recordingFor === action;
             const hasConflict = conflicts.has(action);
-            const isDefault = (() => {
-              const def = DEFAULT_SHORTCUTS[action];
-              if (!def && !binding) return true;
-              if (!def || !binding) return false;
-              return def.ctrl === binding.ctrl && def.shift === binding.shift && def.alt === binding.alt && def.meta === binding.meta && def.key === binding.key;
-            })();
             return (
               <div key={action} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0 flex items-center gap-2">
@@ -536,7 +514,7 @@ function ShortcutsSection() {
                     </span>
                   )}
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="shrink-0">
                   <button
                     onClick={() => startRecording(action)}
                     onKeyDown={isRecording ? onRecordKey : undefined}
@@ -553,14 +531,6 @@ function ShortcutsSection() {
                     }`}
                   >
                     {isRecording ? "Press keys…" : shortcutToString(binding)}
-                  </button>
-                  <button
-                    onClick={() => resetOne(action)}
-                    disabled={isDefault}
-                    title="Reset to default"
-                    className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
-                  >
-                    <RotateCcw size={13} />
                   </button>
                 </div>
               </div>
