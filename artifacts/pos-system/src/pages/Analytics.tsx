@@ -457,23 +457,43 @@ function Chart({
   const yAt = (v: number) =>
     margin.top + plotH * (1 - (v - yMin) / Math.max(1e-6, yMax - yMin));
 
-  const pts = bins.map((b) => ({ x: xAt(b.ts), y: yAt(b.value) }));
-  const lineD = smoothPath(pts);
+  // ── Future-zone & real-data trimming ──────────────────────────────────
+  // The line must stop at the last real data point — no fake projection
+  // into "now → end of period". Synthetic zero-anchors (visible:false) are
+  // structural only and never participate in the rendered line, hover, or
+  // tooltips. Mid-dataset real zeros (visible:true) are still interactive.
+  const nowTs = Date.now();
+  const realIndices: number[] = [];
+  for (let i = 0; i < bins.length; i++) {
+    if (bins[i].visible && bins[i].ts <= nowTs) realIndices.push(i);
+  }
+  const lastRealIdx = realIndices.length > 0 ? realIndices[realIndices.length - 1] : -1;
+  const linePts = realIndices.map(i => ({ x: xAt(bins[i].ts), y: yAt(bins[i].value) }));
+  const lineD = smoothPath(linePts);
   const areaD =
-    pts.length > 0
-      ? `${lineD} L ${pts[pts.length - 1].x} ${baseY} L ${pts[0].x} ${baseY} Z`
+    linePts.length > 0
+      ? `${lineD} L ${linePts[linePts.length - 1].x} ${baseY} L ${linePts[0].x} ${baseY} Z`
       : "";
 
+  // Future zone = everything after the last real point (or whole plot if no data).
+  const plotEndX = margin.left + plotW;
+  const futureStartX = lastRealIdx >= 0
+    ? Math.min(plotEndX, Math.max(margin.left, xAt(bins[lastRealIdx].ts)))
+    : margin.left;
+  const showFutureZone = futureStartX < plotEndX - 0.5;
+  const interactiveWidth = Math.max(0, futureStartX - margin.left);
+
   const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
-    if (bins.length === 0) return;
+    if (realIndices.length === 0) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    const rel = x / rect.width;
-    const ts = rangeStart + rel * span;
+    const rel = Math.min(1, Math.max(0, x / Math.max(1, rect.width)));
+    // The capture rect covers ts ∈ [rangeStart, lastRealTs], so map directly.
+    const lastRealTs = bins[lastRealIdx].ts;
+    const ts = rangeStart + rel * (lastRealTs - rangeStart);
     let bestIdx = -1;
     let bestDist = Infinity;
-    for (let i = 0; i < bins.length; i++) {
-      if (!bins[i].visible) continue;
+    for (const i of realIndices) {
       const d = Math.abs(bins[i].ts - ts);
       if (d < bestDist) { bestDist = d; bestIdx = i; }
     }
@@ -564,7 +584,8 @@ function Chart({
           </text>
         ))}
 
-        {/* Line + area */}
+        {/* Line + area — drawn ONLY through real data points; never extends
+            into the future zone. */}
         <g key={animKey} className="chart-reveal">
           {areaD && <path d={areaD} fill="url(#aFill)" />}
           {lineD && (
@@ -572,6 +593,29 @@ function Chart({
               strokeLinecap="round" strokeLinejoin="round" />
           )}
         </g>
+
+        {/* Future zone — soft desaturated overlay + dotted baseline.
+            Communicates "no data exists yet" rather than "predicted data". */}
+        {showFutureZone && (
+          <g pointerEvents="none">
+            <rect
+              x={futureStartX} y={margin.top}
+              width={plotEndX - futureStartX} height={plotH}
+              fill="hsl(240 8% 6%)" fillOpacity={0.42}
+            />
+            <line
+              x1={futureStartX} x2={futureStartX}
+              y1={margin.top} y2={baseY}
+              stroke="hsl(43 90% 55%)" strokeOpacity={0.28}
+              strokeWidth={1} strokeDasharray="2 4"
+            />
+            <line
+              x1={futureStartX} x2={plotEndX} y1={baseY} y2={baseY}
+              stroke="hsl(240 5% 55%)" strokeOpacity={0.3}
+              strokeWidth={1} strokeDasharray="2 3"
+            />
+          </g>
+        )}
 
         {/* Crosshair + active point */}
         {hover && (
@@ -584,9 +628,13 @@ function Chart({
           </>
         )}
 
-        <rect x={margin.left} y={margin.top} width={plotW} height={plotH}
-          fill="transparent" onMouseMove={handleMove} onMouseLeave={handleLeave}
-          style={{ cursor: "crosshair" }} />
+        {/* Hover capture is limited to the real-data band so the future
+            zone never produces tooltips, crosshairs, or hover values. */}
+        {interactiveWidth > 0 && (
+          <rect x={margin.left} y={margin.top} width={interactiveWidth} height={plotH}
+            fill="transparent" onMouseMove={handleMove} onMouseLeave={handleLeave}
+            style={{ cursor: "crosshair" }} />
+        )}
       </svg>
 
       {hover && (
