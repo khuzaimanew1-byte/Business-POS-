@@ -134,8 +134,10 @@ function buildChartData(
     const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
     rangeLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-    const stride = days <= 14 ? 2 : days <= 21 ? 3 : 4;
-    for (let d = 1; d <= days; d += stride) {
+    // Fixed segment boundaries: 1, 8, 15, 22, and the last day of the
+    // current month — the last tick adapts to whichever month is active.
+    const segmentDays = Array.from(new Set([1, 8, 15, 22, days])).sort((a, b) => a - b);
+    for (const d of segmentDays) {
       const ts = new Date(now.getFullYear(), now.getMonth(), d, 12, 0, 0).getTime();
       xTicks.push({ ts, label: String(d) });
     }
@@ -457,11 +459,17 @@ function Chart({
   const yAt = (v: number) =>
     margin.top + plotH * (1 - (v - yMin) / Math.max(1e-6, yMax - yMin));
 
-  // ── Future-zone & real-data trimming ──────────────────────────────────
-  // The line must stop at the last real data point — no fake projection
-  // into "now → end of period". Synthetic zero-anchors (visible:false) are
-  // structural only and never participate in the rendered line, hover, or
-  // tooltips. Mid-dataset real zeros (visible:true) are still interactive.
+  // ── Line construction & hover model ───────────────────────────────────
+  // Rules (apply consistently across daily / weekly / monthly / yearly):
+  //   • Line ALWAYS spans from the first x-axis tick to the last x-axis tick.
+  //   • A synthetic anchor extends the line horizontally to either edge if
+  //     the first/last real point doesn't sit exactly there.
+  //   • If a period has zero activity, render a flat baseline at y=0 across
+  //     the full width (still visible, still hoverable at the start anchor).
+  //   • The first anchor is always hoverable — even when its value is 0 —
+  //     so users can read the baseline state.
+  //   • The end-of-data glow stays on the last REAL data point (never on a
+  //     synthetic anchor), preserving the "live latest value" cue.
   const nowTs = Date.now();
   const realIndices: number[] = [];
   for (let i = 0; i < bins.length; i++) {
@@ -469,12 +477,22 @@ function Chart({
   }
   const lastRealIdx = realIndices.length > 0 ? realIndices[realIndices.length - 1] : -1;
   const realPts = realIndices.map(i => ({ x: xAt(bins[i].ts), y: yAt(bins[i].value) }));
-  // Anchor the first real point to the chart's left edge so the line never
-  // appears to "float" mid-plot. We prepend a synthetic point at margin.left
-  // sharing the first real point's Y, giving a clean horizontal lead-in.
-  const linePts = realPts.length > 0 && realPts[0].x > margin.left + 0.5
-    ? [{ x: margin.left, y: realPts[0].y }, ...realPts]
-    : realPts;
+  const plotEndX = margin.left + plotW;
+
+  let linePts: { x: number; y: number }[];
+  if (realPts.length === 0) {
+    // Full zero-state — flat baseline at y=0 from first tick to last tick.
+    linePts = [{ x: margin.left, y: baseY }, { x: plotEndX, y: baseY }];
+  } else {
+    linePts = [];
+    if (realPts[0].x > margin.left + 0.5) {
+      linePts.push({ x: margin.left, y: realPts[0].y });
+    }
+    for (const p of realPts) linePts.push(p);
+    if (realPts[realPts.length - 1].x < plotEndX - 0.5) {
+      linePts.push({ x: plotEndX, y: realPts[realPts.length - 1].y });
+    }
+  }
   const lineD = smoothPath(linePts);
   const areaD =
     linePts.length > 0
@@ -482,46 +500,60 @@ function Chart({
       : "";
   const lastPt = realPts.length > 0 ? realPts[realPts.length - 1] : null;
 
-  // Future zone = everything after the last real point (or whole plot if no data).
-  const plotEndX = margin.left + plotW;
+  // Future-zone atmosphere = everything after the last real data point.
   const futureStartX = lastRealIdx >= 0
     ? Math.min(plotEndX, Math.max(margin.left, xAt(bins[lastRealIdx].ts)))
     : margin.left;
   const showFutureZone = futureStartX < plotEndX - 0.5;
-  const interactiveWidth = Math.max(0, futureStartX - margin.left);
 
-  // Zero-start handling: when the first real value is zero, that point is a
-  // structural anchor — it represents a baseline, not insight data. In that
-  // case only the first point should be hoverable so users don't read the
-  // flat segment as meaningful trend.
-  const firstValueIsZero = realIndices.length > 0 && bins[realIndices[0]].value === 0;
-  const hoverableIndices = firstValueIsZero ? [realIndices[0]] : realIndices;
+  // Hoverable points: real data (always), plus a synthetic baseline anchor
+  // at the period start when the first real point isn't already there.
+  type HP = { ts: number; value: number; px: number; py: number; isAnchor: boolean };
+  const hoverPoints: HP[] = [];
+  const firstRealTs = realIndices.length > 0 ? bins[realIndices[0]].ts : Number.POSITIVE_INFINITY;
+  if (firstRealTs > rangeStart + 1) {
+    hoverPoints.push({
+      ts: rangeStart, value: 0,
+      px: margin.left, py: baseY, isAnchor: true,
+    });
+  }
+  for (const i of realIndices) {
+    hoverPoints.push({
+      ts: bins[i].ts, value: bins[i].value,
+      px: xAt(bins[i].ts), py: yAt(bins[i].value), isAnchor: false,
+    });
+  }
+
+  // Hover capture spans the full plot for empty state (so users can find the
+  // single baseline anchor anywhere) and the data band otherwise.
+  const captureEnd = realIndices.length > 0
+    ? Math.max(margin.left + 1, futureStartX)
+    : plotEndX;
+  const interactiveWidth = Math.max(0, captureEnd - margin.left);
 
   const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
-    if (hoverableIndices.length === 0) return;
-    if (hoverableIndices.length === 1) {
-      setHoverIdx(hoverableIndices[0]);
+    if (hoverPoints.length === 0) return;
+    if (hoverPoints.length === 1) {
+      setHoverIdx(0);
       return;
     }
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const rel = Math.min(1, Math.max(0, x / Math.max(1, rect.width)));
-    // The capture rect covers ts ∈ [rangeStart, lastRealTs], so map directly.
-    const lastRealTs = bins[lastRealIdx].ts;
-    const ts = rangeStart + rel * (lastRealTs - rangeStart);
-    let bestIdx = -1;
+    const xPx = margin.left + (e.clientX - rect.left);
+    let bestIdx = 0;
     let bestDist = Infinity;
-    for (const i of hoverableIndices) {
-      const d = Math.abs(bins[i].ts - ts);
+    for (let i = 0; i < hoverPoints.length; i++) {
+      const d = Math.abs(hoverPoints[i].px - xPx);
       if (d < bestDist) { bestDist = d; bestIdx = i; }
     }
-    setHoverIdx(bestIdx >= 0 ? bestIdx : null);
+    setHoverIdx(bestIdx);
   };
   const handleLeave = () => setHoverIdx(null);
   const TT_W_EST = metric === "profit" ? 180 : 200;
-  const hover = hoverIdx !== null ? bins[hoverIdx] : null;
-  const hoverPx = hover ? xAt(hover.ts) : 0;
-  const hoverPy = hover ? yAt(hover.value) : 0;
+  const hover = hoverIdx !== null && hoverIdx >= 0 && hoverIdx < hoverPoints.length
+    ? hoverPoints[hoverIdx]
+    : null;
+  const hoverPx = hover ? hover.px : 0;
+  const hoverPy = hover ? hover.py : 0;
   let ttLeft = 0;
   if (hover) {
     ttLeft = Math.max(margin.left + 4, Math.min(size.w - TT_W_EST - 4, hoverPx - TT_W_EST / 2));
@@ -700,11 +732,6 @@ function Chart({
         </div>
       )}
 
-      {bins.every((b) => b.value === 0) && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-xs text-muted-foreground/70">No activity in this period</p>
-        </div>
-      )}
     </div>
   );
 }
