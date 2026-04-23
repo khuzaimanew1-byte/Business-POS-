@@ -899,7 +899,7 @@ export default function POS() {
                           {product.name}
                         </TooltipContent>
                       </Tooltip>
-                      <p className="font-bold text-primary leading-none text-[13px] sm:text-[16px]">{fmtCur(product.price)}</p>
+                      <p className="font-semibold text-primary leading-none text-[13px] sm:text-[16px]">{fmtCur(product.price)}</p>
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-muted-foreground text-[11px] sm:text-[14px] leading-none">Stock: {product.stock}</span>
                         <button

@@ -199,7 +199,7 @@ export function formatCurrency(v: number, s: SettingsState): string {
   const converted = convertFromUSD(v, s);
   const rounded = applyRounding(converted, s.decimals, s.rounding);
   const num = formatNumberTrimmed(rounded, s.decimals);
-  if (s.currency === "OMR") return `${num} (OMR)`;
+  if (s.currency === "OMR") return `${num} OMR`;
   return `${CURRENCY_SYMBOLS[s.currency]}${num}`;
 }
 
