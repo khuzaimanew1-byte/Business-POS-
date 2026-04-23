@@ -468,12 +468,19 @@ function Chart({
     if (bins[i].visible && bins[i].ts <= nowTs) realIndices.push(i);
   }
   const lastRealIdx = realIndices.length > 0 ? realIndices[realIndices.length - 1] : -1;
-  const linePts = realIndices.map(i => ({ x: xAt(bins[i].ts), y: yAt(bins[i].value) }));
+  const realPts = realIndices.map(i => ({ x: xAt(bins[i].ts), y: yAt(bins[i].value) }));
+  // Anchor the first real point to the chart's left edge so the line never
+  // appears to "float" mid-plot. We prepend a synthetic point at margin.left
+  // sharing the first real point's Y, giving a clean horizontal lead-in.
+  const linePts = realPts.length > 0 && realPts[0].x > margin.left + 0.5
+    ? [{ x: margin.left, y: realPts[0].y }, ...realPts]
+    : realPts;
   const lineD = smoothPath(linePts);
   const areaD =
     linePts.length > 0
       ? `${lineD} L ${linePts[linePts.length - 1].x} ${baseY} L ${linePts[0].x} ${baseY} Z`
       : "";
+  const lastPt = realPts.length > 0 ? realPts[realPts.length - 1] : null;
 
   // Future zone = everything after the last real point (or whole plot if no data).
   const plotEndX = margin.left + plotW;
@@ -531,6 +538,14 @@ function Chart({
           <linearGradient id="aFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="hsl(43 90% 55%)" stopOpacity="0.22" />
             <stop offset="100%" stopColor="hsl(43 90% 55%)" stopOpacity="0" />
+          </linearGradient>
+          {/* Future-zone fade: transparent at the boundary, gently darker
+              and desaturated toward the right edge. Communicates
+              "space exists but is not yet defined" without hiding the grid. */}
+          <linearGradient id="futureFade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="hsl(240 8% 6%)" stopOpacity="0" />
+            <stop offset="60%" stopColor="hsl(240 8% 6%)" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="hsl(240 8% 6%)" stopOpacity="0.55" />
           </linearGradient>
         </defs>
 
@@ -594,25 +609,31 @@ function Chart({
           )}
         </g>
 
-        {/* Future zone — soft desaturated overlay + dotted baseline.
-            Communicates "no data exists yet" rather than "predicted data". */}
+        {/* Future zone — soft horizontal gradient fade. Grid stays visible
+            beneath, no line is drawn here, and there is no interaction. */}
         {showFutureZone && (
           <g pointerEvents="none">
             <rect
               x={futureStartX} y={margin.top}
               width={plotEndX - futureStartX} height={plotH}
-              fill="hsl(240 8% 6%)" fillOpacity={0.42}
+              fill="url(#futureFade)"
             />
-            <line
-              x1={futureStartX} x2={futureStartX}
-              y1={margin.top} y2={baseY}
-              stroke="hsl(43 90% 55%)" strokeOpacity={0.28}
-              strokeWidth={1} strokeDasharray="2 4"
+          </g>
+        )}
+
+        {/* End-of-data marker — a clean dot with a subtle pulsing glow at
+            the last real data point. No fade-out of the line itself. */}
+        {lastPt && (
+          <g pointerEvents="none">
+            <circle
+              cx={lastPt.x} cy={lastPt.y} r={9}
+              fill="hsl(43 90% 55%)"
+              className="chart-endpoint-glow"
             />
-            <line
-              x1={futureStartX} x2={plotEndX} y1={baseY} y2={baseY}
-              stroke="hsl(240 5% 55%)" strokeOpacity={0.3}
-              strokeWidth={1} strokeDasharray="2 3"
+            <circle
+              cx={lastPt.x} cy={lastPt.y} r={3.25}
+              fill="hsl(43 90% 55%)"
+              stroke="hsl(240 10% 8%)" strokeWidth={1.5}
             />
           </g>
         )}

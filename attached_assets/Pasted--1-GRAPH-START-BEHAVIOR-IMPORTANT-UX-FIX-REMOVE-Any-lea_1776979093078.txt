@@ -1,0 +1,79 @@
+📊 1. GRAPH START BEHAVIOR (IMPORTANT UX FIX)
+❌ REMOVE:
+Any leading empty space before first data point
+Any visual delay or padding before line starts
+✅ IMPLEMENT:
+Line graph MUST start directly from first available real data point
+First point should visually anchor at chart origin edge (no “floating start” feel)
+
+👉 Goal: graph feels complete and data-driven from moment it loads
+
+⚡ 2. REAL-TIME DAILY UPDATE LOGIC
+REQUIRED BEHAVIOR:
+On checkout / new entry:
+graph updates instantly (no reload delay feel)
+last point transitions smoothly (subtle animation only)
+Ensure latest data always becomes the endpoint of the line
+UX RULE:
+updates should feel “live system”, not static chart refresh
+🌫️ 3. FUTURE ZONE PSYCHOLOGICAL DESIGN (KEY IMPROVEMENT)
+❌ DO NOT:
+extend line forward
+show flat continuation
+leave visually “half-finished empty space”
+imply prediction or missing rendering
+✅ DO THIS INSTEAD:
+
+After last real data point:
+
+🎨 FUTURE SPACE DESIGN:
+full grid remains visible (very low opacity)
+apply soft gradient fade after last point (right side)
+slightly desaturate future region
+optionally add very subtle blur overlay
+
+👉 Important: NO LINE exists in future zone
+
+🧠 4. PSYCHOLOGICAL UX INTENT (NO TEXT, PURE VISUAL SIGNAL)
+
+Future zone should naturally feel like:
+
+“not yet reached”
+“system continues beyond visible data”
+“space exists but is not defined”
+
+WITHOUT:
+
+labels
+tooltips
+fake points
+prediction lines
+📍 5. END-OF-DATA EDGE TREATMENT
+
+At last data point:
+
+line ends cleanly (no fade-out of line itself)
+optionally add slight glow pulse on last point (very subtle)
+no continuation curve
+🚫 6. INTERACTION RULES
+Future zone:
+no hover
+no click
+no tooltip
+Only real data points are interactive
+zero or baseline points behave as structural markers only (if applicable)
+🧱 7. IMPLEMENTATION CONSTRAINT
+DO NOT redesign layout or chart structure
+ONLY modify:
+line rendering start logic
+end-of-data rendering behavior
+background/future zone styling layer
+update animation timing
+⚡ RESULT EXPECTED
+
+After update:
+
+graph feels fully loaded (no visual incompleteness)
+start feels intentional, not padded
+future feels “invisible but present”
+user never thinks chart is broken or half-rendered

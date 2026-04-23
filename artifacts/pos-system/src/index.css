@@ -75,6 +75,16 @@
   transform-origin: bottom center;
 }
 
+@keyframes chart-endpoint-glow-anim {
+  0%, 100% { opacity: 0.18; transform: scale(1); }
+  50%      { opacity: 0.42; transform: scale(1.35); }
+}
+.chart-endpoint-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chart-endpoint-glow-anim 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 :root {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
