@@ -487,7 +487,7 @@ function ShortcutsSection() {
       <Block>
         <Toggle checked={settings.shortcutsEnabled} onChange={v => update("shortcutsEnabled", v)} label="Enable keyboard shortcuts" desc="Master switch for all global hotkeys." />
       </Block>
-      <Block label="Bindings" desc="Click a binding then press the new key combination. Press Escape to cancel.">
+      <Block>
         <div className={`flex flex-col divide-y divide-border/30 ${settings.shortcutsEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
           {actions.map(action => {
             const binding = settings.shortcuts[action];
@@ -521,13 +521,6 @@ function ShortcutsSection() {
                   >
                     {isRecording ? "Press keys…" : shortcutToString(binding)}
                   </button>
-                  <button
-                    onClick={() => resetOne(action)}
-                    title="Reset to default"
-                    className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors duration-200"
-                  >
-                    <RotateCcw size={13} />
-                  </button>
                   {binding && (
                     <button
                       onClick={() => clearOne(action)}
@@ -541,14 +534,6 @@ function ShortcutsSection() {
               </div>
             );
           })}
-        </div>
-        <div className="pt-3">
-          <button
-            onClick={resetAll}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 inline-flex items-center gap-1.5"
-          >
-            <RotateCcw size={12} /> Reset all shortcuts
-          </button>
         </div>
       </Block>
     </>
