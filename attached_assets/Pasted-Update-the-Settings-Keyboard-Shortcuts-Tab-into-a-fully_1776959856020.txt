@@ -1,0 +1,213 @@
+Update the **Settings → Keyboard Shortcuts Tab** into a fully functional **global shortcut engine** with real-time application, proper scope handling, and clean UI.
+
+This update focuses on:
+
+* Making edited shortcuts actually work
+* Applying shortcuts globally across the app
+* Removing unnecessary UI clutter
+* Defining clear execution conditions
+
+---
+
+# ⌨️ SHORTCUT SYSTEM — GLOBAL EXECUTION ENGINE
+
+## 🎯 CORE GOAL
+
+Shortcut keys must:
+
+* Work instantly after editing
+* Apply across **all pages**
+* Respect context (where needed)
+* Never feel broken or inactive
+
+---
+
+# ⚙️ 1. REAL-TIME SHORTCUT APPLICATION (CRITICAL)
+
+## ✅ RULE:
+
+When a shortcut key is edited:
+
+* It must be **applied immediately**
+* No reload required
+* No “save to apply later” behavior
+
+---
+
+## 🔄 SYSTEM BEHAVIOR:
+
+* Old shortcut → instantly removed
+* New shortcut → instantly active
+* No duplicate bindings allowed (handle conflict)
+
+---
+
+# 🌐 2. GLOBAL SHORTCUT AVAILABILITY
+
+## ✅ RULE:
+
+Shortcuts should work from **any page**, unless context-specific
+
+---
+
+## 🧠 SHORTCUT TYPES
+
+### 🔹 GLOBAL ACTION SHORTCUTS (ALWAYS WORK)
+
+These must trigger from anywhere:
+
+* Open Analytics (Shift + A)
+* Open Add Product (Shift + P)
+* Open Settings (if assigned)
+
+👉 These override current page and navigate if needed
+
+---
+
+### 🔹 CONTEXTUAL SHORTCUTS (CONDITIONAL)
+
+These only work if related UI is active:
+
+* Enter → Create product
+
+  * Only works on Add Product Page
+
+* Shift + Enter → Create & Add Another
+
+  * Only on Add Product Page
+
+* Enter (Search Active) → Add product to cart
+
+  * Only when search input is focused
+
+* C + Number + ↑ / ↓
+
+  * Only when cart is open
+
+* Open Cart (Shift + C)
+* Toggle Edit Mode (Shift + E)
+* Toggle Search (Ctrl + `)
+only in main pos page
+
+---
+
+## ❗ CONDITION RULE:
+
+If required component/page is NOT active:
+
+* Shortcut should **NOT trigger action**
+* No error shown
+* Silent ignore
+
+---
+
+# 🔁 3. NAVIGATION PRIORITY LOGIC
+
+If shortcut is for navigation:
+
+## Example:
+
+* User presses Shift + A
+
+👉 Behavior:
+
+* From ANY page → Navigate to Analytics page
+
+---
+
+## RULE:
+
+Navigation shortcuts:
+
+* Always execute
+* Ignore current page state
+
+---
+
+# 🧠 4. CONFLICT HANDLING
+
+If user assigns:
+
+* Same shortcut to multiple actions
+
+System must:
+
+* Show warning
+* Prevent duplicate OR allow override (your design choice)
+* Clearly indicate conflict
+
+---
+
+# 🧩 5. SHORTCUT MANAGEMENT UI UPDATE
+
+## ❌ REMOVE:
+
+* Cross (❌) icon at end of each shortcut row
+
+---
+
+## ✅ KEEP:
+
+Each shortcut row should have:
+
+* Action name
+* Current key binding
+* Edit option
+* Reset option (optional)
+
+---
+
+## ✏️ EDIT FLOW:
+
+When editing:
+
+* Capture new key combination
+* Validate:
+
+  * Not empty
+  * Not conflicting (or warn)
+* Apply instantly
+
+---
+
+# ⚡ 6. PERFORMANCE + EVENT SYSTEM
+
+* Use centralized key listener
+* Avoid multiple listeners per component
+* Prevent lag or duplicate firing
+
+---
+
+# 🎯 FINAL SHORTCUT ENGINE BEHAVIOR
+
+This system should feel like:
+
+> “A global command layer controlling the entire POS system”
+
+Where:
+
+* User-defined keys actually work
+* Changes reflect instantly
+* Shortcuts behave intelligently based on context
+* Navigation shortcuts always respond
+* UI stays clean and distraction-free
+
+---
+
+# 🚫 IMPORTANT CONSTRAINTS
+
+* No reload required for changes
+* No inactive shortcuts after editing
+* No visual clutter (remove delete icons)
+* No broken or unresponsive key bindings
+
+---
+
+# 🏁 RESULT
+
+After this update:
+
+* User edits shortcut → it WORKS immediately
+* Shortcuts work across all pages
+* Context-based logic prevents incorrect execution
+* System feels fast, responsive, and reliable

@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import { ArrowLeft, Plus, Check, X, ChevronDown, FolderPlus, Loader2, Trash2, Upload } from "lucide-react";
 import { useStore, normalizeCode, type Product } from "@/lib/store";
 import { useSettings } from "@/lib/settings";
+import { useShortcut } from "@/lib/shortcuts";
 import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -367,42 +368,27 @@ export default function AddProduct() {
     toast.success(`Removed "${cat}"`);
   };
 
-  // ── keyboard shortcuts (global; Enter handled per-field) ────────────
+  // ── keyboard shortcuts ─────────────────────────────────────────────
+  // Enter handling for individual form fields lives in field-level handlers.
+  // The global shortcut engine handles configurable bindings; we register the
+  // contextual ones here. The pending-delete modal keeps its own listener.
+  useShortcut('createProduct', () => { void submit('redirect'); });
+  useShortcut('createAndAnother', () => { void submit('another'); });
+
   useEffect(() => {
+    if (!pendingDelete) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === '`') {
-        e.preventDefault();
-        nameInputRef.current?.focus();
-        nameInputRef.current?.select();
-        return;
-      }
-      if (e.key === 'Escape' && pendingDelete) {
+      if (e.key === 'Escape') {
         e.preventDefault();
         setPendingDelete(null);
-        return;
-      }
-      const el = e.target as HTMLElement | null;
-      const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
-      // Enter while a delete is pending → confirm
-      if (e.key === 'Enter' && pendingDelete) {
+      } else if (e.key === 'Enter') {
         e.preventDefault();
         confirmDelete(pendingDelete);
-        return;
-      }
-      if (e.shiftKey && (e.key === 'A' || e.key === 'a') && !typing) {
-        e.preventDefault();
-        setLocation('/analytics');
-        return;
-      }
-      if (e.shiftKey && e.key === 'Backspace' && !typing) {
-        e.preventDefault();
-        setLocation('/');
-        return;
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [pendingDelete, setLocation]);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [pendingDelete]);
 
   // ── render ────────────────────────────────────────────────────────────
   return (

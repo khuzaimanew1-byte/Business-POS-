@@ -9,6 +9,7 @@ import AddProduct from "@/pages/AddProduct";
 import SettingsPage from "@/pages/Settings";
 import { StoreProvider } from "@/lib/store";
 import { SettingsProvider } from "@/lib/settings";
+import { ShortcutsProvider } from "@/lib/shortcuts";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +32,9 @@ function App() {
         <SettingsProvider>
           <StoreProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
+              <ShortcutsProvider>
+                <Router />
+              </ShortcutsProvider>
             </WouterRouter>
             <Toaster />
           </StoreProvider>

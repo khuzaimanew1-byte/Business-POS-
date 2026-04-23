@@ -843,22 +843,8 @@ export default function Analytics() {
     return () => clearTimeout(t);
   }, [mode, metric, custom?.from, custom?.to]);
 
-  // Global navigation shortcuts: Shift+A → Home, Shift+Backspace → back
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement | null;
-      const typing = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
-      if (typing) return;
-      if (e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-        e.preventDefault(); setLocation('/analytics'); return;
-      }
-      if (e.shiftKey && e.key === 'Backspace') {
-        e.preventDefault(); setLocation('/'); return;
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [setLocation]);
+  // Navigation shortcuts (Open Analytics, Back, etc.) are handled by the
+  // global shortcut engine — no per-page listener needed here.
 
   const data = useMemo(
     () => buildChartData(mode, events, metric, custom),

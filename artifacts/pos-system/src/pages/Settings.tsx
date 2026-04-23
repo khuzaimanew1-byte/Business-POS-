@@ -464,16 +464,35 @@ function ShortcutsSection() {
     if (e.key === "Escape") { setRecordingFor(null); return; }
     const binding = bindingFromKeyEvent(e);
     if (!binding || !recordingFor) return;
+
+    // Detect conflict against bindings already assigned to other actions.
+    const conflictWith = (Object.keys(settings.shortcuts) as ShortcutAction[]).find(a => {
+      if (a === recordingFor) return false;
+      const b = settings.shortcuts[a];
+      if (!b) return false;
+      return (
+        b.ctrl === binding.ctrl &&
+        b.shift === binding.shift &&
+        b.alt === binding.alt &&
+        b.meta === binding.meta &&
+        b.key === binding.key
+      );
+    });
+
     update("shortcuts", { ...settings.shortcuts, [recordingFor]: binding });
     setRecordingFor(null);
+
+    if (conflictWith) {
+      toast.warning(`Shortcut conflicts with "${SHORTCUT_LABELS[conflictWith]}"`, {
+        description: "Both actions are bound to the same key.",
+      });
+    } else {
+      toast.success(`Shortcut updated`);
+    }
   };
 
   const resetOne = (action: ShortcutAction) => {
     update("shortcuts", { ...settings.shortcuts, [action]: DEFAULT_SHORTCUTS[action] });
-  };
-
-  const clearOne = (action: ShortcutAction) => {
-    update("shortcuts", { ...settings.shortcuts, [action]: null });
   };
 
   const resetAll = () => {
@@ -483,16 +502,30 @@ function ShortcutsSection() {
 
   return (
     <>
-      <SectionHeader title="Keyboard Shortcuts" desc="Speed up your most common actions. Click any binding to reassign." />
+      <SectionHeader title="Keyboard Shortcuts" desc="Speed up your most common actions. Click any binding to reassign — changes apply instantly." />
       <Block>
         <Toggle checked={settings.shortcutsEnabled} onChange={v => update("shortcutsEnabled", v)} label="Enable keyboard shortcuts" desc="Master switch for all global hotkeys." />
       </Block>
       <Block>
+        <div className="flex items-center justify-end mb-1">
+          <button
+            onClick={resetAll}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors"
+          >
+            <RotateCcw size={12} /> Reset all
+          </button>
+        </div>
         <div className={`flex flex-col divide-y divide-border/30 ${settings.shortcutsEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
           {actions.map(action => {
             const binding = settings.shortcuts[action];
             const isRecording = recordingFor === action;
             const hasConflict = conflicts.has(action);
+            const isDefault = (() => {
+              const def = DEFAULT_SHORTCUTS[action];
+              if (!def && !binding) return true;
+              if (!def || !binding) return false;
+              return def.ctrl === binding.ctrl && def.shift === binding.shift && def.alt === binding.alt && def.meta === binding.meta && def.key === binding.key;
+            })();
             return (
               <div key={action} className="flex items-center justify-between gap-3 py-3">
                 <div className="min-w-0 flex items-center gap-2">
@@ -521,15 +554,14 @@ function ShortcutsSection() {
                   >
                     {isRecording ? "Press keys…" : shortcutToString(binding)}
                   </button>
-                  {binding && (
-                    <button
-                      onClick={() => clearOne(action)}
-                      title="Unassign"
-                      className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors duration-200 text-xs font-bold leading-none"
-                    >
-                      ×
-                    </button>
-                  )}
+                  <button
+                    onClick={() => resetOne(action)}
+                    disabled={isDefault}
+                    title="Reset to default"
+                    className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors duration-200 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                  >
+                    <RotateCcw size={13} />
+                  </button>
                 </div>
               </div>
             );

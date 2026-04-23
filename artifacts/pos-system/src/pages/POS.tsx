@@ -23,6 +23,7 @@ import {
 
 import { useStore, type Product, type Category } from "@/lib/store";
 import { useSettings, formatCurrency } from "@/lib/settings";
+import { useShortcut } from "@/lib/shortcuts";
 
 type CartItem = {
   product: Product;
@@ -333,7 +334,31 @@ export default function POS() {
   };
 
   // ── KEYBOARD SHORTCUTS ─────────────────────────────────────────────────
-  // C+digit hold then ArrowUp/Down to adjust quantity of cart item by index (1-based)
+  // Configurable shortcuts are routed through the global engine (useShortcut).
+  // The C+digit+Arrow cart-qty combo stays local — it's a chord, not a single binding.
+
+  // Toggle search focus (POS-only). Allowed in inputs so it can also blur the search field.
+  useShortcut(
+    'toggleSearch',
+    () => {
+      const input = searchInputRef.current;
+      if (!input) return;
+      if (document.activeElement === input) input.blur();
+      else { input.focus(); input.select(); }
+    },
+    { allowInInput: true },
+  );
+
+  // Open / close cart
+  useShortcut('openCart', () => setIsCartOpen(o => !o));
+
+  // Enter edit mode (only if not already editing)
+  useShortcut('toggleEditMode', () => { if (!isEditMode) enterEditMode(); });
+
+  // Override the global "back" handler on Home: prompt exit confirmation instead.
+  useShortcut('back', () => setExitConfirm(true));
+
+  // ── Cart-qty chord: Hold C, press a digit (1-9), then Arrow Up/Down ────
   const cKeyDown = useRef(false);
   const heldDigit = useRef<number | null>(null);
 
@@ -347,69 +372,22 @@ export default function POS() {
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (!settings.shortcutsEnabled) return;
-      // Ctrl + ` (backtick) → toggle search focus
-      if (e.ctrlKey && e.key === '`') {
-        e.preventDefault();
-        const input = searchInputRef.current;
-        if (!input) return;
-        if (document.activeElement === input) {
-          input.blur();
-        } else {
-          input.focus();
-          input.select();
-        }
-        return;
-      }
+      if (isTypingTarget(e.target)) return;
 
-      // Track C key & digit holds for cart qty adjust (do NOT block typing fields)
-      if (!isTypingTarget(e.target)) {
-        if (e.key === 'c' || e.key === 'C') {
-          if (!e.shiftKey) cKeyDown.current = true;
+      if ((e.key === 'c' || e.key === 'C') && !e.shiftKey) {
+        cKeyDown.current = true;
+      }
+      if (cKeyDown.current && /^[0-9]$/.test(e.key)) {
+        heldDigit.current = parseInt(e.key, 10);
+      }
+      if (cKeyDown.current && heldDigit.current !== null && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        e.preventDefault();
+        const idx = heldDigit.current - 1;
+        const item = cartItems[idx];
+        if (item) {
+          const delta = e.key === 'ArrowUp' ? 1 : -1;
+          updateCartQty(item.product.id, item.quantity + delta);
         }
-        if (cKeyDown.current && /^[0-9]$/.test(e.key)) {
-          heldDigit.current = parseInt(e.key, 10);
-        }
-        if (cKeyDown.current && heldDigit.current !== null && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-          e.preventDefault();
-          const idx = heldDigit.current - 1;
-          const item = cartItems[idx];
-          if (item) {
-            const delta = e.key === 'ArrowUp' ? 1 : -1;
-            updateCartQty(item.product.id, item.quantity + delta);
-          }
-          return;
-        }
-      }
-
-      // Shift + C → open cart
-      if (e.shiftKey && (e.key === 'C' || e.key === 'c') && !isTypingTarget(e.target)) {
-        e.preventDefault();
-        setIsCartOpen(o => !o);
-        return;
-      }
-      // Shift + E → enter edit mode
-      if (e.shiftKey && (e.key === 'E' || e.key === 'e') && !isTypingTarget(e.target)) {
-        e.preventDefault();
-        if (!isEditMode) enterEditMode();
-        return;
-      }
-      // Shift + P → Add Product page
-      if (e.shiftKey && (e.key === 'P' || e.key === 'p') && !isTypingTarget(e.target)) {
-        e.preventDefault();
-        setLocation('/add-product');
-        return;
-      }
-      // Shift + A → Analytics page
-      if (e.shiftKey && (e.key === 'A' || e.key === 'a') && !isTypingTarget(e.target)) {
-        e.preventDefault();
-        setLocation('/analytics');
-        return;
-      }
-      // Shift + Backspace → on Home, prompt exit; elsewhere, go back
-      if (e.shiftKey && e.key === 'Backspace' && !isTypingTarget(e.target)) {
-        e.preventDefault();
-        setExitConfirm(true);
-        return;
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
@@ -427,7 +405,7 @@ export default function POS() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [cartItems, isEditMode, setLocation]);
+  }, [cartItems, settings.shortcutsEnabled, updateCartQty]);
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
