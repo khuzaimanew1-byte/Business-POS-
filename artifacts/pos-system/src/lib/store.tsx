@@ -1,6 +1,8 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 export type Category = string;
+
+export const OUT_OF_STOCK_CATEGORY = "Out of Stock";
 
 export type Product = {
   id: string;
@@ -11,6 +13,8 @@ export type Product = {
   stock: number;
   image?: string;
   profit?: number;
+  /** Remembered when product is auto-moved into "Out of Stock"; restored when stock returns. */
+  originalCategory?: Category;
 };
 
 export const INITIAL_CATEGORIES: Category[] = ["All", "Drinks", "Snacks", "Electronics", "Clothing", "Food"];
@@ -47,6 +51,42 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [customCategories, setCustomCategories] = useState<Set<string>>(() => new Set());
+
+  // ── Auto Out-of-Stock category management ────────────────────────────────
+  // Whenever a product hits stock=0, remember its original category and move
+  // it to the special "Out of Stock" bucket. When stock returns, restore it.
+  useEffect(() => {
+    setProducts(prev => {
+      let changed = false;
+      const next = prev.map(p => {
+        if (p.stock <= 0 && p.category !== OUT_OF_STOCK_CATEGORY) {
+          changed = true;
+          return { ...p, originalCategory: p.originalCategory ?? p.category, category: OUT_OF_STOCK_CATEGORY };
+        }
+        if (p.stock > 0 && p.category === OUT_OF_STOCK_CATEGORY) {
+          changed = true;
+          const restore = p.originalCategory && p.originalCategory !== OUT_OF_STOCK_CATEGORY ? p.originalCategory : "All";
+          const { originalCategory: _omit, ...rest } = p;
+          return { ...rest, category: restore };
+        }
+        return p;
+      });
+      return changed ? next : prev;
+    });
+  }, [products]);
+
+  // Keep "Out of Stock" category present and pinned last whenever any product is out.
+  useEffect(() => {
+    const hasOOS = products.some(p => p.stock <= 0);
+    setCategories(prev => {
+      const without = prev.filter(c => c !== OUT_OF_STOCK_CATEGORY);
+      if (hasOOS) {
+        if (prev.length === without.length + 1 && prev[prev.length - 1] === OUT_OF_STOCK_CATEGORY) return prev;
+        return [...without, OUT_OF_STOCK_CATEGORY];
+      }
+      return without.length === prev.length ? prev : without;
+    });
+  }, [products]);
 
   const addCustomCategory = (name: string) => {
     const trimmed = name.trim();

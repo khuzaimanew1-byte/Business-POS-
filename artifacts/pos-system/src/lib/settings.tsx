@@ -16,7 +16,11 @@ export type ShortcutAction =
   | "createAndAnother"
   | "toggleEditMode"
   | "back"
-  | "openSettings";
+  | "openSettings"
+  | "prevCategory"
+  | "nextCategory"
+  | "prevSettingsTab"
+  | "nextSettingsTab";
 
 export type ShortcutBinding = {
   ctrl: boolean;
@@ -37,6 +41,10 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   toggleEditMode:   "Toggle Edit Mode",
   back:             "Back / Exit",
   openSettings:     "Open Settings",
+  prevCategory:     "Previous Category",
+  nextCategory:     "Next Category",
+  prevSettingsTab:  "Previous Settings Tab",
+  nextSettingsTab:  "Next Settings Tab",
 };
 
 export const DEFAULT_SHORTCUTS: Record<ShortcutAction, ShortcutBinding> = {
@@ -49,6 +57,10 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, ShortcutBinding> = {
   toggleEditMode:   { ctrl: false, shift: true,  alt: false, meta: false, key: "e" },
   back:             { ctrl: false, shift: true,  alt: false, meta: false, key: "backspace" },
   openSettings:     null,
+  prevCategory:     { ctrl: true,  shift: false, alt: false, meta: false, key: "arrowleft" },
+  nextCategory:     { ctrl: true,  shift: false, alt: false, meta: false, key: "arrowright" },
+  prevSettingsTab:  { ctrl: true,  shift: false, alt: false, meta: false, key: "arrowup" },
+  nextSettingsTab:  { ctrl: true,  shift: false, alt: false, meta: false, key: "arrowdown" },
 };
 
 // ── Currency ──────────────────────────────────────────────────────────────
@@ -219,6 +231,10 @@ export function shortcutToString(b: ShortcutBinding): string {
   const k = b.key === "enter" ? "Enter"
     : b.key === "backspace" ? "⌫"
     : b.key === " " ? "Space"
+    : b.key === "arrowup" ? "↑"
+    : b.key === "arrowdown" ? "↓"
+    : b.key === "arrowleft" ? "←"
+    : b.key === "arrowright" ? "→"
     : b.key.length === 1 ? b.key.toUpperCase()
     : b.key.charAt(0).toUpperCase() + b.key.slice(1);
   parts.push(k);

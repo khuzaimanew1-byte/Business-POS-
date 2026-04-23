@@ -45,6 +45,8 @@ export default function POS() {
 
   type EditDraft = { name: string; price: string; stock: string; quickCode: string; profit: string; image?: string };
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isEditModeArming, setIsEditModeArming] = useState(false);
+  const categoryBarRef = React.useRef<HTMLDivElement | null>(null);
   const [editDrafts, setEditDrafts] = useState<Record<string, EditDraft>>({});
   const [savedProducts, setSavedProducts] = useState<Product[]>([]);
   const [savedCategories, setSavedCategories] = useState<Category[]>([]);
@@ -155,6 +157,7 @@ export default function POS() {
   };
 
   const enterEditMode = () => {
+    if (isEditMode || isEditModeArming) return;
     setSavedProducts(products);
     setSavedCategories(categories);
     const drafts: Record<string, EditDraft> = {};
@@ -163,7 +166,12 @@ export default function POS() {
     categories.forEach(c => { catDrafts[c] = c; });
     setEditDrafts(drafts);
     setCategoryDrafts(catDrafts);
-    setIsEditMode(true);
+    // Brief soft fade+scale before flipping into edit mode (premium feel, ~150ms)
+    setIsEditModeArming(true);
+    setTimeout(() => {
+      setIsEditMode(true);
+      setIsEditModeArming(false);
+    }, 150);
   };
 
   const saveEditMode = () => {
@@ -357,6 +365,26 @@ export default function POS() {
 
   // Override the global "back" handler on Home: prompt exit confirmation instead.
   useShortcut('back', () => setExitConfirm(true));
+
+  // Category navigation (POS-only) — Ctrl+→ / Ctrl+← cycles through chips.
+  const cycleCategory = (dir: 1 | -1) => {
+    const list = categories;
+    if (list.length <= 1) return;
+    const idx = list.indexOf(selectedCategory);
+    const start = idx < 0 ? 0 : idx;
+    const next = (start + dir + list.length) % list.length;
+    setSelectedCategory(list[next]);
+  };
+  useShortcut('prevCategory', () => cycleCategory(-1));
+  useShortcut('nextCategory', () => cycleCategory(1));
+
+  // Smoothly scroll the active category chip into view whenever it changes.
+  useEffect(() => {
+    const bar = categoryBarRef.current;
+    if (!bar) return;
+    const el = bar.querySelector<HTMLElement>(`[data-cat="${CSS.escape(selectedCategory)}"]`);
+    if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  }, [selectedCategory]);
 
   // ── Cart-qty chord: Hold C, press a digit (1-9), then Arrow Up/Down ────
   const cKeyDown = useRef(false);
@@ -601,7 +629,7 @@ export default function POS() {
 
         {/* CATEGORY BAR */}
         <div className={`border-b bg-background shrink-0 overflow-hidden transition-colors duration-400 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
-          <div className="flex items-center px-3 sm:px-4 py-2.5 gap-2 overflow-x-auto scrollbar-none">
+          <div ref={categoryBarRef} className="flex items-center px-3 sm:px-4 py-2.5 gap-2 overflow-x-auto scrollbar-none scroll-smooth">
             {isEditMode ? (
               <>
                 <button
@@ -636,6 +664,7 @@ export default function POS() {
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
                       data-testid={`btn-category-${cat}`}
+                      data-cat={cat}
                       className={`shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 ${
                         selectedCategory === cat
                           ? 'text-primary-foreground bg-primary shadow-sm'
@@ -687,7 +716,7 @@ export default function POS() {
             We use a CSS custom property approach via inline style + CSS var trick.
           */}
           <div
-            className="p-2 product-grid"
+            className={`p-2 product-grid${isEditModeArming ? ' edit-mode-arming' : ''}`}
             style={{ display: 'grid', gap: '6px' }}
           >
             {filteredProducts.map(product => {
@@ -724,10 +753,10 @@ export default function POS() {
                       <img
                         src={currentImage}
                         alt={product.name}
-                        className="w-full h-full object-cover transition-transform duration-400 ease-in-out group-hover:scale-[1.015]"
+                        className={`w-full h-full object-cover transition-all duration-400 ease-in-out group-hover:scale-[1.015] ${product.stock <= 0 ? 'opacity-55 grayscale-[0.6]' : ''}`}
                       />
                     ) : (
-                      <div className="w-full h-full bg-secondary flex items-center justify-center text-xl font-bold text-muted-foreground/30">
+                      <div className={`w-full h-full bg-secondary flex items-center justify-center text-xl font-bold text-muted-foreground/30 ${product.stock <= 0 ? 'opacity-55' : ''}`}>
                         {renderInitials(product.name)}
                       </div>
                     )}
@@ -808,8 +837,8 @@ export default function POS() {
                     )}
 
                     {product.stock <= 0 && (
-                      <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
-                        <span className="text-xs font-medium text-muted-foreground">Out of Stock</span>
+                      <div className="absolute inset-x-0 bottom-0 flex items-center justify-center py-1 bg-background/75 backdrop-blur-[1px] border-t border-border/40">
+                        <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Out of Stock</span>
                       </div>
                     )}
                   </div>

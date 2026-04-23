@@ -13,6 +13,7 @@ import {
 } from "@/lib/settings";
 import { AlertTriangle } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { useShortcut } from "@/lib/shortcuts";
 import { toast } from "sonner";
 
 type SectionId = "performance" | "currency" | "input" | "shortcuts" | "defaults" | "data" | "safety";
@@ -32,6 +33,16 @@ export default function SettingsPage() {
   const [section, setSection] = useState<SectionId>("performance");
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 10); return () => clearTimeout(t); }, []);
+
+  // Settings-only tab navigation: Ctrl+↑ / Ctrl+↓ cycles through sections.
+  const cycleSection = (dir: 1 | -1) => {
+    const idx = SECTIONS.findIndex(s => s.id === section);
+    const start = idx < 0 ? 0 : idx;
+    const next = (start + dir + SECTIONS.length) % SECTIONS.length;
+    setSection(SECTIONS[next].id);
+  };
+  useShortcut('prevSettingsTab', () => cycleSection(-1));
+  useShortcut('nextSettingsTab', () => cycleSection(1));
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
@@ -536,6 +547,25 @@ function ShortcutsSection() {
               </div>
             );
           })}
+
+          {/* System / Locked shortcut — visible but not editable */}
+          <div className="flex items-center justify-between gap-3 py-3">
+            <div className="min-w-0 flex items-center gap-2">
+              <span className="text-sm text-foreground/90">Adjust Cart Item Quantity</span>
+              <span className="inline-flex items-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">
+                System
+              </span>
+            </div>
+            <div className="shrink-0">
+              <div
+                title="System shortcut — cannot be changed"
+                aria-disabled="true"
+                className="min-w-[140px] text-center px-3 py-1.5 rounded-md text-xs font-mono border border-border/40 bg-secondary/20 text-muted-foreground cursor-not-allowed select-none"
+              >
+                C + 1–9 + ↑/↓
+              </div>
+            </div>
+          </div>
         </div>
       </Block>
     </>

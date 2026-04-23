@@ -1,0 +1,290 @@
+Refine multiple systems across **Settings, Main POS Page, Product Logic, and Input Styling** with precise behavior updates and smooth UX improvements. Apply these changes without breaking existing structure or styles.
+
+---
+
+# ⌨️ 1. NEW KEYBOARD SHORTCUTS (ADD + DEFINE SCOPE + ENSURE VISIBILITY IN SETTINGS)
+
+## ➕ SETTINGS PAGE TAB NAVIGATION
+
+### Shortcut:
+
+* `Ctrl + ↑` → Switch to previous settings tab
+* `Ctrl + ↓` → Switch to next settings tab
+
+### Behavior:
+
+* Works **only inside Settings page**
+* Smooth tab transition (no instant jump)
+* Maintain scroll position per tab (optional)
+
+---
+
+## ➕ MAIN PAGE CATEGORY NAVIGATION
+
+### Shortcut:
+
+* `Ctrl + →` → Next category
+* `Ctrl + ←` → Previous category
+
+### Behavior:
+
+* Works **only on Main POS page**
+* Smooth horizontal scroll
+* Active category shifts with animation
+
+---
+
+## 🔒 UNCHANGEABLE SHORTCUT (IMPORTANT)
+
+### Fixed Shortcut:
+
+* `C + Number + ↑ / ↓`
+
+### Behavior:
+
+* Increase / decrease specific cart item quantity
+
+---
+
+## 🚫 RULE (STRICT)
+
+* This shortcut:
+
+  * MUST NOT be editable
+  * MUST NOT allow reassignment
+  * MUST NOT be removed
+
+---
+
+## 📌 SHORTCUT TAB INTEGRATION (VERY IMPORTANT UPDATE)
+
+👉 ALL the above shortcuts MUST appear inside **Settings → Shortcut Tab**
+
+### Requirements:
+
+* Show:
+
+  * Action name
+  * Key combination
+
+---
+
+### For editable shortcuts:
+
+* Allow edit interaction (inline)
+
+---
+
+### For locked shortcut (`C + Number + ↑ / ↓`):
+
+* Show label:
+
+  * **“System” or “Locked”**
+* No edit interaction
+* Visually distinguish (subtle muted style or tag)
+
+---
+
+### ⚠️ CRITICAL:
+
+Even if shortcut is:
+
+* Page-specific
+* System-level
+
+👉 It MUST still be listed in shortcut tab
+👉 No shortcut should exist outside the settings visibility
+
+---
+
+# 🎬 2. EDIT MODE ACTIVATION — SMOOTH MICRO ANIMATION
+
+## ❌ REMOVE:
+
+* Instant edit mode activation
+
+---
+
+## ✅ ADD MICRO ANIMATION:
+
+### Behavior:
+
+* Delay: ~120–180ms
+* Soft fade + slight scale transition
+
+---
+
+### Visual Flow:
+
+* Product cards slightly lift
+* Static text morphs into inputs
+* Icons transition smoothly
+
+---
+
+### GOAL:
+
+* Smooth UX
+* No sudden jumps
+* Premium feel
+
+---
+
+# 📦 3. OUT OF STOCK SYSTEM (AUTO CATEGORY + STYLING)
+
+## ⚙️ AUTO CATEGORY LOGIC
+
+### When:
+
+* Product stock = `0`
+
+### Then:
+
+* Move product to:
+
+  * **“Out of Stock” category**
+
+---
+
+## 📂 CATEGORY RULES
+
+* Auto-create if not exists
+* Always positioned **last**
+* Not manually reorderable
+
+---
+
+## 🔁 REVERSAL
+
+If stock > 0:
+
+* Return product to original category
+
+---
+
+## 🎨 PRODUCT CARD STYLING
+
+Out-of-stock state:
+
+* Slight opacity reduction
+* Desaturated image OR subtle overlay
+* “Out of Stock” label visible
+* Add-to-cart disabled or inactive
+
+---
+
+## ⚠️ UX RULE
+
+* Product must remain visible
+* Only visually distinguished
+
+---
+
+# 🎨 4. INPUT AUTOFILL FIX (STRICT CSS ONLY)
+
+## ✅ ADD ONLY THIS:
+
+```css
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px transparent inset !important;
+  -webkit-text-fill-color: inherit !important;
+  transition: background-color 9999s ease-in-out 0s;
+}
+```
+
+---
+
+## 🚫 DO NOT MODIFY:
+
+* padding
+* font-size
+* border
+* border-radius
+* background
+* layout
+
+👉 Only neutralize autofill flash
+
+---
+
+# 💱 5. CURRENCY MODE CHANGE — LIVE SYSTEM UPDATE
+
+## ⚙️ ON CHANGE:
+
+Instantly update:
+
+* Product prices
+* Cart totals
+* Analytics
+* Input values
+
+---
+
+## 🔁 SYSTEM RULE:
+
+* No reload
+* No flicker
+* Smooth transition
+
+---
+
+## 🎬 MICRO INTERACTION:
+
+* Values softly update (fade/tick)
+* No flashy animation
+
+---
+
+## 📊 CONSISTENCY:
+
+* Follow selected currency
+* Respect decimal precision (including 0)
+* Proper rounding
+
+---
+
+# 🎯 FINAL RESULT
+
+### Shortcuts:
+
+* Fully visible in settings
+* Editable where allowed
+* Locked where required
+* Context-aware execution
+
+---
+
+### UX:
+
+* Smooth edit transitions
+* Keyboard navigation enhanced
+
+---
+
+### Product Logic:
+
+* Automatic stock handling
+* Clear visual states
+
+---
+
+### Inputs:
+
+* Autofill fixed without breaking design
+
+---
+
+### Currency:
+
+* Fully dynamic
+* Instantly synced system-wide
+
+---
+
+System now behaves like:
+
+> A clean, controlled, professional-grade POS interface with intelligent interactions and zero friction
