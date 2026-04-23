@@ -45,6 +45,10 @@ export function ShortcutsProvider({ children }: { children: React.ReactNode }) {
       addProduct: { fn: () => navRef.current("/add-product") },
       openSettings: { fn: () => navRef.current("/settings") },
       back: {
+        // Shift+Backspace must work even when an input is focused.
+        // The engine calls preventDefault() before invoking us, so the
+        // input won't also delete a character.
+        allowInInput: true,
         fn: () => {
           if (window.history.length > 1) window.history.back();
           else navRef.current("/");

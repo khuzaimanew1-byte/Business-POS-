@@ -272,11 +272,26 @@ export default function AddProduct() {
 
   function handleFieldEnter(current: FieldKey, e: React.KeyboardEvent) {
     if (e.key !== 'Enter') return;
-    e.preventDefault();
+
+    // Shift FIRST — Shift+Enter ALWAYS means "Create & Add Another" (stay on page).
+    // Must never fall through to the plain-Enter path.
     if (e.shiftKey) {
-      trySubmitOrFocusFirstError();
+      e.preventDefault();
+      e.stopPropagation();
+      const bad = firstInvalidField();
+      if (bad) {
+        setError(bad, fieldValidationMsg(bad)!);
+        focusField(bad);
+        triggerShake(bad);
+        return;
+      }
+      void submit('another');
       return;
     }
+
+    // Plain Enter — advance to next field, or submit-and-redirect on last field.
+    e.preventDefault();
+    e.stopPropagation();
     const msg = fieldValidationMsg(current);
     if (msg) {
       setError(current, msg);

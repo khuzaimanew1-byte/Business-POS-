@@ -1,0 +1,220 @@
+Fix the **keyboard shortcut conflicts and non-working behavior on Add Product Page** with a strict, reliable event-handling system so these issues never occur again.
+
+This is a **bug-fix + logic correction prompt**, not a redesign.
+
+---
+
+# ⚠️ CORE ISSUES TO FIX
+
+1. `Shift + Backspace` is **not working** on Add Product Page
+2. `Shift + Enter` is behaving like normal `Enter` (causing redirect)
+3. `Enter` and `Shift + Enter` are **conflicting / clashing**
+
+---
+
+# 🎯 GOAL
+
+* All shortcuts must:
+
+  * Work consistently
+  * Be clearly separated
+  * Never override each other incorrectly
+
+---
+
+# ⌨️ 1. SHIFT + BACKSPACE (FIX NOT WORKING)
+
+## ✅ EXPECTED BEHAVIOR:
+
+* `Shift + Backspace`:
+
+  * Works from **Add Product Page**
+  * Triggers:
+
+    * Go back OR exit page (based on your existing logic)
+
+---
+
+## 🔧 FIX IMPLEMENTATION:
+
+* Listen for:
+
+  * `keydown` event
+* Condition:
+
+```js
+if (event.key === "Backspace" && event.shiftKey)
+```
+
+---
+
+## ❗ IMPORTANT:
+
+* Must work even when:
+
+  * Input field is focused
+* Prevent default browser behavior if needed:
+
+```js
+event.preventDefault()
+```
+
+---
+
+# ⌨️ 2. ENTER vs SHIFT + ENTER (CONFLICT FIX)
+
+## ❌ CURRENT PROBLEM:
+
+* `Shift + Enter` is triggering same logic as `Enter`
+
+---
+
+## ✅ REQUIRED BEHAVIOR:
+
+### 🔹 Enter
+
+* Action:
+
+  * Create product
+  * Redirect to main page
+
+---
+
+### 🔹 Shift + Enter
+
+* Action:
+
+  * Create product
+  * **Stay on page**
+  * Reset form for next entry
+
+---
+
+# 🔧 CRITICAL FIX (STRICT CONDITION HANDLING)
+
+## You MUST separate conditions clearly:
+
+```js
+if (event.key === "Enter" && event.shiftKey) {
+  // SHIFT + ENTER logic
+  event.preventDefault()
+  handleCreateAndContinue()
+  return
+}
+
+if (event.key === "Enter" && !event.shiftKey) {
+  // NORMAL ENTER logic
+  event.preventDefault()
+  handleCreateAndRedirect()
+  return
+}
+```
+
+---
+
+## ⚠️ VERY IMPORTANT RULE:
+
+* ALWAYS check `shiftKey` FIRST
+* Use `return` after handling to stop propagation
+* Never let both conditions run
+
+---
+
+# 🚫 3. PREVENT DEFAULT FORM SUBMIT CONFLICT
+
+## PROBLEM:
+
+Browser default form submit may trigger on Enter
+
+---
+
+## FIX:
+
+* Disable native form submit behavior:
+
+```js
+<form onSubmit={(e) => e.preventDefault()}>
+```
+
+OR
+
+```js
+event.preventDefault()
+```
+
+inside key handler
+
+---
+
+# 🧠 4. GLOBAL SHORTCUT PRIORITY SYSTEM
+
+## RULE:
+
+Inside Add Product Page:
+
+| Shortcut          | Priority    |
+| ----------------- | ----------- |
+| Shift + Enter     | Highest     |
+| Enter             | Medium      |
+| Shift + Backspace | Independent |
+
+---
+
+## Ensure:
+
+* No overlap
+* No double execution
+* No fallback to wrong handler
+
+---
+
+# ⚙️ 5. INPUT FOCUS BEHAVIOR
+
+## RULE:
+
+Even if cursor is inside:
+
+* Name input
+* Price input
+* Any field
+
+👉 Shortcuts must still work correctly
+
+---
+
+# 🧪 6. EDGE CASE HANDLING
+
+* If required fields are NOT filled:
+
+  * Prevent creation
+  * Show validation error
+  * DO NOT redirect
+
+---
+
+# 🎯 FINAL RESULT
+
+After this fix:
+
+* ✅ Shift + Backspace works reliably
+* ✅ Shift + Enter does NOT redirect
+* ✅ Enter and Shift + Enter are fully separated
+* ✅ No key conflicts or double execution
+* ✅ Works even when inputs are focused
+
+---
+
+# 🏁 SYSTEM BEHAVIOR
+
+Keyboard system now behaves like:
+
+> “A deterministic shortcut engine with zero ambiguity between key combinations”
+
+No more:
+
+* Clash
+* Double trigger
+* Wrong execution
+* Broken shortcuts
+
+Everything becomes precise and predictable.
