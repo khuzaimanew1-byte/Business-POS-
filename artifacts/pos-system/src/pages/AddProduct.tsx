@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { useLocation } from "wouter";
 import { ArrowLeft, Plus, Check, X, ChevronDown, FolderPlus, Loader2, Trash2, Upload } from "lucide-react";
 import { useStore, normalizeCode, type Product } from "@/lib/store";
+import { useSettings } from "@/lib/settings";
 import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -116,14 +117,15 @@ const TraceField = React.forwardRef<HTMLInputElement, TraceFieldProps>(function 
 export default function AddProduct() {
   const [, setLocation] = useLocation();
   const { products, setProducts, categories, customCategories, addCustomCategory, removeCategory } = useStore();
+  const { settings } = useSettings();
 
-  // Form state
+  // Form state (defaults pre-filled from Settings → Defaults)
   const [name, setName] = useState("");
   const [quickCodeRaw, setQuickCodeRaw] = useState("");
   const [price, setPrice] = useState("");
-  const [profit, setProfit] = useState("");
-  const [stock, setStock] = useState("");
-  const [category, setCategory] = useState<string>("");
+  const [profit, setProfit] = useState(settings.defaultProfit);
+  const [stock, setStock] = useState(settings.defaultStock);
+  const [category, setCategory] = useState<string>(settings.defaultCategory);
   const [image, setImage] = useState<string | null>(null);
 
   // UI state
@@ -306,8 +308,8 @@ export default function AddProduct() {
     setName("");
     setQuickCodeRaw("");
     setPrice("");
-    setProfit("");
-    setStock("");
+    setProfit(settings.defaultProfit);
+    setStock(settings.defaultStock);
     setIsAddingCategory(false);
     setNewCategoryName("");
     setImageFading(true);

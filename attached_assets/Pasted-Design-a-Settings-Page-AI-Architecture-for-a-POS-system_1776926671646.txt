@@ -1,0 +1,250 @@
+Design a **Settings Page AI Architecture** for a POS system that opens from the **Settings icon in the global navigation**. The goal is to create a **simple, premium, fast, and highly usable control panel** that improves system performance, behavior customization, and user control without overwhelming the user.
+
+---
+
+# ⚙️ ENTRY POINT
+
+* Settings page opens via **Settings icon (global nav)**
+* Opens as a **full page (not modal)**
+* Smooth transition (fade + slight slide)
+
+---
+
+# 🧭 GLOBAL LAYOUT STRUCTURE (SIMPLE + PREMIUM)
+
+Use a **2-column layout on desktop**, and **single column on mobile**.
+
+---
+
+## 💻 DESKTOP LAYOUT
+
+### LEFT PANEL — SETTINGS NAVIGATION
+
+A vertical list of categories:
+
+* Performance
+* Currency
+* Input Behavior
+* Shortcuts
+* Defaults
+* Data & Analytics
+* Safety
+
+### Behavior:
+
+* Active section highlighted softly
+* Minimal design (no heavy borders)
+* Smooth hover transitions
+
+---
+
+### RIGHT PANEL — ACTIVE SETTINGS CONTENT
+
+Displays selected section settings.
+
+* Clean spacing
+* Card-like grouping (soft, not boxed)
+* Clear hierarchy
+
+---
+
+## 📱 MOBILE LAYOUT
+
+* Convert left panel into **top horizontal scroll tabs OR dropdown selector**
+* Settings content below
+* One section visible at a time
+
+---
+
+# 🎨 VISUAL STYLE (IMPORTANT)
+
+* Soft dark UI (consistent with POS)
+* Subtle elevation (shadow, not borders)
+* Plenty of breathing space
+* No cluttered UI elements
+
+---
+
+# ⚡ CORE SETTINGS MODULES
+
+---
+
+## ⚡ 1. PERFORMANCE SETTINGS
+
+### Options:
+
+* Smooth Mode (default)
+* Fast Mode (reduced animations)
+* Ultra Fast Mode (no animations)
+
+### Behavior:
+
+* Controls all system animations globally
+* Immediate effect applied system-wide
+
+---
+
+## 💱 2. CURRENCY SYSTEM
+
+### Options:
+
+* PKR
+* USD
+* OMR
+
+### Additional Controls:
+
+* Decimal precision (2 / 3)
+* Rounding mode:
+
+  * Standard
+  * Floor
+  * Ceiling
+
+### Behavior:
+
+* Automatically updates all price/profit display across system
+
+---
+
+## ⌨️ 3. KEYBOARD SHORTCUTS
+
+### Display:
+
+List all shortcuts in clean card format:
+
+* Shift + P → Add Product
+* Enter → Create
+* Shift + Enter → Create & Continue
+* Shift + A → Analytics
+* Ctrl + ` → Search toggle
+
+### Options:
+
+* Enable / Disable shortcuts toggle
+
+### Future-ready:
+
+* Designed for extendable shortcuts system
+
+---
+
+## 📦 4. DEFAULT VALUES
+
+### Inputs:
+
+* Default Profit
+* Default Stock
+* Default Category
+
+### Behavior:
+
+* Auto-fill during product creation
+* Editable anytime
+
+---
+
+## 📊 5. DATA & ANALYTICS CONTROL
+
+### Options:
+
+* Reset analytics data
+* Toggle demo data
+* Data retention:
+
+  * 7 days
+  * 30 days
+  * All time
+
+### Behavior:
+
+* Controls analytics storage logic
+
+---
+
+## 🔐 6. SAFETY SETTINGS
+
+### Options:
+
+* Confirm before delete (toggle)
+* Enable undo delete
+* Bulk delete protection
+
+### Behavior:
+
+* Prevents accidental data loss
+* Lightweight confirmation UI (no heavy popups)
+
+---
+
+# 🧠 INTERACTION DESIGN SYSTEM
+
+---
+
+## 🎛️ TOGGLES
+
+* Smooth switch animation
+* Instant state update
+* No lag or reload
+
+---
+
+## 📂 DROPDOWNS
+
+* Soft expand animation
+* Auto-close on selection
+
+---
+
+## ⚡ BUTTONS
+
+* Minimal style
+* Subtle press feedback
+* No flashy animations
+
+---
+
+# 🎬 PAGE TRANSITION
+
+* Open Settings:
+
+  * fade in + slight slide from right
+* Close Settings:
+
+  * reverse transition
+
+---
+
+# 📐 SPACING RULES
+
+* Large vertical spacing between sections
+* Compact controls inside sections
+* Consistent alignment grid
+
+---
+
+# 🎯 UX PRINCIPLE
+
+This settings page is designed to be:
+
+* Easy to scan
+* Fast to adjust
+* Non-technical friendly
+* Minimal cognitive load
+
+---
+
+# 🚀 FINAL GOAL
+
+The Settings Page should feel like a:
+
+> “System control center, not a configuration form”
+
+It should allow users to:
+
+* control performance
+* customize behavior
+* manage data safely
+* adjust system feel
+
+without confusion or clutter.

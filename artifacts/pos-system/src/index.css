@@ -228,3 +228,21 @@
     100% { opacity: 1; transform: scale(1) translateY(0); }
   }
 }
+/* ── Performance modes ─────────────────────────────────────── */
+html[data-perf="fast"] *,
+html[data-perf="fast"] *::before,
+html[data-perf="fast"] *::after {
+  animation-duration: 100ms !important;
+  transition-duration: 100ms !important;
+}
+html[data-perf="ultra"] *,
+html[data-perf="ultra"] *::before,
+html[data-perf="ultra"] *::after {
+  animation-duration: 0ms !important;
+  animation-delay: 0ms !important;
+  transition-duration: 0ms !important;
+  transition-delay: 0ms !important;
+}
+
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

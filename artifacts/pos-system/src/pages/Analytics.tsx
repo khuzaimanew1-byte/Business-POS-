@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSaleEvents, type SaleEvent, type SaleItem } from "@/lib/analytics-store";
 import { PRODUCTS_META, getProductMeta, colorForProduct, type ProductMeta } from "@/lib/products-meta";
+import { useSettings, CURRENCY_SYMBOLS } from "@/lib/settings";
 
 type Mode = "daily" | "weekly" | "monthly" | "yearly" | "custom";
 type Metric = "sales" | "profit";
@@ -251,28 +252,28 @@ function smoothPath(pts: { x: number; y: number }[]): string {
   return d;
 }
 
-function fmtMetric(v: number, metric: Metric) {
+function fmtMetric(v: number, metric: Metric, sym = "$") {
   if (metric === "profit") {
-    if (Math.abs(v) >= 1000) return `$${(v / 1000).toFixed(1)}K`;
-    return `$${v.toFixed(2)}`;
+    if (Math.abs(v) >= 1000) return `${sym}${(v / 1000).toFixed(1)}K`;
+    return `${sym}${v.toFixed(2)}`;
   }
   const n = Math.round(v);
   return `${n} item${n === 1 ? "" : "s"}`;
 }
 
-function fmtBarLabel(v: number, metric: Metric) {
+function fmtBarLabel(v: number, metric: Metric, sym = "$") {
   if (metric === "profit") {
-    if (Math.abs(v) >= 1000) return `$${(v / 1000).toFixed(1)}K`;
-    if (Math.abs(v) >= 100) return `$${Math.round(v)}`;
-    return `$${v.toFixed(1)}`;
+    if (Math.abs(v) >= 1000) return `${sym}${(v / 1000).toFixed(1)}K`;
+    if (Math.abs(v) >= 100) return `${sym}${Math.round(v)}`;
+    return `${sym}${v.toFixed(1)}`;
   }
   return String(Math.round(v));
 }
 
-function fmtYTick(v: number, metric: Metric) {
+function fmtYTick(v: number, metric: Metric, sym = "$") {
   if (metric === "profit") {
-    if (v >= 1000) return `$${(v / 1000).toFixed(0)}K`;
-    return `$${Math.round(v)}`;
+    if (v >= 1000) return `${sym}${(v / 1000).toFixed(0)}K`;
+    return `${sym}${Math.round(v)}`;
   }
   return String(Math.round(v));
 }
@@ -407,11 +408,13 @@ function Chart({
   metric,
   loadingKey,
   mode,
+  sym = "$",
 }: {
   data: ChartData;
   metric: Metric;
   loadingKey: string;
   mode: Mode;
+  sym?: string;
 }) {
   const { bins, rangeStart, rangeEnd, xTicks } = data;
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -443,7 +446,7 @@ function Chart({
   const yMin = 0;
   const yMax = max + padTop;
   const yTicks = computeYTicks(yMin, yMax, 5);
-  const maxTickStr = fmtYTick(yTicks[yTicks.length - 1] ?? yMax, metric);
+  const maxTickStr = fmtYTick(yTicks[yTicks.length - 1] ?? yMax, metric, sym);
   const leftPad = Math.min(76, Math.max(44, 14 + maxTickStr.length * 7));
   const margin = { top: 16, right: 18, bottom: 28, left: leftPad };
   const plotW = Math.max(10, size.w - margin.left - margin.right);
@@ -535,7 +538,7 @@ function Chart({
                 strokeOpacity={i === 0 ? 0.9 : 0.5}
               />
               <text x={margin.left - 10} y={y + 4} fontSize="10" fill="hsl(240 5% 55%)" textAnchor="end">
-                {fmtYTick(v, metric)}
+                {fmtYTick(v, metric, sym)}
               </text>
             </g>
           );
@@ -593,7 +596,7 @@ function Chart({
         >
           <span className="text-muted-foreground">{fmtTooltipTime(hover.ts)}</span>
           <span className="w-px h-3 bg-border" />
-          <span className="font-semibold text-foreground">{fmtMetric(hover.value, metric)}</span>
+          <span className="font-semibold text-foreground">{fmtMetric(hover.value, metric, sym)}</span>
         </div>
       )}
 
@@ -616,9 +619,11 @@ function TopProductsBar({
   metric,
   excludeIds,
   onSwap,
+  sym = "$",
 }: {
   slots: ProductAgg[];
   metric: Metric;
+  sym?: string;
   excludeIds: Set<string>;
   onSwap: (slotIdx: number, newId: string) => void;
 }) {
@@ -688,7 +693,7 @@ function TopProductsBar({
                         isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
                       }`}
                     >
-                      {isZero ? "—" : fmtBarLabel(p.value, metric)}
+                      {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
                     </span>
 
                     {/* Bar container */}
@@ -757,9 +762,11 @@ function TopProductsBar({
 function TopProductsList({
   items,
   metric,
+  sym = "$",
 }: {
   items: ProductAgg[];
   metric: Metric;
+  sym?: string;
 }) {
   const max = Math.max(1, ...items.map((i) => i.value));
   if (items.length === 0) return null;
@@ -803,7 +810,7 @@ function TopProductsList({
                 </div>
               </div>
               <span className="text-[12px] font-semibold tabular-nums shrink-0 text-foreground/80 group-hover:text-foreground transition-colors">
-                {isZero ? "—" : fmtBarLabel(p.value, metric)}
+                {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
               </span>
             </li>
           );
@@ -818,6 +825,8 @@ function TopProductsList({
 // ──────────────────────────────────────────────────────────────────────────
 export default function Analytics() {
   const [, setLocation] = useLocation();
+  const { settings } = useSettings();
+  const sym = CURRENCY_SYMBOLS[settings.currency];
   const [mode, setMode] = useState<Mode>("monthly");
   const [metric, setMetric] = useState<Metric>("sales");
   const [custom, setCustom] = useState<{ from: number; to: number } | null>(null);
@@ -1022,7 +1031,7 @@ export default function Analytics() {
                     {metric === "sales" ? "Total items sold" : "Total profit"}
                   </p>
                   <p className="text-3xl sm:text-4xl font-bold tracking-tight mt-0.5">
-                    {fmtMetric(totalValue, metric)}
+                    {fmtMetric(totalValue, metric, sym)}
                   </p>
                 </div>
                 <p className="text-[11px] text-muted-foreground/60 pb-1">
@@ -1041,6 +1050,7 @@ export default function Analytics() {
                   data={data}
                   metric={metric}
                   mode={mode}
+                  sym={sym}
                   loadingKey={`${mode}-${metric}-${custom?.from ?? 0}-${custom?.to ?? 0}`}
                 />
               </div>
@@ -1050,13 +1060,14 @@ export default function Analytics() {
                 <TopProductsBar
                   slots={barSlots}
                   metric={metric}
+                  sym={sym}
                   excludeIds={new Set()}
                   onSwap={swapSlot}
                 />
                 {listItems.length > 0 && (
                   <>
                     <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent mx-5 sm:mx-6" />
-                    <TopProductsList items={listItems} metric={metric} />
+                    <TopProductsList items={listItems} metric={metric} sym={sym} />
                   </>
                 )}
               </section>

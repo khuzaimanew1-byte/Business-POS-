@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useStore, type Product, type Category } from "@/lib/store";
+import { useSettings, formatCurrency } from "@/lib/settings";
 
 type CartItem = {
   product: Product;
@@ -31,6 +32,8 @@ type CartItem = {
 export default function POS() {
   const [, setLocation] = useLocation();
   const { products, setProducts, categories, setCategories } = useStore();
+  const { settings } = useSettings();
+  const fmtCur = (v: number) => formatCurrency(v, settings);
   const [selectedCategory, setSelectedCategory] = useState<Category>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -343,6 +346,7 @@ export default function POS() {
     };
 
     const onKeyDown = (e: KeyboardEvent) => {
+      if (!settings.shortcutsEnabled) return;
       // Ctrl + ` (backtick) → toggle search focus
       if (e.ctrlKey && e.key === '`') {
         e.preventDefault();
@@ -440,7 +444,7 @@ export default function POS() {
             <div onClick={() => setLocation("/add-product")}>
               <TooltipItem icon={<Plus size={20} />} label="Add Product" />
             </div>
-            <TooltipItem icon={<Settings size={20} />} label="Settings" />
+            <TooltipItem icon={<Settings size={20} />} label="Settings" onClick={() => setLocation("/settings")} />
           </TooltipProvider>
         </div>
       </aside>
@@ -895,7 +899,7 @@ export default function POS() {
                           {product.name}
                         </TooltipContent>
                       </Tooltip>
-                      <p className="font-bold text-primary leading-none text-[13px] sm:text-[16px]">${product.price.toFixed(2)}</p>
+                      <p className="font-bold text-primary leading-none text-[13px] sm:text-[16px]">{fmtCur(product.price)}</p>
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-muted-foreground text-[11px] sm:text-[14px] leading-none">Stock: {product.stock}</span>
                         <button
@@ -981,7 +985,7 @@ export default function POS() {
             </div>
           </div>
           <div className="font-bold text-primary tracking-tight text-xl sm:text-2xl">
-            ${cartTotal.toFixed(2)}
+            {fmtCur(cartTotal)}
           </div>
         </div>
       </main>
@@ -1030,7 +1034,9 @@ export default function POS() {
         </Popover>
 
         {/* Settings */}
-        <MobileNavBtn icon={<Settings size={20} />} label="Settings" />
+        <div onClick={() => setLocation("/settings")}>
+          <MobileNavBtn icon={<Settings size={20} />} label="Settings" />
+        </div>
       </nav>
 
       {/* ── CART PANEL ────────────────────────────────────────────────────── */}
@@ -1088,10 +1094,10 @@ export default function POS() {
                   <div className="flex-1 min-w-0 flex flex-col justify-center px-3 py-2.5">
                     <div className="flex justify-between items-start mb-1">
                       <h4 className="font-medium text-sm truncate pr-2">{item.product.name}</h4>
-                      <span className="font-semibold text-sm">${(item.product.price * item.quantity).toFixed(2)}</span>
+                      <span className="font-semibold text-sm">{fmtCur(item.product.price * item.quantity)}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">${item.product.price.toFixed(2)} / ea</span>
+                      <span className="text-xs text-muted-foreground">{fmtCur(item.product.price)} / ea</span>
                       <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
                         <button onClick={() => updateCartQty(item.product.id, item.quantity - 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-minus-${item.product.id}`}>
                           <Minus className="w-3 h-3" />
@@ -1117,7 +1123,7 @@ export default function POS() {
         <div className="p-4 border-t border-border bg-background shrink-0 pb-safe">
           <div className="flex justify-between font-bold text-lg mb-4 text-foreground">
             <span>Total</span>
-            <span className="text-primary">${cartTotal.toFixed(2)}</span>
+            <span className="text-primary">{fmtCur(cartTotal)}</span>
           </div>
           <Button className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold rounded-xl transition-all duration-200" disabled={cartItems.length === 0} onClick={checkout} data-testid="btn-checkout">
             Checkout

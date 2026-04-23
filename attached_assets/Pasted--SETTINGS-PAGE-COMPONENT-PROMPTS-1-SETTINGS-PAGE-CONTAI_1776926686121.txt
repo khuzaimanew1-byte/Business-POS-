@@ -1,0 +1,303 @@
+ 🧩 SETTINGS PAGE — COMPONENT PROMPTS
+
+---
+
+## 🧭 1. SETTINGS PAGE CONTAINER
+
+Create a full-page Settings container that opens from the global settings icon.
+
+The page should feel lightweight and fast, not heavy like a dashboard.
+
+Use a clean layout with generous spacing and a soft dark theme. Avoid hard borders; instead, use subtle elevation and spacing for separation.
+
+Add a smooth entry animation:
+
+* fade in + slight slide from right
+
+Ensure the page integrates naturally with the rest of the POS system.
+
+---
+
+## 📂 2. SETTINGS NAVIGATION PANEL (LEFT PANEL)
+
+Create a vertical settings navigation panel for desktop.
+
+Include sections:
+
+* Performance
+* Currency
+* Input Behavior
+* Shortcuts
+* Defaults
+* Data & Analytics
+* Safety
+
+Behavior:
+
+* Active section softly highlighted
+* Hover → subtle background change
+* Smooth transitions between states
+
+Visual:
+
+* Minimal design
+* No heavy borders
+* Compact but readable
+
+On mobile:
+
+* Convert into horizontal scroll tabs or dropdown selector
+
+Ensure navigation is quick and intuitive.
+
+---
+
+## 📄 3. SETTINGS CONTENT PANEL
+
+Create a dynamic content panel that updates based on selected settings section.
+
+Structure:
+
+* Each section grouped into soft “blocks”
+* Use spacing instead of heavy containers
+
+Behavior:
+
+* Smooth content transition when switching sections (fade or slight slide)
+* No full page reload
+
+Ensure readability and logical grouping of settings.
+
+---
+
+## ⚡ 4. PERFORMANCE SETTINGS COMPONENT
+
+Create a performance settings component.
+
+Include options:
+
+* Smooth Mode
+* Fast Mode
+* Ultra Fast Mode
+
+Design:
+
+* Use selectable cards or segmented control
+
+Behavior:
+
+* Only one option active at a time
+* Changes apply instantly across system
+
+Visual:
+
+* Active option slightly elevated or highlighted
+* Smooth selection animation
+
+Keep it simple and clear.
+
+---
+
+## 💱 5. CURRENCY SETTINGS COMPONENT
+
+Create a currency settings component.
+
+Include:
+
+* Currency selector (PKR, USD, OMR)
+* Decimal precision selector (2 or 3)
+* Rounding behavior:
+
+  * Standard
+  * Floor
+  * Ceiling
+
+Behavior:
+
+* Changes update system values instantly
+
+UI:
+
+* Use dropdowns or segmented controls
+* Keep layout compact and aligned
+
+Ensure clarity and accuracy in financial settings.
+
+---
+
+## ⌨️ 6. KEYBOARD SHORTCUTS COMPONENT
+
+Create a keyboard shortcuts display component.
+
+Show shortcuts in a clean list or card format:
+
+* Shift + P → Add Product
+* Enter → Create
+* Shift + Enter → Create & Continue
+* Shift + A → Analytics
+* Ctrl + ` → Search toggle
+
+Add:
+
+* Toggle to enable/disable shortcuts globally
+
+Design:
+
+* Each shortcut visually separated
+* Keys styled distinctly (like keyboard keys)
+
+Ensure easy readability and scanning.
+
+---
+
+## 🎯 7. DEFAULT VALUES COMPONENT
+
+Create a default values settings component.
+
+Include inputs:
+
+* Default Profit
+* Default Stock
+* Default Category (dropdown)
+
+Behavior:
+
+* These values auto-fill in Add Product page
+
+Design:
+
+* Clean input layout
+* Consistent with form styling used elsewhere
+
+Ensure fast editing and clarity.
+
+---
+
+## 🧠 8. INPUT BEHAVIOR SETTINGS COMPONENT
+
+Create an input behavior settings component.
+
+Include toggles:
+
+* Enable Enter navigation
+* Auto-focus next input
+* Enable input vibration (shake)
+* Show inline error messages
+
+Behavior:
+
+* Changes apply instantly
+
+Design:
+
+* Use toggle switches with labels
+* Group related options together
+
+Keep it simple and understandable.
+
+---
+
+## 📊 9. DATA & ANALYTICS COMPONENT
+
+Create a data and analytics control component.
+
+Include:
+
+* Reset analytics data button
+* Demo data toggle
+* Data retention selector (7 days, 30 days, all time)
+
+Behavior:
+
+* Reset action should feel safe (light confirmation)
+* Demo data toggles instantly
+
+Design:
+
+* Clear grouping
+* Slight emphasis on destructive actions
+
+Avoid heavy warning UI.
+
+---
+
+## 🔐 10. SAFETY SETTINGS COMPONENT
+
+Create a safety settings component.
+
+Include:
+
+* Confirm before delete toggle
+* Undo delete toggle
+* Bulk delete protection toggle
+
+Behavior:
+
+* Immediate effect on system actions
+
+Design:
+
+* Clean toggle list
+* Subtle emphasis for critical controls
+
+Ensure user trust and clarity.
+
+---
+
+## 🎛️ 11. TOGGLE COMPONENT (REUSABLE)
+
+Create a reusable toggle switch component.
+
+Behavior:
+
+* Smooth on/off animation
+* Instant state change
+* No delay
+
+Visual:
+
+* Soft rounded design
+* Clear active/inactive states
+
+Use across all settings consistently.
+
+---
+
+## 📂 12. DROPDOWN COMPONENT (REUSABLE)
+
+Create a reusable dropdown component.
+
+Behavior:
+
+* Smooth open/close animation
+* Auto close on selection
+* Highlight active option
+
+Mobile:
+
+* Can expand into full-width selection panel
+
+Ensure accessibility and clarity.
+
+---
+
+## 🎬 13. PAGE TRANSITION SYSTEM
+
+Implement smooth page transitions for the Settings page.
+
+Open:
+
+* Fade in
+* Slight slide from right
+
+Close:
+
+* Reverse animation
+
+Ensure:
+
+* Fast execution
+* No lag or heavy animation
+
+Keep transitions subtle and polished.
+
