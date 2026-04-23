@@ -1,0 +1,283 @@
+Refine and upgrade the **Settings Page System Architecture** into a fully configurable, production-level control panel for the POS system.
+
+This version includes corrected **global currency logic (base = 1 USD reference)**, system-wide real-time updates, and fully functional shortcut validation.
+
+Keep UI simple, premium, fast, and non-cluttered.
+
+---
+
+# ⚙️ 1. KEYBOARD SHORTCUTS SYSTEM (FULLY DYNAMIC + VALIDATED)
+
+## 📌 CORE RULE
+
+All shortcuts must be:
+
+* Viewable
+* Editable
+* Reassignable
+* Removable (optional)
+* **Validated for conflicts before saving**
+
+---
+
+## ⌨️ DEFAULT SHORTCUT LIST (SYSTEM LEVEL)
+
+### Navigation
+
+* Shift + P → Add Product Page
+* Shift + A → Analytics Page
+* Ctrl + ` → Search toggle
+
+### Cart System
+
+* Shift + C → Open Cart
+* Enter (Search Active) → Add top result to cart
+
+### Product Flow
+
+* Enter → Create Product
+* Shift + Enter → Create & Add Another
+
+### Edit Mode
+
+* Shift + E → Toggle Edit Mode
+
+### Exit System
+
+* Shift + Backspace → Back / Exit Page
+
+---
+
+## 🧠 SHORTCUT VALIDATION RULE (IMPORTANT)
+
+* If a shortcut is **not assigned or missing**, system must:
+
+  * Auto-detect missing bindings
+  * Assign default fallback behavior OR mark as inactive
+* No shortcut should remain undefined silently
+
+---
+
+## 🧩 SHORTCUT MANAGEMENT UI
+
+Each shortcut includes:
+
+* Key combination display
+* Action label
+* Edit option
+* Reset to default
+* Conflict warning indicator
+
+---
+
+## ➕ USER DEFINED SHORTCUT SYSTEM
+
+### Suggested Features Dropdown:
+
+Users can assign shortcuts to:
+
+* Open Cart
+* Open Search
+* Toggle Edit Mode
+* Add Product
+* Open Analytics
+* Create Product
+* Add to Cart
+* Open Settings
+
+---
+
+# 💱 2. CURRENCY SYSTEM (GLOBAL USD BASE LOGIC)
+
+## 🌍 CORE PRINCIPLE (IMPORTANT CHANGE)
+
+👉 **USD is the base reference currency**
+
+All currencies convert from USD:
+
+* 1 USD = X PKR
+* 1 USD = X OMR
+
+No direct PKR ↔ OMR conversion logic.
+
+---
+
+## 🔁 GLOBAL EXCHANGE SYSTEM
+
+* All prices in system internally stored in USD
+* On display:
+
+  * Converted based on selected currency
+* Conversion applies globally in ONE action (not per item)
+
+---
+
+## 🧮 BATCH UPDATE RULE (IMPORTANT)
+
+If currency settings change:
+
+* Entire system updates **instantly in one pass**
+* Includes:
+
+  * POS page
+  * Cart
+  * Analytics
+  * Add Product page
+  * Inputs everywhere
+
+No item-by-item recalculation UI lag
+
+---
+
+## 📊 DECIMAL PRECISION
+
+Options:
+
+* 1
+* 2
+* 3
+
+### RULE:
+
+* No forced trailing zeros
+
+Examples:
+
+* 3.4 → 3.4
+* 6.7835 → 6.784 (precision 3)
+
+---
+
+## 💰 GLOBAL CURRENCY DISPLAY RULE
+
+* Currency symbol updates everywhere:
+
+  * Product cards
+  * Cart
+  * Inputs
+  * Analytics
+  * Add Product page
+
+---
+
+## 🇴🇲 OMR SPECIAL RULE
+
+If currency = OMR:
+
+* Display format:
+
+  * value + “(OMR)”
+* Example:
+
+  * 10.5 (OMR)
+
+---
+
+# 📊 3. DATA SYSTEM (IMPORT / EXPORT / ANALYTICS)
+
+---
+
+## 📥 IMPORT SYSTEM
+
+* Import products (JSON / CSV)
+* Import categories
+* Merge OR replace mode
+
+---
+
+## 📤 EXPORT SYSTEM
+
+* Export full dataset backup
+* Export selected categories/products
+
+---
+
+## 📄 ANALYTICS EXPORT (PDF)
+
+From Analytics Page:
+
+* Export full report as PDF
+
+Includes:
+
+* Sales data
+* Profit data
+* Graph snapshot
+* Date range summary
+
+---
+
+# 🔐 4. SAFETY SETTINGS (EXPANDED)
+
+---
+
+## 🧨 CORE SAFETY OPTIONS
+
+* Confirm before delete
+* Undo delete (time-limited restore)
+* Bulk delete protection
+
+---
+
+## 🧠 ADVANCED SAFETY LAYER
+
+### 1. Data Recovery Mode
+
+* Restore deleted items within time window
+
+### 2. Action Strength Control
+
+* Soft confirm
+* Strict confirm (typing required)
+
+### 3. Auto Backup System
+
+* Periodic background backup
+
+### 4. Dangerous Action Lock
+
+Protect:
+
+* Bulk delete
+* Data reset
+* Import overwrite
+
+---
+
+# 🎛️ SYSTEM BEHAVIOR RULES
+
+---
+
+## 🌐 GLOBAL SYNC RULE
+
+All settings must:
+
+* Apply instantly
+* Sync across entire system
+* Require no refresh
+
+---
+
+## ⚡ PERFORMANCE RULE
+
+* No page reload after changes
+* Real-time update preferred
+* Minimal computation blocking UI
+
+---
+
+# 🎯 FINAL SYSTEM GOAL
+
+This Settings system behaves like:
+
+> “A centralized runtime control engine for a POS system”
+
+It allows:
+
+* Full system customization
+* Financial accuracy via USD base model
+* Fast workflow control
+* Safe data operations
+* Professional-grade flexibility
+
+Without increasing UI complexity or user confusion.

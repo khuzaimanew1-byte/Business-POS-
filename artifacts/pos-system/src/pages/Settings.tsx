@@ -4,7 +4,14 @@ import {
   Home, BarChart2, Plus, Settings as SettingsIcon, ArrowLeft,
   Zap, DollarSign, Keyboard, Package, BarChart3, ShieldCheck, Sliders,
 } from "lucide-react";
-import { useSettings, type PerformanceMode, type CurrencyCode, type RoundingMode, type RetentionMode } from "@/lib/settings";
+import {
+  useSettings,
+  type PerformanceMode, type CurrencyCode, type RoundingMode, type RetentionMode, type DecimalPrecision,
+  type ShortcutAction, type ShortcutBinding,
+  SHORTCUT_LABELS, DEFAULT_SHORTCUTS, DEFAULT_RATES,
+  shortcutToString, detectConflicts, bindingFromKeyEvent,
+} from "@/lib/settings";
+import { AlertTriangle, RotateCcw } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { toast } from "sonner";
 
@@ -246,11 +253,15 @@ function CurrencySection() {
         />
       </Block>
       <Block>
-        <Row label="Decimal precision" desc="Number of digits shown after the decimal point.">
+        <Row label="Decimal precision" desc="Maximum digits after the decimal. Trailing zeros are not shown.">
           <Select
-            value={String(settings.decimals) as "2" | "3"}
-            onChange={v => update("decimals", Number(v) as 2 | 3)}
-            options={[{ value: "2", label: "2 (e.g. 12.34)" }, { value: "3", label: "3 (e.g. 12.345)" }]}
+            value={String(settings.decimals)}
+            onChange={v => update("decimals", Number(v) as DecimalPrecision)}
+            options={[
+              { value: "1", label: "1 (e.g. 12.3)" },
+              { value: "2", label: "2 (e.g. 12.34)" },
+              { value: "3", label: "3 (e.g. 12.345)" },
+            ]}
           />
         </Row>
         <Row label="Rounding mode" desc="How fractional values are resolved.">
@@ -264,6 +275,30 @@ function CurrencySection() {
             ]}
           />
         </Row>
+      </Block>
+      <Block label="Exchange rates" desc="USD is the base. All product prices are stored in USD and converted on display.">
+        <Row label="1 USD = ? PKR" desc="Pakistani Rupee conversion rate.">
+          <NumberInput
+            value={String(settings.rates.PKR)}
+            onChange={v => update("rates", { ...settings.rates, PKR: Number(v) || 0 })}
+            placeholder="280"
+          />
+        </Row>
+        <Row label="1 USD = ? OMR" desc="Omani Rial conversion rate.">
+          <NumberInput
+            value={String(settings.rates.OMR)}
+            onChange={v => update("rates", { ...settings.rates, OMR: Number(v) || 0 })}
+            placeholder="0.385"
+          />
+        </Row>
+        <div className="pt-2">
+          <button
+            onClick={() => { update("rates", DEFAULT_RATES); toast.success("Exchange rates reset to defaults"); }}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 inline-flex items-center gap-1.5"
+          >
+            <RotateCcw size={12} /> Reset to defaults
+          </button>
+        </div>
       </Block>
     </>
   );
@@ -286,30 +321,103 @@ function InputBehaviorSection() {
 
 function ShortcutsSection() {
   const { settings, update } = useSettings();
-  const shortcuts: { keys: React.ReactNode; label: string }[] = [
-    { keys: <><Kbd>Shift</Kbd>+<Kbd>P</Kbd></>, label: "Add Product" },
-    { keys: <Kbd>Enter</Kbd>,                   label: "Create / confirm" },
-    { keys: <><Kbd>Shift</Kbd>+<Kbd>Enter</Kbd></>, label: "Create & continue" },
-    { keys: <><Kbd>Shift</Kbd>+<Kbd>A</Kbd></>, label: "Open Analytics" },
-    { keys: <><Kbd>Shift</Kbd>+<Kbd>E</Kbd></>, label: "Toggle edit mode" },
-    { keys: <><Kbd>Shift</Kbd>+<Kbd>C</Kbd></>, label: "Toggle cart" },
-    { keys: <><Kbd>Ctrl</Kbd>+<Kbd>`</Kbd></>, label: "Toggle search focus" },
-    { keys: <><Kbd>Shift</Kbd>+<Kbd>⌫</Kbd></>, label: "Back / exit" },
-  ];
+  const [recordingFor, setRecordingFor] = useState<ShortcutAction | null>(null);
+  const conflicts = useMemo(() => detectConflicts(settings.shortcuts), [settings.shortcuts]);
+  const actions = Object.keys(SHORTCUT_LABELS) as ShortcutAction[];
+
+  const startRecording = (action: ShortcutAction) => setRecordingFor(action);
+
+  const onRecordKey = (e: React.KeyboardEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.key === "Escape") { setRecordingFor(null); return; }
+    const binding = bindingFromKeyEvent(e);
+    if (!binding || !recordingFor) return;
+    update("shortcuts", { ...settings.shortcuts, [recordingFor]: binding });
+    setRecordingFor(null);
+  };
+
+  const resetOne = (action: ShortcutAction) => {
+    update("shortcuts", { ...settings.shortcuts, [action]: DEFAULT_SHORTCUTS[action] });
+  };
+
+  const clearOne = (action: ShortcutAction) => {
+    update("shortcuts", { ...settings.shortcuts, [action]: null });
+  };
+
+  const resetAll = () => {
+    update("shortcuts", DEFAULT_SHORTCUTS);
+    toast.success("All shortcuts reset to defaults");
+  };
+
   return (
     <>
-      <SectionHeader title="Keyboard Shortcuts" desc="Speed up your most common actions." />
+      <SectionHeader title="Keyboard Shortcuts" desc="Speed up your most common actions. Click any binding to reassign." />
       <Block>
         <Toggle checked={settings.shortcutsEnabled} onChange={v => update("shortcutsEnabled", v)} label="Enable keyboard shortcuts" desc="Master switch for all global hotkeys." />
       </Block>
-      <Block label="Available shortcuts">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2">
-          {shortcuts.map((s, i) => (
-            <div key={i} className={`flex items-center justify-between py-2.5 ${settings.shortcutsEnabled ? '' : 'opacity-40'}`}>
-              <span className="text-sm text-foreground/85">{s.label}</span>
-              <span className="flex items-center gap-1">{s.keys}</span>
-            </div>
-          ))}
+      <Block label="Bindings" desc="Click a binding then press the new key combination. Press Escape to cancel.">
+        <div className={`flex flex-col divide-y divide-border/30 ${settings.shortcutsEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
+          {actions.map(action => {
+            const binding = settings.shortcuts[action];
+            const isRecording = recordingFor === action;
+            const hasConflict = conflicts.has(action);
+            return (
+              <div key={action} className="flex items-center justify-between gap-3 py-3">
+                <div className="min-w-0 flex items-center gap-2">
+                  <span className="text-sm text-foreground/90">{SHORTCUT_LABELS[action]}</span>
+                  {hasConflict && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-amber-400/90 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                      <AlertTriangle size={10} /> Conflict
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <button
+                    onClick={() => startRecording(action)}
+                    onKeyDown={isRecording ? onRecordKey : undefined}
+                    onBlur={() => isRecording && setRecordingFor(null)}
+                    autoFocus={isRecording}
+                    className={`min-w-[140px] text-center px-3 py-1.5 rounded-md text-xs font-mono border transition-all duration-200 ${
+                      isRecording
+                        ? 'border-primary/60 bg-primary/[0.08] text-primary animate-pulse'
+                        : hasConflict
+                        ? 'border-amber-400/40 bg-amber-400/[0.05] text-foreground hover:border-amber-400/60'
+                        : !binding
+                        ? 'border-dashed border-border/60 text-muted-foreground hover:border-border'
+                        : 'border-border/60 bg-secondary/40 text-foreground hover:border-border'
+                    }`}
+                  >
+                    {isRecording ? "Press keys…" : shortcutToString(binding)}
+                  </button>
+                  <button
+                    onClick={() => resetOne(action)}
+                    title="Reset to default"
+                    className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary/40 transition-colors duration-200"
+                  >
+                    <RotateCcw size={13} />
+                  </button>
+                  {binding && (
+                    <button
+                      onClick={() => clearOne(action)}
+                      title="Unassign"
+                      className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors duration-200 text-xs font-bold leading-none"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="pt-3">
+          <button
+            onClick={resetAll}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 inline-flex items-center gap-1.5"
+          >
+            <RotateCcw size={12} /> Reset all shortcuts
+          </button>
         </div>
       </Block>
     </>
@@ -385,6 +493,7 @@ function SafetySection() {
         <Toggle checked={settings.confirmBeforeDelete}   onChange={v => update("confirmBeforeDelete", v)}   label="Confirm before delete"     desc="Show a confirmation dialog for destructive actions." />
         <Toggle checked={settings.enableUndoDelete}      onChange={v => update("enableUndoDelete", v)}      label="Enable undo delete"        desc="Show a brief undo toast after deleting." />
         <Toggle checked={settings.bulkDeleteProtection}  onChange={v => update("bulkDeleteProtection", v)}  label="Bulk delete protection"    desc="Always require confirmation when deleting more than one item." />
+        <Toggle checked={settings.strictConfirm}         onChange={v => update("strictConfirm", v)}         label="Strict confirmation"       desc="Require typing the item name to confirm destructive actions." />
       </Block>
     </>
   );
