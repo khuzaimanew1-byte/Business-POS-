@@ -276,9 +276,6 @@ function CurrencySection() {
           />
         </Row>
       </Block>
-      <Block label="Exchange rates" desc="USD is the base. All values derive from USD — no direct PKR ↔ OMR relationship.">
-        <ExchangeRatesInline />
-      </Block>
     </>
   );
 }
