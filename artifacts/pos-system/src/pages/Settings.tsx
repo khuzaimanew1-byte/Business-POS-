@@ -11,7 +11,7 @@ import {
   SHORTCUT_LABELS, DEFAULT_SHORTCUTS, DEFAULT_RATES,
   shortcutToString, detectConflicts, bindingFromKeyEvent,
 } from "@/lib/settings";
-import { AlertTriangle, RotateCcw } from "lucide-react";
+import { AlertTriangle, RotateCcw, ArrowRight } from "lucide-react";
 import { useStore } from "@/lib/store";
 import { toast } from "sonner";
 
@@ -241,16 +241,8 @@ function CurrencySection() {
   return (
     <>
       <SectionHeader title="Currency" desc="Affects every price, total, and analytics figure." />
-      <Block label="Currency">
-        <Segmented
-          value={settings.currency}
-          onChange={v => update("currency", v)}
-          options={[
-            { value: "USD", label: "USD", sub: "$ • US Dollar" },
-            { value: "PKR", label: "PKR", sub: "Rs • Pakistani Rupee" },
-            { value: "OMR", label: "OMR", sub: "OMR • Omani Rial" },
-          ]}
-        />
+      <Block>
+        <CurrencyValueCards />
       </Block>
       <Block>
         <Row label="Decimal precision" desc="Maximum digits after the decimal. Trailing zeros are not shown.">
@@ -280,7 +272,7 @@ function CurrencySection() {
   );
 }
 
-function ExchangeRatesInline() {
+function CurrencyValueCards() {
   const { settings, update } = useSettings();
   const [editing, setEditing] = useState(false);
   const [pkr, setPkr] = useState(String(settings.rates.PKR));
@@ -304,89 +296,113 @@ function ExchangeRatesInline() {
     toast.success("Exchange rates updated");
   };
 
+  const formatOMR = (n: number) => {
+    // Show up to 3 decimals, trim trailing zeros
+    const s = n.toFixed(3);
+    return parseFloat(s).toString();
+  };
+
+  const cardBase =
+    "relative h-[64px] rounded-xl border flex items-center px-4 transition-all duration-300";
+
   return (
-    <div className="flex items-center gap-3 sm:gap-5 flex-nowrap overflow-x-auto py-1">
-      {/* USD (locked, base) */}
-      <div className="shrink-0 flex flex-col gap-1">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium">USD · base</div>
-        <div className="relative h-10 min-w-[110px] px-3 rounded-lg border border-primary/30 bg-primary/[0.06] flex items-center justify-between gap-2">
-          <span className="text-sm font-mono font-semibold text-foreground">1</span>
-          <span className="text-xs font-medium text-primary/80">$</span>
+    <div>
+      {/* Header row: title + Change/Save button */}
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <div className="text-sm font-medium text-foreground">Exchange rates</div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            USD is the base. Edit values to update prices, totals and analytics globally.
+          </div>
         </div>
+        <button
+          onClick={editing ? save : enterEdit}
+          className={`shrink-0 h-9 px-4 rounded-lg text-sm font-medium transition-all duration-200 active:scale-[0.97] ${
+            editing
+              ? "bg-primary text-primary-foreground hover:brightness-110 shadow-[0_4px_14px_rgba(212,175,90,0.35)]"
+              : "bg-secondary/40 text-foreground border border-border/60 hover:bg-secondary/60 hover:border-border"
+          }`}
+          data-testid={editing ? "btn-save-rates" : "btn-change-rates"}
+        >
+          {editing ? "Save" : "Change"}
+        </button>
       </div>
 
-      {/* Arrow USD → PKR */}
-      <div className="shrink-0 text-muted-foreground/60 text-lg leading-none pt-5 select-none">→</div>
-
-      {/* PKR */}
-      <div className="shrink-0 flex flex-col gap-1">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium">PKR</div>
-        {editing ? (
-          <div className="relative h-10 min-w-[130px]">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={pkr}
-              onChange={e => setPkr(e.target.value.replace(/[^0-9.]/g, ''))}
-              className="w-full h-full pl-3 pr-9 rounded-lg bg-input/50 border border-border/60 text-sm font-mono text-foreground outline-none focus:border-ring/60 focus:ring-1 focus:ring-ring/20 transition-all duration-200"
-              autoFocus
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-muted-foreground pointer-events-none">₨</span>
+      {/* 3-card row */}
+      <div className="grid grid-cols-3 gap-2.5 sm:gap-4">
+        {/* USD — locked, base */}
+        <div
+          className={`${cardBase} border-primary/40 bg-primary/[0.06] gap-3`}
+          data-testid="card-usd"
+        >
+          <span className="text-primary/90 inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary/10 shrink-0">
+            <ArrowRight size={14} strokeWidth={2.5} />
+          </span>
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <span className="text-base sm:text-lg font-mono font-semibold text-foreground">$</span>
+            <span className="text-base sm:text-lg font-mono font-semibold text-foreground tabular-nums">1</span>
           </div>
-        ) : (
-          <div className="relative h-10 min-w-[130px] px-3 rounded-lg border border-border/50 bg-white/[0.02] flex items-center justify-between gap-2">
-            <span className="text-sm font-mono font-semibold text-foreground">{settings.rates.PKR}</span>
-            <span className="text-xs font-medium text-muted-foreground">₨</span>
-          </div>
-        )}
-      </div>
+        </div>
 
-      {/* Spacer between PKR and OMR — no arrow, no direct relationship */}
-      <div className="shrink-0 w-3 sm:w-6" />
+        {/* PKR */}
+        <div
+          className={`${cardBase} border-border/50 bg-white/[0.02] ${editing ? "px-2 sm:px-3" : ""}`}
+          data-testid="card-pkr"
+        >
+          {editing ? (
+            <div className="relative w-full">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base font-semibold text-muted-foreground pointer-events-none">₨</span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={pkr}
+                onChange={e => setPkr(e.target.value.replace(/[^0-9.]/g, ""))}
+                className="w-full h-10 pl-8 pr-3 rounded-lg bg-input/60 border border-border/60 text-base font-mono font-semibold text-foreground tabular-nums outline-none focus:border-primary/60 focus:shadow-[0_0_0_3px_rgba(212,175,90,0.18)] transition-all duration-200"
+                autoFocus
+                data-testid="input-pkr"
+              />
+            </div>
+          ) : (
+            <div className="flex items-baseline gap-1.5 min-w-0">
+              <span className="text-base sm:text-lg font-mono font-semibold text-muted-foreground">₨</span>
+              <span className="text-base sm:text-lg font-mono font-semibold text-foreground tabular-nums truncate">
+                {settings.rates.PKR}
+              </span>
+            </div>
+          )}
+        </div>
 
-      {/* OMR (derived from USD, not from PKR) */}
-      <div className="shrink-0 flex flex-col gap-1">
-        <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium">OMR</div>
-        {editing ? (
-          <div className="relative h-10 min-w-[140px]">
-            <input
-              type="text"
-              inputMode="decimal"
-              value={omr}
-              onChange={e => setOmr(e.target.value.replace(/[^0-9.]/g, ''))}
-              className="w-full h-full pl-3 pr-12 rounded-lg bg-input/50 border border-border/60 text-sm font-mono text-foreground outline-none focus:border-ring/60 focus:ring-1 focus:ring-ring/20 transition-all duration-200"
-            />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-muted-foreground pointer-events-none">OMR</span>
-          </div>
-        ) : (
-          <div className="relative h-10 min-w-[140px] px-3 rounded-lg border border-border/50 bg-white/[0.02] flex items-center justify-between gap-2">
-            <span className="text-sm font-mono font-semibold text-foreground">{settings.rates.OMR}</span>
-            <span className="text-[10px] font-semibold text-muted-foreground">OMR</span>
-          </div>
-        )}
-      </div>
-
-      {/* Action button */}
-      <div className="shrink-0 ml-auto pt-5">
-        {editing ? (
-          <button
-            onClick={save}
-            className="h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 active:scale-[0.97] transition-all duration-200"
-          >
-            Save
-          </button>
-        ) : (
-          <button
-            onClick={enterEdit}
-            className="h-10 px-4 rounded-lg border border-border/60 bg-secondary/40 text-sm font-medium text-foreground hover:border-border hover:bg-secondary/60 transition-all duration-200"
-          >
-            Change
-          </button>
-        )}
+        {/* OMR — label on the right */}
+        <div
+          className={`${cardBase} border-border/50 bg-white/[0.02] ${editing ? "px-2 sm:px-3" : ""}`}
+          data-testid="card-omr"
+        >
+          {editing ? (
+            <div className="relative w-full">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={omr}
+                onChange={e => setOmr(e.target.value.replace(/[^0-9.]/g, ""))}
+                className="w-full h-10 pl-3 pr-12 rounded-lg bg-input/60 border border-border/60 text-base font-mono font-semibold text-foreground tabular-nums outline-none focus:border-primary/60 focus:shadow-[0_0_0_3px_rgba(212,175,90,0.18)] transition-all duration-200"
+                data-testid="input-omr"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold tracking-wider text-muted-foreground pointer-events-none">OMR</span>
+            </div>
+          ) : (
+            <div className="flex items-baseline justify-between gap-2 w-full min-w-0">
+              <span className="text-base sm:text-lg font-mono font-semibold text-foreground tabular-nums truncate">
+                {formatOMR(settings.rates.OMR)}
+              </span>
+              <span className="text-[11px] font-semibold tracking-wider text-muted-foreground shrink-0">OMR</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
 
 function InputBehaviorSection() {
   const { settings, update } = useSettings();
