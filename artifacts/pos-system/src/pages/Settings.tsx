@@ -304,7 +304,6 @@ function CurrencyCardSelector() {
       {/* Header row with Change/Save button */}
       <div className="flex items-center justify-between mb-3">
         <div>
-          <div className="text-sm font-medium text-foreground">Currency</div>
           <div className="text-xs text-muted-foreground mt-0.5">Tap a card to set the active currency. USD is the base — all values derive from it.</div>
         </div>
         {editing ? (
