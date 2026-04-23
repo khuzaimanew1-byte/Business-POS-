@@ -490,8 +490,19 @@ function Chart({
   const showFutureZone = futureStartX < plotEndX - 0.5;
   const interactiveWidth = Math.max(0, futureStartX - margin.left);
 
+  // Zero-start handling: when the first real value is zero, that point is a
+  // structural anchor — it represents a baseline, not insight data. In that
+  // case only the first point should be hoverable so users don't read the
+  // flat segment as meaningful trend.
+  const firstValueIsZero = realIndices.length > 0 && bins[realIndices[0]].value === 0;
+  const hoverableIndices = firstValueIsZero ? [realIndices[0]] : realIndices;
+
   const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
-    if (realIndices.length === 0) return;
+    if (hoverableIndices.length === 0) return;
+    if (hoverableIndices.length === 1) {
+      setHoverIdx(hoverableIndices[0]);
+      return;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const rel = Math.min(1, Math.max(0, x / Math.max(1, rect.width)));
@@ -500,7 +511,7 @@ function Chart({
     const ts = rangeStart + rel * (lastRealTs - rangeStart);
     let bestIdx = -1;
     let bestDist = Infinity;
-    for (const i of realIndices) {
+    for (const i of hoverableIndices) {
       const d = Math.abs(bins[i].ts - ts);
       if (d < bestDist) { bestDist = d; bestIdx = i; }
     }
@@ -547,49 +558,69 @@ function Chart({
             <stop offset="60%" stopColor="hsl(240 8% 6%)" stopOpacity="0.32" />
             <stop offset="100%" stopColor="hsl(240 8% 6%)" stopOpacity="0.55" />
           </linearGradient>
+          {/* Grid-fade mask: keeps grid fully visible up to the data boundary,
+              then smoothly drops opacity through the future zone so the grid
+              "thins out" rather than ending or being merely overlaid. */}
+          <linearGradient id="gridFadeGrad" x1="0" y1="0" x2={size.w} y2="0" gradientUnits="userSpaceOnUse">
+            <stop offset={Math.max(0, Math.min(1, (futureStartX - 0.5) / Math.max(1, size.w)))} stopColor="white" stopOpacity="1" />
+            <stop offset="1" stopColor="white" stopOpacity="0.18" />
+          </linearGradient>
+          <mask id="gridFade" maskUnits="userSpaceOnUse" x="0" y="0" width={size.w} height={size.h}>
+            <rect x="0" y="0" width={size.w} height={size.h} fill="url(#gridFadeGrad)" />
+          </mask>
         </defs>
 
-        {/* Subtle grid — vertical lines */}
-        {Array.from({ length: gridCols + 1 }).map((_, i) => {
-          const x = margin.left + (plotW * i) / gridCols;
-          return (
-            <line
-              key={`vg-${i}`}
-              x1={x} x2={x} y1={margin.top} y2={baseY}
-              stroke="hsl(240 6% 20%)" strokeWidth={1} strokeOpacity={0.45}
-            />
-          );
-        })}
-
-        {/* Horizontal grid + Y labels */}
-        {yTicks.map((v, i) => {
-          const y = yAt(v);
-          return (
-            <g key={i}>
+        {/* Grid layers — masked so they thin out smoothly through the future
+            zone instead of being merely covered by an overlay. */}
+        <g mask="url(#gridFade)">
+          {/* Vertical lines */}
+          {Array.from({ length: gridCols + 1 }).map((_, i) => {
+            const x = margin.left + (plotW * i) / gridCols;
+            return (
               <line
+                key={`vg-${i}`}
+                x1={x} x2={x} y1={margin.top} y2={baseY}
+                stroke="hsl(240 6% 20%)" strokeWidth={1} strokeOpacity={0.45}
+              />
+            );
+          })}
+
+          {/* Horizontal lines */}
+          {yTicks.map((v, i) => {
+            const y = yAt(v);
+            return (
+              <line
+                key={`hg-${i}`}
                 x1={margin.left} x2={margin.left + plotW} y1={y} y2={y}
                 stroke="hsl(240 6% 22%)" strokeWidth={1}
                 strokeDasharray={i === 0 ? "0" : "3 3"}
                 strokeOpacity={i === 0 ? 0.9 : 0.5}
               />
-              <text x={margin.left - 10} y={y + 4} fontSize="10" fill="hsl(240 5% 55%)" textAnchor="end">
-                {fmtYTick(v, metric, sym)}
-              </text>
-            </g>
-          );
-        })}
+            );
+          })}
 
-        {/* Subtle grid — cell fills for every other row */}
-        {gridRows > 0 && yTicks.slice(0, -1).map((v, i) => {
-          const y1 = yAt(yTicks[i + 1]);
-          const y2 = yAt(v);
-          return i % 2 === 0 ? (
-            <rect
-              key={`gcell-${i}`}
-              x={margin.left} y={y1} width={plotW} height={y2 - y1}
-              fill="hsl(240 6% 14%)" fillOpacity={0.35}
-            />
-          ) : null;
+          {/* Cell fills for every other row */}
+          {gridRows > 0 && yTicks.slice(0, -1).map((v, i) => {
+            const y1 = yAt(yTicks[i + 1]);
+            const y2 = yAt(v);
+            return i % 2 === 0 ? (
+              <rect
+                key={`gcell-${i}`}
+                x={margin.left} y={y1} width={plotW} height={y2 - y1}
+                fill="hsl(240 6% 14%)" fillOpacity={0.35}
+              />
+            ) : null;
+          })}
+        </g>
+
+        {/* Y-axis labels — outside the mask so they remain fully readable */}
+        {yTicks.map((v, i) => {
+          const y = yAt(v);
+          return (
+            <text key={`yl-${i}`} x={margin.left - 10} y={y + 4} fontSize="10" fill="hsl(240 5% 55%)" textAnchor="end">
+              {fmtYTick(v, metric, sym)}
+            </text>
+          );
         })}
 
         {/* X labels */}

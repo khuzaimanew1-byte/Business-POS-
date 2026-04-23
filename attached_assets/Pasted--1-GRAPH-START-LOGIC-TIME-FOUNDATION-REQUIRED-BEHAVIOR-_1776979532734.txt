@@ -1,0 +1,83 @@
+⏱️ 1. GRAPH START LOGIC (TIME FOUNDATION)
+REQUIRED BEHAVIOR:
+X-axis always starts from earliest time boundary:
+daily → start of day
+hourly → start of hour range
+RULES:
+No left padding space before first point
+First data point anchors directly at chart start
+Timeline must always appear complete from the beginning
+📍 2. START POINT + ZERO STATE BEHAVIOR
+CASE: FIRST VALUE = 0 OR NO ACTIVITY
+Start point MUST exist as a structural anchor
+It represents baseline only, not insight data
+TOOLTIP RULE:
+If first point is zero:
+tooltip allowed ONLY on first point
+shows neutral system state internally (no repeated emphasis)
+Do NOT treat zero as meaningful trend data
+🌫️ 3. FUTURE SPACE (CRITICAL UX FIX — NO TEXT VERSION)
+❌ REMOVE COMPLETELY:
+empty blank visual area feel
+flat unused space
+dashed prediction lines
+ghost lines or fake continuation
+any tooltip / label / hint in future zone
+✅ IMPLEMENT FUTURE ZONE AS VISUAL ATMOSPHERE ONLY:
+
+Instead of empty space, create a visual transition layer:
+
+🎨 FUTURE REGION DESIGN:
+grid remains visible but:
+opacity gradually decreases toward right side
+apply:
+soft horizontal gradient fade (data → no-data direction)
+slight desaturation of background grid
+very subtle blur or diffusion effect near edge
+optional micro noise texture for depth
+
+👉 IMPORTANT: No line, no dots, no indicators in future zone
+
+🧠 4. PSYCHOLOGICAL UX INTENT
+
+Future zone must naturally feel like:
+
+continuation of time beyond current dataset
+system space still active but not defined
+visually “open but unavailable”
+
+WITHOUT:
+
+text
+icons
+tooltips
+prediction indicators
+explicit labeling of any kind
+⚡ 5. REAL-TIME UPDATE BEHAVIOR
+New data (checkout/event):
+extend line smoothly to new endpoint
+animate only last segment
+avoid full graph re-render flicker
+Keep graph stable and continuous
+📉 6. END POINT DESIGN (KEEP EXISTING IMPROVEMENT)
+Last data point:
+subtle pulse/glow animation
+indicates live/latest state
+No extension beyond last point
+🚫 7. STRICT CONSTRAINT
+DO NOT redesign layout
+DO NOT change chart type
+ONLY modify:
+axis start logic
+zero-start handling
+future zone visual layer (gradient/opacity/blur only)
+update animation behavior
+⚡ FINAL RESULT
+
+After implementation:
+
+graph feels naturally complete from first frame
+zero-start does not confuse interpretation
+future space feels intentional and “alive but undefined”
+no text needed to explain UX — visual design carries meaning alone
+system feels like real-time analytics engine, not static chart
