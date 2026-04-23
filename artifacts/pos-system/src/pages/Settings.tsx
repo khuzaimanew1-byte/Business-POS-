@@ -28,17 +28,7 @@ export default function SettingsPage() {
 
   return (
     <div className="flex h-screen bg-background text-foreground overflow-hidden">
-      {/* Desktop sidebar (matches POS) */}
-      <aside className="hidden sm:flex w-16 bg-card flex-col items-center justify-between py-6 shrink-0">
-        <div className="flex flex-col items-center gap-3">
-          <button onClick={() => setLocation('/')} className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors duration-200" aria-label="Home"><Home size={20} /></button>
-          <button onClick={() => setLocation('/analytics')} className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors duration-200" aria-label="Analytics"><BarChart2 size={20} /></button>
-          <button onClick={() => setLocation('/add-product')} className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors duration-200" aria-label="Add Product"><Plus size={20} /></button>
-          <button className="p-2 rounded-full bg-secondary text-foreground" aria-label="Settings"><SettingsIcon size={20} /></button>
-        </div>
-      </aside>
-
-      <main className={`flex-1 flex flex-col min-w-0 transition-all duration-400 ease-out ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
+<main className={`flex-1 flex flex-col min-w-0 transition-all duration-400 ease-out ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
         {/* Top bar */}
         <header className="h-14 sm:h-16 flex items-center px-3 sm:px-6 shrink-0 bg-background/90 backdrop-blur-sm sticky top-0 z-10 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)]">
           <button
