@@ -153,6 +153,11 @@ export default function AddProduct() {
   const profitInputRef = useRef<HTMLInputElement>(null);
   const stockInputRef = useRef<HTMLInputElement>(null);
   const categoryButtonRef = useRef<HTMLButtonElement>(null);
+  // Timestamp of the last category selection from the dropdown. Used to swallow
+  // the *same* Enter keystroke that picked an option so it cannot also trigger
+  // form submission on the trigger button — selecting a category and creating
+  // the product must always be two distinct, intentional Enter presses.
+  const categorySelectGuardRef = useRef<number>(0);
 
   const fieldRefs: Record<FieldKey, React.RefObject<HTMLElement>> = {
     name: nameInputRef as React.RefObject<HTMLElement>,
@@ -363,6 +368,11 @@ export default function AddProduct() {
     const cat = newCategoryName.trim();
     if (!cat) { setIsAddingCategory(false); return; }
     if (cat.toLowerCase() === 'all') { toast.error('Reserved name'); return; }
+    // "Sold Out" is a system status (auto-applied at stock 0), not a category.
+    if (/^sold[\s_-]*out$/i.test(cat)) {
+      toast.error('"Sold Out" is a system state, not a category');
+      return;
+    }
     if (categories.some(c => c.toLowerCase() === cat.toLowerCase())) {
       toast.error('Category already exists');
       return;
@@ -372,6 +382,10 @@ export default function AddProduct() {
     setNewCategoryName('');
     setIsAddingCategory(false);
     setIsCatDropdownOpen(false);
+    // Selecting a brand-new category from the dropdown immediately returns
+    // focus to the trigger; arm the same guard the menu uses so the same
+    // Enter keystroke can't fall through and submit the form.
+    categorySelectGuardRef.current = Date.now();
   };
 
   const confirmDelete = (cat: string) => {
@@ -696,6 +710,14 @@ export default function AddProduct() {
                       type="button"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
+                          // The Enter that selected an option from the dropdown
+                          // bubbles up to this button. Swallow it so the same
+                          // keystroke can't also submit the form — selection
+                          // and creation must be two intentional presses.
+                          if (Date.now() - categorySelectGuardRef.current < 350) {
+                            e.preventDefault();
+                            return;
+                          }
                           if (!isFieldFilled('category')) {
                             e.preventDefault();
                             setError('category', 'Please select a category');
@@ -743,6 +765,10 @@ export default function AddProduct() {
                             if (isPending) { e.preventDefault(); return; }
                             setCategory(c);
                             setIsCatDropdownOpen(false);
+                            // Guard against the same Enter keystroke also
+                            // triggering a form submission once focus returns
+                            // to the trigger button.
+                            categorySelectGuardRef.current = Date.now();
                           }}
                           className="flex items-center justify-between gap-2 group/cat pr-2"
                         >

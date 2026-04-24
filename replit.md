@@ -35,3 +35,12 @@ Actionable-only notification system in `artifacts/pos-system`. Architected aroun
 - **Surfaces**: live unread badge with soft halo on the bell (POS desktop header, mobile bottom nav, Analytics header), top-right toast stack (max 3, auto-dismiss ~4.5s, replaced by `src/components/NotificationToaster.tsx`), and dedicated page at `/notifications` (`src/pages/Notifications.tsx`) with Alerts/Warnings tabs.
 - **Deep-linking**: action button calls `requestProductFocus(productId)`. POS consumes this on mount/change, switches category if needed, scrolls the card into view, and applies a 2-cycle `product-card-highlight` pulse. Context-aware: navigating to `/` is a no-op when already there.
 - **Animations** (in `src/index.css`): `notif-bell-pulse-anim`, `notif-toast-in-anim`, `product-card-highlight-anim` — all short, subtle, and respect `data-perf` modes.
+
+## POS System — UX Conventions
+
+- **Sold Out is a system state, not a category.** When `stock <= 0` the product card renders a tilted red `SOLD OUT` stamp overlay (CSS in `pages/POS.tsx`). It cannot be created, renamed, or assigned manually — guards in `handleAddCategory`, `saveEditMode` (POS), and `commitNewCategory` (AddProduct) reject any case-insensitive `sold[\s_-]*out` name.
+- **Add Product → Category Enter behavior.** Selection and submission are always two distinct keystrokes. A `categorySelectGuardRef` (timestamp) is set whenever a category is picked from the dropdown; the trigger button's Enter handler swallows any Enter that fires within 350 ms of that guard, so the same keystroke can never both select an option and submit the form.
+- **Shortcuts (in `lib/settings.tsx` + `lib/shortcuts.tsx`).** All bindings are user-configurable via Settings.
+  - `Shift+E` — *true* toggle for Edit Mode: enters when closed, saves & exits when open.
+  - `Shift+N` — opens the Notifications page; idempotent (`navTo` checks `window.location.pathname` first, so re-pressing on the same page is a silent no-op).
+  - All shortcuts are skipped when typing in inputs unless `allowInInput` is set.

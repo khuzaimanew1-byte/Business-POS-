@@ -285,6 +285,14 @@ export default function POS() {
   };
 
   const saveEditMode = () => {
+    // Reject any rename that targets the reserved "Sold Out" system state.
+    for (const cat of categories) {
+      const next = (categoryDrafts[cat] ?? cat).trim();
+      if (next && next !== cat && /^sold[\s_-]*out$/i.test(next)) {
+        toast.error('"Sold Out" is a system state, not a category');
+        return;
+      }
+    }
     const renamedMap: Record<string, string> = {};
     categories.forEach(cat => { renamedMap[cat] = (categoryDrafts[cat] ?? cat).trim() || cat; });
     setCategories(prev => prev.map(c => renamedMap[c] || c));
@@ -363,8 +371,14 @@ export default function POS() {
   const handleAddCategory = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const name = fd.get("name") as string;
-    if (name && !categories.includes(name)) setCategories(prev => [...prev, name]);
+    const name = (fd.get("name") as string)?.trim();
+    if (!name) { setIsAddCategoryModalOpen(false); return; }
+    // "Sold Out" is a system state, not a user-creatable category.
+    if (/^sold[\s_-]*out$/i.test(name)) {
+      toast.error('"Sold Out" is a system state, not a category');
+      return;
+    }
+    if (!categories.includes(name)) setCategories(prev => [...prev, name]);
     setIsAddCategoryModalOpen(false);
   };
 
@@ -470,8 +484,16 @@ export default function POS() {
   // Open / close cart
   useShortcut('openCart', () => setIsCartOpen(o => !o));
 
-  // Enter edit mode (only if not already editing)
-  useShortcut('toggleEditMode', () => { if (!isEditMode) enterEditMode(); });
+  // True toggle: enter edit mode if closed, save & exit if already editing.
+  // Mirrors the user's mental model that the same key reverses its own effect.
+  useShortcut('toggleEditMode', () => {
+    if (isEditMode) saveEditMode();
+    else enterEditMode();
+  });
+
+  // Open the notifications page. Idempotent: re-pressing while already on
+  // the page is a silent no-op (handled inside the shortcut engine).
+  useShortcut('openNotifications', () => setLocation('/notifications'));
 
   // Override the global "back" handler on Home: prompt exit confirmation instead.
   useShortcut('back', () => setExitConfirm(true));
@@ -944,9 +966,16 @@ export default function POS() {
                       </button>
                     )}
 
-                    {product.stock <= 0 && (
-                      <div className="absolute inset-x-0 bottom-0 flex items-center justify-center py-1 bg-background/75 backdrop-blur-[1px] border-t border-border/40">
-                        <span className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Out of Stock</span>
+                    {/* Sold Out — system state, NOT a category. Auto-applied
+                        when stock hits 0 and removed when stock returns.
+                        Rendered as a tilted red stamp overlay so it reads as
+                        a status layer, never confusable with a filter or tag. */}
+                    {product.stock <= 0 && !isEditMode && (
+                      <div
+                        className="sold-out-stamp absolute inset-0 flex items-center justify-center pointer-events-none"
+                        aria-label="Sold out"
+                      >
+                        <span className="sold-out-stamp-text">SOLD OUT</span>
                       </div>
                     )}
                   </div>
@@ -1349,6 +1378,31 @@ export default function POS() {
             grid-template-columns: repeat(auto-fill, minmax(clamp(100px, 28vw, 130px), 1fr));
           }
         }
+
+        /* ── Sold Out stamp — temporary status overlay (not a category) ── */
+        .sold-out-stamp { z-index: 3; }
+        .sold-out-stamp-text {
+          font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+          font-weight: 900;
+          font-size: clamp(13px, 1.6vw, 18px);
+          letter-spacing: 0.16em;
+          color: hsl(0 92% 62%);
+          padding: 6px 12px;
+          border: 2.5px solid hsl(0 92% 62% / 0.85);
+          border-radius: 4px;
+          background: hsl(0 80% 18% / 0.18);
+          box-shadow: 0 0 0 1px hsl(0 92% 62% / 0.18) inset;
+          text-shadow: 0 1px 0 rgba(0,0,0,0.35);
+          transform: rotate(-12deg);
+          animation: sold-out-stamp-in 320ms cubic-bezier(0.18, 1.2, 0.4, 1) both;
+        }
+        @keyframes sold-out-stamp-in {
+          0%   { opacity: 0; transform: rotate(-22deg) scale(1.6); }
+          70%  { opacity: 1; transform: rotate(-10deg) scale(0.96); }
+          100% { opacity: 1; transform: rotate(-12deg) scale(1); }
+        }
+        :root[data-perf="fast"]  .sold-out-stamp-text { animation-duration: 220ms; }
+        :root[data-perf="ultra"] .sold-out-stamp-text { animation: none; }
 
         /* ── Image upload overlay: hover on desktop, always visible on touch ── */
         .img-upload-btn {

@@ -39,11 +39,19 @@ export function ShortcutsProvider({ children }: { children: React.ReactNode }) {
 
   const registryRef = useRef<Map<ShortcutAction, Handler[]>>(new Map());
 
+  // Idempotent navigation: if we're already on the target path, do nothing
+  // (prevents re-mount flicker when the user re-presses the same shortcut).
+  const navTo = (path: string) => {
+    if (window.location.pathname === path) return;
+    navRef.current(path);
+  };
+
   const navHandlers = useMemo<Partial<Record<ShortcutAction, Handler>>>(
     () => ({
-      openAnalytics: { fn: () => navRef.current("/analytics") },
-      addProduct: { fn: () => navRef.current("/add-product") },
-      openSettings: { fn: () => navRef.current("/settings") },
+      openAnalytics:     { fn: () => navTo("/analytics") },
+      openNotifications: { fn: () => navTo("/notifications") },
+      addProduct:        { fn: () => navTo("/add-product") },
+      openSettings:      { fn: () => navTo("/settings") },
       back: {
         // Shift+Backspace must work even when an input is focused.
         // The engine calls preventDefault() before invoking us, so the

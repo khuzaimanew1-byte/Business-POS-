@@ -10,6 +10,7 @@ export type DecimalPrecision = 0 | 1 | 2 | 3;
 export type ShortcutAction =
   | "addProduct"
   | "openAnalytics"
+  | "openNotifications"
   | "toggleSearch"
   | "openCart"
   | "createProduct"
@@ -34,6 +35,7 @@ export type ShortcutBinding = {
 export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   addProduct:       "Add Product",
   openAnalytics:    "Open Analytics",
+  openNotifications: "Open Notifications",
   toggleSearch:     "Toggle Search",
   openCart:         "Open Cart",
   createProduct:    "Create Product",
@@ -50,6 +52,7 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
 export const DEFAULT_SHORTCUTS: Record<ShortcutAction, ShortcutBinding> = {
   addProduct:       { ctrl: false, shift: true,  alt: false, meta: false, key: "p" },
   openAnalytics:    { ctrl: false, shift: true,  alt: false, meta: false, key: "a" },
+  openNotifications:{ ctrl: false, shift: true,  alt: false, meta: false, key: "n" },
   toggleSearch:     { ctrl: true,  shift: false, alt: false, meta: false, key: "`" },
   openCart:         { ctrl: false, shift: true,  alt: false, meta: false, key: "c" },
   createProduct:    { ctrl: false, shift: false, alt: false, meta: false, key: "enter" },
