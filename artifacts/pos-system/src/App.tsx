@@ -7,9 +7,12 @@ import POS from "@/pages/POS";
 import Analytics from "@/pages/Analytics";
 import AddProduct from "@/pages/AddProduct";
 import SettingsPage from "@/pages/Settings";
+import NotificationsPage from "@/pages/Notifications";
 import { StoreProvider } from "@/lib/store";
 import { SettingsProvider } from "@/lib/settings";
 import { ShortcutsProvider } from "@/lib/shortcuts";
+import { NotificationsProvider } from "@/lib/notifications-store";
+import { NotificationToaster } from "@/components/NotificationToaster";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +23,7 @@ function Router() {
       <Route path="/analytics" component={Analytics} />
       <Route path="/add-product" component={AddProduct} />
       <Route path="/settings" component={SettingsPage} />
+      <Route path="/notifications" component={NotificationsPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -32,9 +36,12 @@ function App() {
         <SettingsProvider>
           <StoreProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <ShortcutsProvider>
-                <Router />
-              </ShortcutsProvider>
+              <NotificationsProvider>
+                <ShortcutsProvider>
+                  <Router />
+                </ShortcutsProvider>
+                <NotificationToaster />
+              </NotificationsProvider>
             </WouterRouter>
             <Toaster />
           </StoreProvider>

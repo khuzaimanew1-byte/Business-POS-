@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useSaleEvents, type SaleEvent, type SaleItem } from "@/lib/analytics-store";
 import { PRODUCTS_META, getProductMeta, colorForProduct, type ProductMeta } from "@/lib/products-meta";
 import { useSettings, CURRENCY_SYMBOLS } from "@/lib/settings";
+import { useNotifications } from "@/lib/notifications-store";
 
 type Mode = "daily" | "weekly" | "monthly" | "yearly" | "custom";
 type Metric = "sales" | "profit";
@@ -991,6 +992,7 @@ export default function Analytics() {
   const [, setLocation] = useLocation();
   const { settings } = useSettings();
   const sym = CURRENCY_SYMBOLS[settings.currency];
+  const { unreadCount: notifUnread } = useNotifications();
   const [mode, setMode] = useState<Mode>("monthly");
   const [metric, setMetric] = useState<Metric>("sales");
   const [custom, setCustom] = useState<{ from: number; to: number } | null>(null);
@@ -1110,6 +1112,23 @@ export default function Analytics() {
           </button>
           <h1 className="text-[15px] font-semibold tracking-tight">Analytics</h1>
           <div className="flex-1" />
+
+          {/* Notifications — same affordance as POS so the bell is reachable
+              from any page without changing layout. */}
+          <button
+            onClick={() => setLocation("/notifications")}
+            className="relative p-2 rounded-full hover:bg-secondary transition-colors duration-200 mr-1"
+            aria-label={notifUnread > 0 ? `${notifUnread} new notification${notifUnread === 1 ? "" : "s"}` : "Notifications"}
+            data-testid="btn-notifications"
+          >
+            <Bell className="text-muted-foreground hover:text-foreground transition-colors duration-200 w-[17px] h-[17px]" />
+            {notifUnread > 0 && (
+              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-none flex items-center justify-center border border-background tabular-nums">
+                <span className="notif-bell-pulse" aria-hidden="true" />
+                <span className="relative">{notifUnread > 9 ? "9+" : notifUnread}</span>
+              </span>
+            )}
+          </button>
 
           {/* Time mode pills — natural, no card border */}
           <div className="flex items-center gap-0.5">

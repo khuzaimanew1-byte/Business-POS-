@@ -1,0 +1,360 @@
+Build a **Notification System (Guide + AI Architecture)** for the POS app. Follow this as a strict implementation guide. The system must be **actionable-only, anti-spam, auto-cleaning, and performance-optimized**. UI should be premium, minimal, and smooth.
+
+---
+
+# 🔔 🎯 CORE PRINCIPLE
+
+> Only show notifications when the user must take action.
+> No success messages. No unnecessary alerts. No repetition.
+
+---
+
+# 🧠 1. SYSTEM ARCHITECTURE (FLOW)
+
+### Event → Filter → Create → Display → Resolve → Remove
+
+```text
+Event detected
+→ Check if actionable
+→ Check if already triggered
+→ Create notification
+→ Show toast (top)
+→ Add to list (page)
+→ Wait for action / condition resolve
+→ Auto remove
+```
+
+---
+
+# ⚙️ 2. EVENT DETECTION LAYER
+
+Trigger only meaningful events:
+
+### ✅ Allowed:
+
+* Product stock ≤ threshold (low stock)
+* Product stock = 0 (out of stock)
+* System error / conflict
+
+### ❌ Ignore:
+
+* Success (created, saved, updated)
+* Minor UI actions
+* Background processes
+
+---
+
+# 🧠 3. INTELLIGENT FILTER (ANTI-SPAM)
+
+Before creating notification:
+
+```text
+if (actionRequired === false) → ignore
+if (alreadyTriggered === true) → ignore
+if (cooldownActive === true) → delay
+else → allow
+```
+
+---
+
+### Per Product Logic:
+
+* Each product has `lowStockTriggered` flag
+* Trigger only once
+* Reset when stock increases again
+
+---
+
+# 🧾 4. NOTIFICATION OBJECT STRUCTURE
+
+```json
+{
+  id: unique,
+  type: "alert" | "warning",
+  message: string,
+  actionLabel: string,
+  actionTarget: string,
+  quickCode: string,
+  timestamp: number,
+  isRead: false,
+  triggered: true
+}
+```
+
+---
+
+# 🔔 5. TOP TOAST SYSTEM (GLOBAL)
+
+### Position:
+
+* Desktop → top-right
+* Mobile → top full-width
+
+---
+
+### Behavior:
+
+* Slide down + fade in
+* Max 3 stacked
+* Auto dismiss (3–5s)
+* Clickable → triggers action
+
+---
+
+### Important Rules:
+
+* No nested popups
+* No repeating same notification
+* No aggressive animation
+
+---
+
+# 🔴 6. BELL ICON SYSTEM
+
+### Features:
+
+* Unread count badge
+* Soft pulse/glow (only when new notification exists)
+* Animation stops when opened
+
+---
+
+# 📄 7. NOTIFICATION PAGE (MAIN STRUCTURE)
+
+---
+
+## 🔝 TOP SECTION
+
+* Title: **Notifications**
+* Tabs:
+
+  * Alerts (critical)
+  * Warnings (moderate)
+
+---
+
+## 📂 MAIN CONTENT
+
+### 🔹 HORIZONTAL BAR LAYOUT (IMPORTANT)
+
+Each notification = **full-width horizontal bar**
+
+---
+
+## 🧱 NOTIFICATION BAR STRUCTURE
+
+```text
+[ ICON ]  Title + Description     [ ACTION BUTTON ]     Time
+```
+
+---
+
+### UI DETAILS:
+
+* Height: medium (compact but readable)
+* Full width
+* Rounded corners
+* Soft shadow
+* Clean spacing
+
+---
+
+### VISUAL STYLE:
+
+* Dark premium theme
+* Subtle hover highlight
+* Smooth transitions
+
+---
+
+# 🎨 8. NOTIFICATION TYPES
+
+### 🔴 Alert:
+
+* Strong color (red tone)
+* For critical actions
+
+### 🟡 Warning:
+
+* Soft yellow/orange tone
+* For moderate actions
+
+---
+
+# 🎯 9. ACTION SYSTEM
+
+---
+
+### Behavior:
+
+* Clicking action button:
+  → Redirect using quickCode
+  → Scroll to product
+  → Highlight product (pulse animation)
+
+---
+
+### Feedback:
+
+* Button → loading state
+* After success:
+  → Notification auto removed
+
+---
+
+# 🔁 10. AUTO CLEANUP SYSTEM
+
+---
+
+### Logic:
+
+Each notification has condition:
+
+```text
+if (conditionResolved === true)
+  removeNotification()
+```
+
+---
+
+### Example:
+
+* Low stock:
+  → remove when stock > threshold
+
+---
+
+### Animation:
+
+* Fade out + collapse smoothly
+
+---
+
+# 🔕 11. ANTI-SPAM SYSTEM
+
+---
+
+### Rules:
+
+* Same notification → only once
+* No duplicate stacking
+* Optional cooldown
+
+---
+
+# 🧠 12. CONTEXT-AWARE BEHAVIOR
+
+---
+
+### Smart UX:
+
+* If user already on target page:
+  → do NOT redirect
+  → just scroll + highlight
+
+---
+
+# 🔗 13. DEEP LINK SYSTEM
+
+---
+
+### Use:
+
+* quickCode
+
+---
+
+### Result:
+
+* Exact product location
+* Smooth scroll
+* Highlight effect
+
+---
+
+# 📱 14. MOBILE UX
+
+---
+
+### Adjustments:
+
+* Full-width bars
+* Larger tap areas
+* Swipe to dismiss
+
+---
+
+# ⚡ 15. PERFORMANCE RULES
+
+---
+
+### MUST:
+
+* No unnecessary notifications
+* Limit active notifications
+* Auto-remove resolved ones
+* Avoid re-render loops
+
+---
+
+### RESULT:
+
+* Low RAM usage
+* Fast UI
+* Smooth experience
+
+---
+
+# 🚫 16. STRICTLY DISALLOWED
+
+---
+
+Do NOT implement:
+
+* Success notifications
+* Repetitive alerts
+* Popup inside popup
+* Fake urgency
+* System noise
+
+---
+
+# 🎬 17. ANIMATION STYLE
+
+---
+
+Keep all animations:
+
+* Smooth
+* Short
+* Non-flashy
+
+---
+
+Avoid:
+
+* Sharp transitions
+* Heavy motion
+* Distracting effects
+
+---
+
+# 🎯 FINAL RESULT
+
+This notification system should feel like:
+
+> A smart assistant — only speaks when necessary, always actionable, never distracting
+
+---
+
+It must be:
+
+* Clean
+* Fast
+* Intelligent
+* Minimal
+* Production-ready
+
+---
+
+You are allowed to enhance UI design slightly, but do NOT break logic rules.

@@ -24,6 +24,7 @@ import {
 import { useStore, type Product, type Category } from "@/lib/store";
 import { useSettings, formatCurrency } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
+import { useNotifications } from "@/lib/notifications-store";
 
 type CartItem = {
   product: Product;
@@ -35,6 +36,11 @@ export default function POS() {
   const { products, setProducts, categories, setCategories } = useStore();
   const { settings } = useSettings();
   const fmtCur = (v: number) => formatCurrency(v, settings);
+  const { unreadCount, pendingFocusId, consumeProductFocus } = useNotifications();
+  // Product currently highlighted via a notification deep-link. The CSS
+  // animation auto-completes; we just clear the id when it's done so the
+  // class can re-apply on subsequent focus requests for the same product.
+  const [highlightId, setHighlightId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -136,6 +142,35 @@ export default function POS() {
 
   const cartTotal = useMemo(() => cartItems.reduce((s, i) => s + i.product.price * i.quantity, 0), [cartItems]);
   const cartCount = useMemo(() => cartItems.reduce((s, i) => s + i.quantity, 0), [cartItems]);
+
+  // ── Notification deep-link: scroll + highlight ───────────────────────────
+  // When a notification is clicked, the store sets pendingFocusId. We:
+  //   1. Switch to the product's category so its card is rendered.
+  //   2. Wait one frame for the DOM, then scroll the card into view.
+  //   3. Apply the highlight class for one animation cycle, then clear.
+  useEffect(() => {
+    if (!pendingFocusId) return;
+    const id = consumeProductFocus();
+    if (!id) return;
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    if (product.category !== selectedCategory && selectedCategory !== "All") {
+      setSelectedCategory(product.category);
+    }
+    // Wait for layout (category switch may re-render the grid).
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const el = document.querySelector<HTMLElement>(`[data-testid="card-product-${id}"]`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        setHighlightId(id);
+        // Animation runs 2 cycles × 1.6s = ~3.2s. Clear shortly after so
+        // the same product can be re-highlighted later.
+        window.setTimeout(() => {
+          setHighlightId(curr => (curr === id ? null : curr));
+        }, 3400);
+      });
+    });
+  }, [pendingFocusId, consumeProductFocus, products, selectedCategory]);
 
   // ── Actions ──────────────────────────────────────────────────────────────
   const addToCart = (product: Product) => {
@@ -570,40 +605,34 @@ export default function POS() {
                 />
               </TooltipProvider>
 
-              {/* Bell — desktop only (mobile has it in bottom nav) */}
+              {/* Bell — desktop only (mobile has it in bottom nav).
+                  Navigates to the dedicated Notifications page; the badge
+                  shows the live unread count from the notifications store
+                  and the soft halo only animates while count > 0. */}
               <div className="hidden sm:block">
-                <Popover>
-                  <TooltipProvider delayDuration={250}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <PopoverTrigger asChild>
-                          <button className="relative p-2 rounded-full hover:bg-secondary transition-colors duration-200" data-testid="btn-notifications">
-                            <Bell className="text-muted-foreground hover:text-foreground transition-colors duration-200 w-[17px] h-[17px]" />
-                            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border border-background" />
-                          </button>
-                        </PopoverTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" className="font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: '12px' }}>
-                        Notifications
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                  <PopoverContent className="w-80 p-0 mr-4 mt-2 border-border shadow-xl rounded-xl overflow-hidden glass-panel" align="end">
-                    <div className="p-4 border-b border-border/50">
-                      <h4 className="font-medium text-sm">Notifications</h4>
-                    </div>
-                    <div className="divide-y divide-border/50">
-                      <div className="p-4 text-sm hover:bg-secondary/50 transition-colors duration-200 cursor-pointer">
-                        <p className="font-medium">Low stock alert</p>
-                        <p className="text-muted-foreground text-xs mt-1">Salad Bowl (#1013) is running low (15 remaining).</p>
-                      </div>
-                      <div className="p-4 text-sm hover:bg-secondary/50 transition-colors duration-200 cursor-pointer">
-                        <p className="font-medium">System Update</p>
-                        <p className="text-muted-foreground text-xs mt-1">POS system successfully updated to v2.4.1.</p>
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
+                <TooltipProvider delayDuration={250}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => setLocation("/notifications")}
+                        className="relative p-2 rounded-full hover:bg-secondary transition-colors duration-200"
+                        data-testid="btn-notifications"
+                        aria-label={unreadCount > 0 ? `${unreadCount} new notification${unreadCount === 1 ? "" : "s"}` : "Notifications"}
+                      >
+                        <Bell className="text-muted-foreground hover:text-foreground transition-colors duration-200 w-[17px] h-[17px]" />
+                        {unreadCount > 0 && (
+                          <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-none flex items-center justify-center border border-background tabular-nums">
+                            <span className="notif-bell-pulse" aria-hidden="true" />
+                            <span className="relative">{unreadCount > 9 ? "9+" : unreadCount}</span>
+                          </span>
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: '12px' }}>
+                      Notifications
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
 
@@ -724,9 +753,12 @@ export default function POS() {
               const qc = product.quickCode || quickCode(product.name);
               const isTopMatch = product.id === topMatchId;
               const isSelected = selectedIds.has(product.id);
+              const isHighlighted = product.id === highlightId;
               const cardCommonProps = {
                 'data-testid': `card-product-${product.id}`,
                 className: `group relative bg-card rounded-xl overflow-hidden transition-all duration-250 ease-in-out flex flex-col ${
+                  isHighlighted ? 'product-card-highlight ' : ''
+                }${
                   isEditMode
                     ? 'border border-primary/20 cursor-default'
                     : isSelectMode
@@ -1014,31 +1046,23 @@ export default function POS() {
           <Plus size={22} />
         </button>
 
-        {/* Notifications */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 text-muted-foreground" aria-label="Notifications">
-              <Bell size={20} />
-              <span className="absolute top-1.5 right-2.5 w-2 h-2 bg-primary rounded-full border border-background" />
-              <span className="text-[9px]">Alerts</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-72 p-0 mb-2 border-border shadow-xl rounded-xl overflow-hidden glass-panel" align="center" side="top">
-            <div className="p-3 border-b border-border/50">
-              <h4 className="font-medium text-sm">Notifications</h4>
-            </div>
-            <div className="divide-y divide-border/50">
-              <div className="p-3 text-sm hover:bg-secondary/50 transition-colors duration-200 cursor-pointer">
-                <p className="font-medium text-xs">Low stock alert</p>
-                <p className="text-muted-foreground text-xs mt-0.5">Salad Bowl (#1013) is running low (15 remaining).</p>
-              </div>
-              <div className="p-3 text-sm hover:bg-secondary/50 transition-colors duration-200 cursor-pointer">
-                <p className="font-medium text-xs">System Update</p>
-                <p className="text-muted-foreground text-xs mt-0.5">POS system updated to v2.4.1.</p>
-              </div>
-            </div>
-          </PopoverContent>
-        </Popover>
+        {/* Notifications — taps through to the dedicated page; badge shows
+            live unread count and the soft halo only animates when count > 0. */}
+        <button
+          onClick={() => setLocation("/notifications")}
+          className="relative flex flex-col items-center justify-center gap-0.5 px-3 py-2 text-muted-foreground"
+          aria-label={unreadCount > 0 ? `${unreadCount} new notification${unreadCount === 1 ? "" : "s"}` : "Notifications"}
+          data-testid="btn-notifications-mobile"
+        >
+          <Bell size={20} />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-none flex items-center justify-center border border-background tabular-nums">
+              <span className="notif-bell-pulse" aria-hidden="true" />
+              <span className="relative">{unreadCount > 9 ? "9+" : unreadCount}</span>
+            </span>
+          )}
+          <span className="text-[9px]">Alerts</span>
+        </button>
 
         {/* Settings */}
         <div onClick={() => setLocation("/settings")}>
