@@ -210,9 +210,11 @@ function computeYTicks(minVal: number, maxVal: number, maxTicks = 5): number[] {
   return ticks;
 }
 
-function smoothPath(pts: { x: number; y: number }[]): string {
-  if (pts.length === 0) return "";
-  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+// Monotone-cubic Hermite — guarantees no overshoot / no false dips between
+// real data points (so a flat or rising series never visually drops to zero
+// between events).
+function smoothCurveTo(pts: { x: number; y: number }[]): string {
+  if (pts.length < 2) return "";
   const n = pts.length;
   const dx: number[] = [], dy: number[] = [], m: number[] = [];
   for (let i = 0; i < n - 1; i++) {
@@ -241,7 +243,7 @@ function smoothPath(pts: { x: number; y: number }[]): string {
       }
     }
   }
-  let d = `M ${pts[0].x} ${pts[0].y}`;
+  let d = "";
   for (let i = 0; i < n - 1; i++) {
     const c1x = pts[i].x + dx[i] / 3;
     const c1y = pts[i].y + (t[i] * dx[i]) / 3;
@@ -250,6 +252,12 @@ function smoothPath(pts: { x: number; y: number }[]): string {
     d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${pts[i + 1].x} ${pts[i + 1].y}`;
   }
   return d;
+}
+
+function smoothPath(pts: { x: number; y: number }[]): string {
+  if (pts.length === 0) return "";
+  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+  return `M ${pts[0].x} ${pts[0].y}` + smoothCurveTo(pts);
 }
 
 function fmtMetric(v: number, metric: Metric, sym = "$") {
@@ -457,69 +465,121 @@ function Chart({
   const yAt = (v: number) =>
     margin.top + plotH * (1 - (v - yMin) / Math.max(1e-6, yMax - yMin));
 
-  // ── Future-zone & real-data trimming ──────────────────────────────────
-  // The line must stop at the last real data point — no fake projection
-  // into "now → end of period". Synthetic zero-anchors (visible:false) are
-  // structural only and never participate in the rendered line, hover, or
-  // tooltips. Mid-dataset real zeros (visible:true) are still interactive.
+  // ── Time zones, line construction & interaction ──────────────────────
+  // Spec model:
+  //   • The X-axis is strictly [rangeStart, rangeEnd]; no edge padding.
+  //   • Data zone   = [rangeStart, dataZoneEnd] where
+  //         dataZoneEnd = min(rangeEnd, now)
+  //     The line ALWAYS spans the full data zone:
+  //         start anchor (rangeStart, 0)
+  //         → flat at 0 until first real activity (step-up there)
+  //         → smooth monotone curve through real data points
+  //         → flat extension at last value to dataZoneEnd
+  //     Between real activities the curve never drops to 0 (monotone cubic),
+  //     so the line is continuous and behaves like a "hold last value" series.
+  //   • Future zone = (dataZoneEnd, rangeEnd], present only when the range
+  //     extends past "now". No line is drawn here, no tooltip / crosshair.
   const nowTs = Date.now();
+  const dataZoneEnd = Math.min(rangeEnd, nowTs);
+  const plotEndX = margin.left + plotW;
+  const dataZoneEndX = Math.min(plotEndX, Math.max(margin.left, xAt(dataZoneEnd)));
+  const showFutureZone = dataZoneEndX < plotEndX - 0.5;
+
+  // Real (visible) activity bins clipped to the data zone.
   const realIndices: number[] = [];
   for (let i = 0; i < bins.length; i++) {
-    if (bins[i].visible && bins[i].ts <= nowTs) realIndices.push(i);
+    if (bins[i].visible && bins[i].ts >= rangeStart && bins[i].ts <= dataZoneEnd) {
+      realIndices.push(i);
+    }
   }
-  const lastRealIdx = realIndices.length > 0 ? realIndices[realIndices.length - 1] : -1;
-  const realPts = realIndices.map(i => ({ x: xAt(bins[i].ts), y: yAt(bins[i].value) }));
-  // Anchor the first real point to the chart's left edge so the line never
-  // appears to "float" mid-plot. We prepend a synthetic point at margin.left
-  // sharing the first real point's Y, giving a clean horizontal lead-in.
-  const linePts = realPts.length > 0 && realPts[0].x > margin.left + 0.5
-    ? [{ x: margin.left, y: realPts[0].y }, ...realPts]
-    : realPts;
-  const lineD = smoothPath(linePts);
-  const areaD =
-    linePts.length > 0
-      ? `${lineD} L ${linePts[linePts.length - 1].x} ${baseY} L ${linePts[0].x} ${baseY} Z`
-      : "";
-  const lastPt = realPts.length > 0 ? realPts[realPts.length - 1] : null;
+  const realData = realIndices.map(i => ({ ts: bins[i].ts, value: bins[i].value }));
+  const lastReal = realData.length > 0 ? realData[realData.length - 1] : null;
 
-  // Future zone = everything after the last real point (or whole plot if no data).
-  const plotEndX = margin.left + plotW;
-  const futureStartX = lastRealIdx >= 0
-    ? Math.min(plotEndX, Math.max(margin.left, xAt(bins[lastRealIdx].ts)))
-    : margin.left;
-  const showFutureZone = futureStartX < plotEndX - 0.5;
-  const interactiveWidth = Math.max(0, futureStartX - margin.left);
+  // Hoverable points = artificial start anchor (when needed) + every real
+  // activity point. The anchor lets the start of the period always have a
+  // tooltip ("time, value = 0") even before any sale happens.
+  type IPoint = { ts: number; value: number; isAnchor: boolean };
+  const interactivePoints: IPoint[] = [];
+  if (realData.length === 0 || realData[0].ts > rangeStart) {
+    interactivePoints.push({ ts: rangeStart, value: 0, isAnchor: true });
+  }
+  for (const p of realData) {
+    interactivePoints.push({ ts: p.ts, value: p.value, isAnchor: false });
+  }
 
-  // Zero-start handling: when the first real value is zero, that point is a
-  // structural anchor — it represents a baseline, not insight data. In that
-  // case only the first point should be hoverable so users don't read the
-  // flat segment as meaningful trend.
-  const firstValueIsZero = realIndices.length > 0 && bins[realIndices[0]].value === 0;
-  const hoverableIndices = firstValueIsZero ? [realIndices[0]] : realIndices;
+  // Build the line path explicitly so step-ups, smooth interior, and the
+  // flat extension to dataZoneEnd all coexist cleanly.
+  const startX = xAt(rangeStart);
+  const baselineY = yAt(0);
+  let lineD = "";
+  let areaD = "";
+  if (realData.length === 0) {
+    // CASE A (no activity at all): pure baseline across the data zone.
+    lineD = `M ${startX} ${baselineY} L ${dataZoneEndX} ${baselineY}`;
+  } else {
+    const realPts = realData.map(d => ({ x: xAt(d.ts), y: yAt(d.value) }));
+    const firstX = realPts[0].x;
+    const firstY = realPts[0].y;
+
+    lineD = `M ${startX} ${baselineY}`;
+    if (realData[0].ts > rangeStart) {
+      // Flat at 0 from rangeStart up to first activity, then vertical step.
+      lineD += ` L ${firstX} ${baselineY}`;
+      if (Math.abs(firstY - baselineY) > 0.01) {
+        lineD += ` L ${firstX} ${firstY}`;
+      }
+    } else if (Math.abs(firstY - baselineY) > 0.01) {
+      // First activity is exactly at rangeStart but with a non-zero value.
+      lineD += ` L ${startX} ${firstY}`;
+    }
+    // Smooth monotone interpolation through the real data points.
+    if (realPts.length >= 2) {
+      lineD += smoothCurveTo(realPts);
+    }
+    // CASE E (no activity after last event): hold last value flat to the
+    // end of the data zone.
+    const lastRealX = realPts[realPts.length - 1].x;
+    const lastRealY = realPts[realPts.length - 1].y;
+    if (dataZoneEndX > lastRealX + 0.5) {
+      lineD += ` L ${dataZoneEndX} ${lastRealY}`;
+    }
+    // Area fill mirrors the line, closed against the baseline.
+    areaD = `${lineD} L ${dataZoneEndX} ${baseY} L ${startX} ${baseY} Z`;
+  }
+
+  // End-point pulse sits on the last REAL data point — this is the live edge.
+  const lastPt = lastReal
+    ? { x: xAt(lastReal.ts), y: yAt(lastReal.value) }
+    : null;
+
+  // Hover capture spans the entire data zone (so the start anchor and the
+  // flat-extension area are both reachable). The future zone gets no capture.
+  const interactiveWidth = Math.max(0, dataZoneEndX - margin.left);
+  const dataZoneSpan = Math.max(1, dataZoneEnd - rangeStart);
 
   const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
-    if (hoverableIndices.length === 0) return;
-    if (hoverableIndices.length === 1) {
-      setHoverIdx(hoverableIndices[0]);
+    if (interactivePoints.length === 0) return;
+    if (interactivePoints.length === 1) {
+      setHoverIdx(0);
       return;
     }
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const rel = Math.min(1, Math.max(0, x / Math.max(1, rect.width)));
-    // The capture rect covers ts ∈ [rangeStart, lastRealTs], so map directly.
-    const lastRealTs = bins[lastRealIdx].ts;
-    const ts = rangeStart + rel * (lastRealTs - rangeStart);
+    const ts = rangeStart + rel * dataZoneSpan;
     let bestIdx = -1;
     let bestDist = Infinity;
-    for (const i of hoverableIndices) {
-      const d = Math.abs(bins[i].ts - ts);
+    for (let i = 0; i < interactivePoints.length; i++) {
+      const d = Math.abs(interactivePoints[i].ts - ts);
       if (d < bestDist) { bestDist = d; bestIdx = i; }
     }
     setHoverIdx(bestIdx >= 0 ? bestIdx : null);
   };
   const handleLeave = () => setHoverIdx(null);
   const TT_W_EST = metric === "profit" ? 180 : 200;
-  const hover = hoverIdx !== null ? bins[hoverIdx] : null;
+  const hover = hoverIdx !== null && hoverIdx < interactivePoints.length
+    ? interactivePoints[hoverIdx]
+    : null;
   const hoverPx = hover ? xAt(hover.ts) : 0;
   const hoverPy = hover ? yAt(hover.value) : 0;
   let ttLeft = 0;
@@ -562,7 +622,7 @@ function Chart({
               then smoothly drops opacity through the future zone so the grid
               "thins out" rather than ending or being merely overlaid. */}
           <linearGradient id="gridFadeGrad" x1="0" y1="0" x2={size.w} y2="0" gradientUnits="userSpaceOnUse">
-            <stop offset={Math.max(0, Math.min(1, (futureStartX - 0.5) / Math.max(1, size.w)))} stopColor="white" stopOpacity="1" />
+            <stop offset={Math.max(0, Math.min(1, (dataZoneEndX - 0.5) / Math.max(1, size.w)))} stopColor="white" stopOpacity="1" />
             <stop offset="1" stopColor="white" stopOpacity="0.18" />
           </linearGradient>
           <mask id="gridFade" maskUnits="userSpaceOnUse" x="0" y="0" width={size.w} height={size.h}>
@@ -640,14 +700,23 @@ function Chart({
           )}
         </g>
 
-        {/* Future zone — soft horizontal gradient fade. Grid stays visible
-            beneath, no line is drawn here, and there is no interaction. */}
+        {/* Future zone — multi-layer atmosphere:
+              1. Soft horizontal gradient fade (atmosphere)
+              2. Slow opacity "breathing" overlay (anticipation cue)
+            Combined with the grid-fade mask above the grid, this gives the
+            "alive but undefined" feel without any text, dots, or fake line. */}
         {showFutureZone && (
           <g pointerEvents="none">
             <rect
-              x={futureStartX} y={margin.top}
-              width={plotEndX - futureStartX} height={plotH}
+              x={dataZoneEndX} y={margin.top}
+              width={plotEndX - dataZoneEndX} height={plotH}
               fill="url(#futureFade)"
+            />
+            <rect
+              x={dataZoneEndX} y={margin.top}
+              width={plotEndX - dataZoneEndX} height={plotH}
+              fill="url(#futureFade)"
+              className="future-zone-breathe"
             />
           </g>
         )}
@@ -700,11 +769,6 @@ function Chart({
         </div>
       )}
 
-      {bins.every((b) => b.value === 0) && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <p className="text-xs text-muted-foreground/70">No activity in this period</p>
-        </div>
-      )}
     </div>
   );
 }

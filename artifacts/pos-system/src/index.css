@@ -85,6 +85,16 @@
   animation: chart-endpoint-glow-anim 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
+/* Slow opacity "breathing" of the future-zone overlay. Subconscious cue
+   that the area is alive but not yet defined — no movement, no text. */
+@keyframes future-zone-breathe-anim {
+  0%, 100% { opacity: 0; }
+  50%      { opacity: 0.55; }
+}
+.future-zone-breathe {
+  animation: future-zone-breathe-anim 5.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 :root {
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
