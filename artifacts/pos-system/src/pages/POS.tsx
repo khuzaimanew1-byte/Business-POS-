@@ -144,33 +144,42 @@ export default function POS() {
   const cartCount = useMemo(() => cartItems.reduce((s, i) => s + i.quantity, 0), [cartItems]);
 
   // ── Notification deep-link: scroll + highlight ───────────────────────────
-  // When a notification is clicked, the store sets pendingFocusId. We:
-  //   1. Switch to the product's category so its card is rendered.
-  //   2. Wait one frame for the DOM, then scroll the card into view.
-  //   3. Apply the highlight class for one animation cycle, then clear.
+  // When a notification action is clicked, the store sets pendingFocusId. We:
+  //   1. Switch to the product's category so its card is rendered (skip if
+  //      we're on "All" or already on the right category).
+  //   2. Wait two animation frames for the grid to commit to the DOM.
+  //   3. Look the card up by quickCode first (the spec's deep-link key),
+  //      then fall back to id; scroll it smoothly into view (no jump).
+  //   4. After a brief 200 ms settle, apply a single highlight pulse.
   useEffect(() => {
     if (!pendingFocusId) return;
     const id = consumeProductFocus();
     if (!id) return;
     const product = products.find(p => p.id === id);
-    if (!product) return;
+    if (!product) return; // Edge case: product was deleted; fail silently.
     if (product.category !== selectedCategory && selectedCategory !== "All") {
       setSelectedCategory(product.category);
     }
-    // Wait for layout (category switch may re-render the grid).
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        const el = document.querySelector<HTMLElement>(`[data-testid="card-product-${id}"]`);
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-        setHighlightId(id);
-        // Animation runs 2 cycles × 1.6s = ~3.2s. Clear shortly after so
-        // the same product can be re-highlighted later.
+        const qc = product.quickCode || quickCode(product.name);
+        const el =
+          document.querySelector<HTMLElement>(`[data-quick-code="${qc}"]`) ||
+          document.querySelector<HTMLElement>(`[data-testid="card-product-${id}"]`);
+        if (!el) return;
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        // Slight delay so the highlight begins after the scroll has settled.
         window.setTimeout(() => {
-          setHighlightId(curr => (curr === id ? null : curr));
-        }, 3400);
+          setHighlightId(id);
+          // Single 1.6 s pulse — clear afterwards so the same product can be
+          // re-highlighted later.
+          window.setTimeout(() => {
+            setHighlightId(curr => (curr === id ? null : curr));
+          }, 1700);
+        }, 200);
       });
     });
-  }, [pendingFocusId, consumeProductFocus, products, selectedCategory]);
+  }, [pendingFocusId, consumeProductFocus, products, selectedCategory, quickCode]);
 
   // ── Actions ──────────────────────────────────────────────────────────────
   const addToCart = (product: Product) => {
@@ -756,6 +765,7 @@ export default function POS() {
               const isHighlighted = product.id === highlightId;
               const cardCommonProps = {
                 'data-testid': `card-product-${product.id}`,
+                'data-quick-code': qc,
                 className: `group relative bg-card rounded-xl overflow-hidden transition-all duration-250 ease-in-out flex flex-col ${
                   isHighlighted ? 'product-card-highlight ' : ''
                 }${

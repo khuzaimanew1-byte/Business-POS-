@@ -38,12 +38,18 @@ export function NotificationToaster() {
           : "border-amber-500/35 bg-amber-500/10";
         const iconTone = isAlert ? "text-red-400" : "text-amber-400";
 
+        const btnTone = isAlert
+          ? "bg-red-500/20 text-red-200 hover:bg-red-500/30 border-red-500/30"
+          : "bg-amber-500/20 text-amber-100 hover:bg-amber-500/30 border-amber-500/30";
+
+        // Layout uses flex with explicit shrink rules so the action button is
+        // never clipped: icon (shrink-0) + text (flex-1, min-w-0, wraps) +
+        // action button (shrink-0, min-width) + dismiss (shrink-0).
         return (
           <div
             key={n.id}
             role="status"
-            className={`notif-toast-in pointer-events-auto group relative flex items-start gap-3 px-3.5 py-3 rounded-xl border ${accent} backdrop-blur-md shadow-xl bg-popover/85 cursor-pointer hover:bg-popover/95 transition-colors`}
-            onClick={() => handleAction(n)}
+            className={`notif-toast-in pointer-events-auto relative flex items-start gap-3 px-3.5 py-3 rounded-xl border ${accent} backdrop-blur-md shadow-xl bg-popover/90`}
             data-testid={`toast-${n.kind}-${n.productId}`}
           >
             <div className={`mt-0.5 shrink-0 ${iconTone}`}>
@@ -51,17 +57,26 @@ export function NotificationToaster() {
             </div>
 
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold leading-tight text-foreground truncate">
+              <p className="text-[13px] font-semibold leading-tight text-foreground">
                 {n.title}
               </p>
-              <p className="text-[11.5px] text-muted-foreground mt-0.5 line-clamp-2">
+              <p className="text-[11.5px] text-muted-foreground mt-0.5 break-words">
                 {n.description}
               </p>
             </div>
 
             <button
+              onClick={(e) => { e.stopPropagation(); handleAction(n); }}
+              className={`shrink-0 self-center px-3 py-1.5 rounded-full border text-[11.5px] font-semibold transition-colors ${btnTone}`}
+              style={{ minWidth: 64 }}
+              data-testid={`toast-action-${n.kind}-${n.productId}`}
+            >
+              {n.actionLabel}
+            </button>
+
+            <button
               onClick={(e) => { e.stopPropagation(); dismissToast(n.id); }}
-              className="shrink-0 -mr-1 -mt-1 p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-secondary/60 transition-colors"
+              className="shrink-0 self-start -mr-1 -mt-1 p-1 rounded-md text-muted-foreground/70 hover:text-foreground hover:bg-secondary/60 transition-colors"
               aria-label="Dismiss"
             >
               <X className="w-3.5 h-3.5" />
