@@ -144,41 +144,107 @@ export default function POS() {
   const cartCount = useMemo(() => cartItems.reduce((s, i) => s + i.quantity, 0), [cartItems]);
 
   // ── Notification deep-link: scroll + highlight ───────────────────────────
-  // When a notification action is clicked, the store sets pendingFocusId. We:
-  //   1. Switch to the product's category so its card is rendered (skip if
-  //      we're on "All" or already on the right category).
-  //   2. Wait two animation frames for the grid to commit to the DOM.
-  //   3. Look the card up by quickCode first (the spec's deep-link key),
-  //      then fall back to id; scroll it smoothly into view (no jump).
-  //   4. After a brief 200 ms settle, apply a single highlight pulse.
+  // Robust pipeline:
+  //   1. Switch to the product's category if the current view would hide it.
+  //   2. Retry-poll for the card in the DOM (up to ~10 × 120 ms) so we never
+  //      query before the grid has re-rendered.
+  //   3. If the card is already comfortably in view, skip the scroll and only
+  //      pulse-highlight it.
+  //   4. Otherwise smooth-scroll to center; after the scroll settles, run one
+  //      bounds-check pass that nudges the scroll container if the card is
+  //      clipped (handles last-row items that fall under sticky footers).
+  //   5. After a 200 ms settle, run a single highlight pulse.
+  // A generation token (focusGenRef) lets the latest click cancel any in-flight
+  // run from an earlier click — no overlapping scrolls, no stale highlights.
+  const focusGenRef = useRef(0);
   useEffect(() => {
     if (!pendingFocusId) return;
     const id = consumeProductFocus();
     if (!id) return;
     const product = products.find(p => p.id === id);
-    if (!product) return; // Edge case: product was deleted; fail silently.
+    if (!product) return; // Product was deleted: fail silently.
+
+    const gen = ++focusGenRef.current;
+    const aborted = () => focusGenRef.current !== gen;
+
     if (product.category !== selectedCategory && selectedCategory !== "All") {
       setSelectedCategory(product.category);
     }
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const qc = product.quickCode || quickCode(product.name);
-        const el =
-          document.querySelector<HTMLElement>(`[data-quick-code="${qc}"]`) ||
-          document.querySelector<HTMLElement>(`[data-testid="card-product-${id}"]`);
-        if (!el) return;
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-        // Slight delay so the highlight begins after the scroll has settled.
-        window.setTimeout(() => {
-          setHighlightId(id);
-          // Single 1.6 s pulse — clear afterwards so the same product can be
-          // re-highlighted later.
-          window.setTimeout(() => {
-            setHighlightId(curr => (curr === id ? null : curr));
-          }, 1700);
-        }, 200);
-      });
-    });
+
+    const qc = product.quickCode || quickCode(product.name);
+
+    const findEl = (): HTMLElement | null =>
+      document.querySelector<HTMLElement>(`[data-quick-code="${qc}"]`) ||
+      document.querySelector<HTMLElement>(`[data-testid="card-product-${id}"]`);
+
+    // Returns the nearest scrolling ancestor (radix viewport when present),
+    // falling back to the visual viewport bounds.
+    const getBounds = (el: HTMLElement) => {
+      const container = el.closest<HTMLElement>('[data-radix-scroll-area-viewport]');
+      if (container) {
+        const r = container.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, container };
+      }
+      return { top: 0, bottom: window.innerHeight, container: null as HTMLElement | null };
+    };
+
+    const isComfortablyVisible = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      const b = getBounds(el);
+      return rect.top >= b.top + 8 && rect.bottom <= b.bottom - 8;
+    };
+
+    // Single bounds-check correction pass — covers last-row items that
+    // scrollIntoView({block:"center"}) could not fully reveal.
+    const adjustIfClipped = (el: HTMLElement) => {
+      const rect = el.getBoundingClientRect();
+      const b = getBounds(el);
+      const padding = 40;
+      if (rect.bottom > b.bottom - 8) {
+        const dy = rect.bottom - b.bottom + padding;
+        if (b.container) b.container.scrollBy({ top: dy, behavior: "smooth" });
+        else window.scrollBy({ top: dy, behavior: "smooth" });
+      } else if (rect.top < b.top + 8) {
+        const dy = rect.top - b.top - padding;
+        if (b.container) b.container.scrollBy({ top: dy, behavior: "smooth" });
+        else window.scrollBy({ top: dy, behavior: "smooth" });
+      }
+    };
+
+    const runHighlight = () => {
+      if (aborted()) return;
+      setHighlightId(id);
+      window.setTimeout(() => {
+        setHighlightId(curr => (curr === id ? null : curr));
+      }, 1700);
+    };
+
+    // Retry until the card is mounted (max ~1.2 s). Handles category
+    // switches that re-render the grid on the next tick.
+    let attempts = 0;
+    const tryFind = () => {
+      if (aborted()) return;
+      const el = findEl();
+      if (!el) {
+        if (++attempts < 10) window.setTimeout(tryFind, 120);
+        return; // Edge case: not found within budget — fail silently.
+      }
+      if (isComfortablyVisible(el)) {
+        // User is already on the item: skip scroll, just highlight.
+        window.setTimeout(runHighlight, 200);
+        return;
+      }
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      // Wait for the smooth scroll to settle, then validate visibility.
+      window.setTimeout(() => {
+        if (aborted()) return;
+        adjustIfClipped(el);
+        // Brief settle after the (possibly second) scroll, then highlight.
+        window.setTimeout(runHighlight, 250);
+      }, 380);
+    };
+
+    requestAnimationFrame(() => requestAnimationFrame(tryFind));
   }, [pendingFocusId, consumeProductFocus, products, selectedCategory, quickCode]);
 
   // ── Actions ──────────────────────────────────────────────────────────────
@@ -754,7 +820,7 @@ export default function POS() {
             We use a CSS custom property approach via inline style + CSS var trick.
           */}
           <div
-            className={`p-2 product-grid${isEditModeArming ? ' edit-mode-arming' : ''}`}
+            className={`p-2 pb-20 product-grid${isEditModeArming ? ' edit-mode-arming' : ''}`}
             style={{ display: 'grid', gap: '6px' }}
           >
             {filteredProducts.map(product => {

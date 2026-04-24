@@ -1,0 +1,121 @@
+📂 1. CATEGORY ALIGNMENT (CRITICAL FIRST STEP)
+ISSUE:
+
+Notification click may target a product inside a different category.
+
+FIX:
+
+Before searching element:
+
+check current category
+if mismatch → switch category first
+wait until category UI fully re-renders
+if (currentCategory !== productCategory) {
+  switchCategory(productCategory)
+  await waitForRender()
+}
+⏳ 2. RENDER SYNCHRONIZATION (AVOID MISSING ELEMENT)
+ISSUE:
+
+Scroll runs before DOM update completes.
+
+FIX:
+Wait until product exists in DOM
+Use retry loop (max 10 attempts, small delay)
+wait until document.querySelector(productSelector)
+retry up to 10 times (100–150ms interval)
+🔍 3. SAFE ELEMENT RESOLUTION
+PRIORITY SELECTORS:
+[data-quick-code="#xyz"]
+productId
+fallback → DOM search by name/id
+
+👉 Never assume single selector is enough
+
+📜 4. SMART SCROLL ENGINE (CORE FIX)
+REQUIRED SCROLL:
+element.scrollIntoView({
+  behavior: "smooth",
+  block: "center"
+})
+📉 5. LAST ITEM / EDGE VISIBILITY FIX (IMPORTANT)
+ISSUE:
+
+Last product often gets cut off at bottom.
+
+FIX:
+
+After scrollIntoView:
+
+const rect = element.getBoundingClientRect()
+
+if (rect.bottom > window.innerHeight) {
+  window.scrollBy({
+    top: rect.bottom - window.innerHeight + 40,
+    behavior: "smooth"
+  })
+}
+
+👉 ensures full visibility with safe padding
+
+👁️ 6. FULL VISIBILITY VALIDATION
+
+After scroll:
+
+verify element fully visible
+if partially hidden → adjust scroll again (1 retry max)
+
+Rules:
+
+no infinite loop
+max 2 adjustment passes
+✨ 7. HIGHLIGHT SYSTEM (AFTER POSITION LOCK)
+TIMING:
+wait 200–300ms after final scroll
+EFFECT:
+soft glow border OR subtle scale
+no aggressive animation
+
+👉 purpose: show “this is the target item”
+
+📦 8. GRID SAFETY (LAST ITEM SUPPORT)
+
+Add breathing space:
+
+.notification-grid {
+  padding-bottom: 80px;
+}
+
+👉 prevents bottom clipping
+
+⚡ 9. MULTI-CLICK + INTERRUPT HANDLING
+RULES:
+cancel previous scroll if new click happens
+only latest notification action runs
+⚡ 10. MICRO UX FEEDBACK (IMPORTANT)
+
+On click:
+
+small press animation
+optional 200–400ms loading state
+
+👉 gives system responsiveness feel
+
+🧠 11. EDGE CASE HANDLING
+CASE A: NOT FOUND
+silently fail OR fallback scroll to category top
+CASE B: USER ALREADY NEAR ITEM
+skip scroll
+only apply highlight
+CASE C: FAST CLICK SPAM
+debounce + cancel previous execution
+🎯 FINAL RESULT
+
+After implementation:
+
+correct category always auto-opens
+item never missed or half-visible
+last product always fully visible
+scroll feels intelligent, not mechanical
+notification → product navigation feels instant + reliable
+UX feels “system aware”, not buggy DOM scroll

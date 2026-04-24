@@ -67,7 +67,7 @@ export function NotificationToaster() {
 
             <button
               onClick={(e) => { e.stopPropagation(); handleAction(n); }}
-              className={`shrink-0 self-center px-3 py-1.5 rounded-full border text-[11.5px] font-semibold transition-colors ${btnTone}`}
+              className={`shrink-0 self-center px-3 py-1.5 rounded-full border text-[11.5px] font-semibold transition-all duration-150 active:scale-95 ${btnTone}`}
               style={{ minWidth: 64 }}
               data-testid={`toast-action-${n.kind}-${n.productId}`}
             >
