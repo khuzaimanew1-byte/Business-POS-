@@ -82,6 +82,19 @@ function buildChartData(
   const now = new Date();
   const valueOf = (e: SaleEvent) => (metric === "sales" ? e.totalQty : e.totalProfit);
 
+  // Unified tick builder: always anchors the first tick at exactly `start`
+  // and the last tick at exactly `end`, with the rest evenly distributed.
+  const makeTicks = (
+    start: number,
+    end: number,
+    n: number,
+    labelFn: (ts: number) => string,
+  ): XTick[] =>
+    Array.from({ length: n }, (_, i) => {
+      const ts = n < 2 ? start : start + ((end - start) * i) / (n - 1);
+      return { ts, label: labelFn(ts) };
+    });
+
   if (mode === "daily") {
     const rangeStart = startOfDay(now);
     const rangeEnd = rangeStart + 86400000;
@@ -94,13 +107,12 @@ function buildChartData(
     const real: Bin[] = Array.from(byMinute.entries())
       .sort((a, b) => a[0] - b[0])
       .map(([ts, value]) => ({ ts, value, visible: true }));
-    const xTicks: XTick[] = [];
-    for (let h = 0; h <= 24; h += 3) {
-      xTicks.push({
-        ts: rangeStart + h * 3600000,
-        label: h === 24 ? "24:00" : `${String(h).padStart(2, "0")}:00`,
+    const xTicks: XTick[] = makeTicks(rangeStart, rangeEnd, 7, (ts) => {
+      if (ts >= rangeEnd - 60000) return "11:59 PM";
+      return new Date(ts).toLocaleTimeString(undefined, {
+        hour: "numeric", minute: "2-digit", hour12: true,
       });
-    }
+    });
     return {
       bins: withZeroAnchors(real, rangeStart, rangeEnd, 2 * 60000),
       rangeStart,
@@ -123,51 +135,24 @@ function buildChartData(
     rangeStart = startOfDay(now) - 6 * 86400000;
     rangeEnd = startOfDay(now) + 86400000;
     rangeLabel = "Last 7 days";
-    // 7 weekday labels (Mon..Sun) for d = 0..6 …
-    for (let d = 0; d < 7; d++) {
-      const ts = rangeStart + d * 86400000;
-      xTicks.push({
-        ts,
-        label: new Date(ts).toLocaleDateString(undefined, { weekday: "short" }),
-      });
-    }
-    // … plus a final boundary tick exactly at rangeEnd showing the weekday
-    // of the day immediately after the 7-day window.
-    xTicks.push({
-      ts: rangeEnd,
-      label: new Date(rangeEnd).toLocaleDateString(undefined, { weekday: "short" }),
-    });
+    xTicks = makeTicks(rangeStart, rangeEnd, 7, (ts) =>
+      new Date(ts).toLocaleDateString(undefined, { weekday: "short" })
+    );
   } else if (mode === "monthly") {
     rangeStart = startOfMonth(now);
-    const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
     rangeLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-    const stride = days <= 14 ? 2 : days <= 21 ? 3 : 4;
-    // Day-1 (midnight) ticks → first label "1" lands on the left edge.
-    for (let d = 1; d <= days; d += stride) {
-      const ts = new Date(now.getFullYear(), now.getMonth(), d, 0, 0, 0).getTime();
-      xTicks.push({ ts, label: String(d) });
-    }
-    // Final boundary tick exactly at rangeEnd (1st of next month → label "1").
-    xTicks.push({ ts: rangeEnd, label: String(new Date(rangeEnd).getDate()) });
+    xTicks = makeTicks(rangeStart, rangeEnd, 7, (ts) =>
+      String(new Date(ts).getDate())
+    );
   } else if (mode === "yearly") {
     const yr = now.getFullYear();
     rangeStart = startOfYear(now);
     rangeEnd = new Date(yr + 1, 0, 1).getTime();
     rangeLabel = String(yr);
-    // 12 month labels (Jan..Dec) for m = 0..11 …
-    for (let m = 0; m < 12; m++) {
-      const ts = new Date(yr, m, 1, 0, 0, 0).getTime();
-      xTicks.push({
-        ts,
-        label: new Date(yr, m, 1).toLocaleDateString(undefined, { month: "short" }),
-      });
-    }
-    // … plus a final boundary tick exactly at rangeEnd (next year's Jan 1).
-    xTicks.push({
-      ts: rangeEnd,
-      label: new Date(rangeEnd).toLocaleDateString(undefined, { month: "short" }),
-    });
+    xTicks = makeTicks(rangeStart, rangeEnd, 7, (ts) =>
+      new Date(ts).toLocaleDateString(undefined, { month: "short" })
+    );
   } else {
     const range = custom ?? {
       from: startOfDay(now) - 6 * 86400000,
@@ -176,18 +161,34 @@ function buildChartData(
     rangeStart = range.from;
     rangeEnd = range.to;
     rangeLabel = `${new Date(rangeStart).toLocaleDateString()} – ${new Date(rangeEnd).toLocaleDateString()}`;
-    const span = rangeEnd - rangeStart;
-    const tickCount = 6;
-    for (let i = 0; i <= tickCount; i++) {
-      const ts = rangeStart + (span * i) / tickCount;
-      xTicks.push({
-        ts,
-        label:
-          span <= 2 * 86400000
-            ? new Date(ts).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-            : new Date(ts).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-      });
-    }
+
+    const totalDays = Math.round((rangeEnd - rangeStart) / 86400000);
+
+    const sameMonth =
+      new Date(rangeStart).getMonth() === new Date(rangeEnd - 1).getMonth() &&
+      new Date(rangeStart).getFullYear() === new Date(rangeEnd - 1).getFullYear();
+
+    const n =
+      totalDays === 2 ? 2
+      : totalDays <= 6 ? totalDays + 1
+      : 7;
+
+    xTicks = makeTicks(rangeStart, rangeEnd, n, (ts) => {
+      const d = new Date(ts);
+      if (totalDays <= 6)
+        return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      if (totalDays === 7)
+        return d.toLocaleDateString(undefined, { weekday: "short" });
+      if (totalDays <= 30 && sameMonth)
+        return String(d.getDate());
+      if (totalDays <= 90)
+        return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      if (totalDays <= 365)
+        return d.toLocaleDateString(undefined, { month: "short" });
+      if (totalDays <= 1095)
+        return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+      return String(d.getFullYear());
+    });
   }
 
   const byDay = new Map<number, number>();

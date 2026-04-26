@@ -1,0 +1,92 @@
+**Replit prompt:**
+
+> In the analytics page, find the section inside `buildChartData` where `xTicks` is populated for each mode. Replace only that section with the following. Do not change anything else in the file.
+>
+> ---
+>
+> **First, add this helper function just above the `if (mode === "daily")` block:**
+>
+> This function takes a start time, end time, how many ticks to make, and a label function. It always places the first tick exactly at rangeStart and the last exactly at rangeEnd with the rest equally spaced between them:
+>
+> ```ts
+> const makeTicks = (
+>   start: number,
+>   end: number,
+>   n: number,
+>   labelFn: (ts: number) => string
+> ): XTick[] =>
+>   Array.from({ length: n }, (_, i) => {
+>     const ts = n < 2 ? start : start + ((end - start) * i) / (n - 1);
+>     return { ts, label: labelFn(ts) };
+>   });
+> ```
+>
+> ---
+>
+> **Then replace the xTicks generation for each mode as follows:**
+>
+> For **daily** mode, after setting rangeStart and rangeEnd, set xTicks like this:
+> ```ts
+> xTicks = makeTicks(rangeStart, rangeEnd, 7, (ts) => {
+>   if (ts >= rangeEnd - 60000) return "11:59 PM";
+>   return new Date(ts).toLocaleTimeString(undefined, {
+>     hour: "numeric", minute: "2-digit", hour12: true,
+>   });
+> });
+> ```
+>
+> For **weekly** mode, after setting rangeStart and rangeEnd, set xTicks like this:
+> ```ts
+> xTicks = makeTicks(rangeStart, rangeEnd, 7, (ts) =>
+>   new Date(ts).toLocaleDateString(undefined, { weekday: "short" })
+> );
+> ```
+>
+> For **monthly** mode, after setting rangeStart and rangeEnd, set xTicks like this:
+> ```ts
+> xTicks = makeTicks(rangeStart, rangeEnd, 7, (ts) =>
+>   String(new Date(ts).getDate())
+> );
+> ```
+>
+> For **yearly** mode, after setting rangeStart and rangeEnd, set xTicks like this:
+> ```ts
+> xTicks = makeTicks(rangeStart, rangeEnd, 7, (ts) =>
+>   new Date(ts).toLocaleDateString(undefined, { month: "short" })
+> );
+> ```
+>
+> For **custom** mode, after setting rangeStart and rangeEnd, set xTicks like this:
+> ```ts
+> const totalDays = Math.round((rangeEnd - rangeStart) / 86400000);
+>
+> const sameMonth =
+>   new Date(rangeStart).getMonth() === new Date(rangeEnd - 1).getMonth() &&
+>   new Date(rangeStart).getFullYear() === new Date(rangeEnd - 1).getFullYear();
+>
+> const n =
+>   totalDays === 2 ? 2
+>   : totalDays <= 6 ? totalDays + 1
+>   : 7;
+>
+> xTicks = makeTicks(rangeStart, rangeEnd, n, (ts) => {
+>   const d = new Date(ts);
+>   if (totalDays <= 6)
+>     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+>   if (totalDays === 7)
+>     return d.toLocaleDateString(undefined, { weekday: "short" });
+>   if (totalDays <= 30 && sameMonth)
+>     return String(d.getDate());
+>   if (totalDays <= 90)
+>     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+>   if (totalDays <= 365)
+>     return d.toLocaleDateString(undefined, { month: "short" });
+>   if (totalDays <= 1095)
+>     return d.toLocaleDateString(undefined, { month: "short", year: "numeric" });
+>   return String(d.getFullYear());
+> });
+> ```
+>
+> ---
+>
+> That is the entire change. Delete all old xTicks loops and push statements for every mode and replace with only what is written above. Nothing else in the file should be touched.
