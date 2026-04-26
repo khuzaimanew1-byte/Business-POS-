@@ -123,8 +123,10 @@ function buildChartData(
     rangeStart = startOfDay(now) - 6 * 86400000;
     rangeEnd = startOfDay(now) + 86400000;
     rangeLabel = "Last 7 days";
-    for (let d = 0; d < 7; d++) {
-      const ts = rangeStart + d * 86400000 + 43200000;
+    // Start-of-day ticks for d = 0..7 → first label sits at the chart's left
+    // edge (rangeStart) and last label at the right edge (rangeEnd).
+    for (let d = 0; d <= 7; d++) {
+      const ts = rangeStart + d * 86400000;
       xTicks.push({
         ts,
         label: new Date(ts).toLocaleDateString(undefined, { weekday: "short" }),
@@ -136,17 +138,24 @@ function buildChartData(
     rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
     rangeLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
     const stride = days <= 14 ? 2 : days <= 21 ? 3 : 4;
+    // Day-1 (midnight) ticks → first label "1" lands on the left edge.
     for (let d = 1; d <= days; d += stride) {
-      const ts = new Date(now.getFullYear(), now.getMonth(), d, 12, 0, 0).getTime();
+      const ts = new Date(now.getFullYear(), now.getMonth(), d, 0, 0, 0).getTime();
       xTicks.push({ ts, label: String(d) });
+    }
+    // Ensure the very right edge (1st of next month) carries a label too.
+    if (xTicks[xTicks.length - 1]?.ts !== rangeEnd) {
+      xTicks.push({ ts: rangeEnd, label: "1" });
     }
   } else if (mode === "yearly") {
     const yr = now.getFullYear();
     rangeStart = startOfYear(now);
     rangeEnd = new Date(yr + 1, 0, 1).getTime();
     rangeLabel = String(yr);
-    for (let m = 0; m < 12; m++) {
-      const ts = new Date(yr, m, 15, 0, 0, 0).getTime();
+    // Month-1 (midnight) ticks for m = 0..12 → "Jan" sits on the left edge
+    // and the trailing tick (next year's Jan 1) sits on the right edge.
+    for (let m = 0; m <= 12; m++) {
+      const ts = new Date(yr, m, 1, 0, 0, 0).getTime();
       xTicks.push({
         ts,
         label: new Date(yr, m, 1).toLocaleDateString(undefined, { month: "short" }),
