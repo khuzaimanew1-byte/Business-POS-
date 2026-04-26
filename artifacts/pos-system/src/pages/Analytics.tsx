@@ -531,72 +531,31 @@ function Chart({
   }
   const realData = realIndices.map(i => ({ ts: bins[i].ts, value: bins[i].value }));
 
-  // Day-aggregated modes (weekly/monthly/yearly/most custom ranges) place
-  // each bin at noon-of-day, so the first real bin naturally sits 12h after
-  // rangeStart even when there IS data on the very first day. Treat any
-  // real bin within the first "natural period" as if it starts at rangeStart
-  // — otherwise we would always draw a phantom flat-zero from midnight up to
-  // noon at the chart's left edge (the duplicated start zero).
-  const startBinThreshold = mode === "daily" ? 60_000 : 86_400_000;
-  const firstRealCoversStart =
-    realData.length > 0 && realData[0].ts - rangeStart < startBinThreshold;
-
-  // Hoverable points = artificial start anchor (when needed) + every real
-  // activity point. The anchor lets the start of the period always have a
-  // tooltip ("time, value = 0") even before any sale happens.
+  // Hoverable points = every real activity point. No artificial start
+  // anchor, since the line itself no longer reaches the left edge.
   type IPoint = { ts: number; value: number; isAnchor: boolean };
-  const interactivePoints: IPoint[] = [];
-  if (realData.length === 0 || (realData[0].ts > rangeStart && !firstRealCoversStart)) {
-    interactivePoints.push({ ts: rangeStart, value: 0, isAnchor: true });
-  }
-  for (const p of realData) {
-    interactivePoints.push({ ts: p.ts, value: p.value, isAnchor: false });
-  }
+  const interactivePoints: IPoint[] = realData.map(p => ({
+    ts: p.ts, value: p.value, isAnchor: false,
+  }));
 
-  // Build the line path explicitly so step-ups, smooth interior, and the
-  // flat extension to dataZoneEnd all coexist cleanly.
-  const startX = xAt(rangeStart);
-  const baselineY = yAt(0);
+  // Build the line path explicitly. The line is drawn ONLY between the
+  // first and last real activity points — no flat pre-segment to the left
+  // edge and no flat extension to the right.
   let lineD = "";
   let areaD = "";
-  if (realData.length === 0) {
-    // CASE A (no activity at all): pure baseline across the data zone.
-    lineD = `M ${startX} ${baselineY} L ${dataZoneEndX} ${baselineY}`;
-  } else {
+  if (realData.length > 0) {
     const realPts = realData.map(d => ({ x: xAt(d.ts), y: yAt(d.value) }));
     const firstX = realPts[0].x;
     const firstY = realPts[0].y;
+    const lastRealX = realPts[realPts.length - 1].x;
 
-    if (firstRealCoversStart) {
-      // First bin falls in the very first period — anchor the line at the
-      // left edge with the first real value (no zero baseline pre-segment).
-      lineD = `M ${startX} ${firstY}`;
-      if (firstX > startX + 0.5) {
-        lineD += ` L ${firstX} ${firstY}`;
-      }
-    } else if (realData[0].ts > rangeStart) {
-      // Flat at 0 from rangeStart up to first activity, then vertical step.
-      lineD = `M ${startX} ${baselineY} L ${firstX} ${baselineY}`;
-      if (Math.abs(firstY - baselineY) > 0.01) {
-        lineD += ` L ${firstX} ${firstY}`;
-      }
-    } else {
-      // First activity is exactly at rangeStart — start the line right there.
-      lineD = `M ${startX} ${firstY}`;
-    }
-    // Smooth monotone interpolation through the real data points.
+    lineD = `M ${firstX} ${firstY}`;
     if (realPts.length >= 2) {
       lineD += smoothCurveTo(realPts);
     }
-    // CASE E (no activity after last event): hold last value flat to the
-    // end of the data zone.
-    const lastRealX = realPts[realPts.length - 1].x;
-    const lastRealY = realPts[realPts.length - 1].y;
-    if (dataZoneEndX > lastRealX + 0.5) {
-      lineD += ` L ${dataZoneEndX} ${lastRealY}`;
-    }
-    // Area fill mirrors the line, closed against the baseline.
-    areaD = `${lineD} L ${dataZoneEndX} ${baseY} L ${startX} ${baseY} Z`;
+    // Area fill mirrors the line, closed against the baseline between the
+    // first and last real points only.
+    areaD = `${lineD} L ${lastRealX} ${baseY} L ${firstX} ${baseY} Z`;
   }
 
   // Hover capture spans the entire data zone (so the start anchor and the
