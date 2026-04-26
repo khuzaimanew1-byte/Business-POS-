@@ -149,17 +149,29 @@ function buildChartData(
     rangeStart = startOfMonth(now);
     rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
     rangeLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-    xTicks = makeTicks(rangeStart, rangeEnd - 86400000, 7, (ts) =>
-      String(new Date(ts).getDate())
-    );
+    // Anchor day "1" at the left edge and the last day of the month at the
+    // right edge of the plot. Tick positions span the full [start, end]
+    // range; labels interpolate between 1 → lastDay so the rightmost tick
+    // visibly reads "30"/"31" sitting on the chart's right edge.
+    const lastDay = new Date(rangeEnd - 86400000).getDate();
+    xTicks = Array.from({ length: 7 }, (_, i) => ({
+      ts: rangeStart + ((rangeEnd - rangeStart) * i) / 6,
+      label: String(Math.round(1 + (lastDay - 1) * (i / 6))),
+    }));
   } else if (mode === "yearly") {
     const yr = now.getFullYear();
     rangeStart = startOfYear(now);
     rangeEnd = new Date(yr + 1, 0, 1).getTime();
     rangeLabel = String(yr);
-    xTicks = makeTicks(rangeStart, new Date(yr, 11, 1).getTime(), 7, (ts) =>
-      new Date(ts).toLocaleDateString(undefined, { month: "short" })
-    );
+    // Same end-anchoring for the year: Jan sits flush at the left edge,
+    // Dec sits flush at the right edge, with five evenly-spaced months
+    // between (Mar, May, Jul, Aug, Oct in a typical 7-tick layout).
+    const monthLabel = (m: number) =>
+      new Date(yr, m, 1).toLocaleDateString(undefined, { month: "short" });
+    xTicks = Array.from({ length: 7 }, (_, i) => ({
+      ts: rangeStart + ((rangeEnd - rangeStart) * i) / 6,
+      label: monthLabel(Math.round(11 * (i / 6))),
+    }));
   } else {
     const range = custom ?? {
       from: startOfDay(now) - 6 * 86400000,
@@ -518,7 +530,6 @@ function Chart({
     }
   }
   const realData = realIndices.map(i => ({ ts: bins[i].ts, value: bins[i].value }));
-  const lastReal = realData.length > 0 ? realData[realData.length - 1] : null;
 
   // Day-aggregated modes (weekly/monthly/yearly/most custom ranges) place
   // each bin at noon-of-day, so the first real bin naturally sits 12h after
@@ -587,11 +598,6 @@ function Chart({
     // Area fill mirrors the line, closed against the baseline.
     areaD = `${lineD} L ${dataZoneEndX} ${baseY} L ${startX} ${baseY} Z`;
   }
-
-  // End-point pulse sits on the last REAL data point — this is the live edge.
-  const lastPt = lastReal
-    ? { x: xAt(lastReal.ts), y: yAt(lastReal.value) }
-    : null;
 
   // Hover capture spans the entire data zone (so the start anchor and the
   // flat-extension area are both reachable). The future zone gets no capture.
@@ -758,23 +764,6 @@ function Chart({
               width={plotEndX - dataZoneEndX} height={plotH}
               fill="url(#futureFade)"
               className="future-zone-breathe"
-            />
-          </g>
-        )}
-
-        {/* End-of-data marker — a clean dot with a subtle pulsing glow at
-            the last real data point. No fade-out of the line itself. */}
-        {lastPt && (
-          <g pointerEvents="none">
-            <circle
-              cx={lastPt.x} cy={lastPt.y} r={9}
-              fill="hsl(43 90% 55%)"
-              className="chart-endpoint-glow"
-            />
-            <circle
-              cx={lastPt.x} cy={lastPt.y} r={3.25}
-              fill="hsl(43 90% 55%)"
-              stroke="hsl(240 10% 8%)" strokeWidth={1.5}
             />
           </g>
         )}

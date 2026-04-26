@@ -75,16 +75,6 @@
   transform-origin: bottom center;
 }
 
-@keyframes chart-endpoint-glow-anim {
-  0%, 100% { opacity: 0.18; transform: scale(1); }
-  50%      { opacity: 0.42; transform: scale(1.35); }
-}
-.chart-endpoint-glow {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: chart-endpoint-glow-anim 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
 /* Slow opacity "breathing" of the future-zone overlay. Subconscious cue
    that the area is alive but not yet defined — no movement, no text. */
 @keyframes future-zone-breathe-anim {
@@ -99,8 +89,7 @@
    Subtle, non-distracting motion only.                                    */
 
 /* Bell badge: gentle outward halo. Only applied while unread > 0.
-   Softer than chart-endpoint-glow — the bell sits in chrome and must not
-   compete with content. */
+   Sits in chrome and must not compete with content. */
 @keyframes notif-bell-pulse-anim {
   0%, 100% { transform: scale(1);   opacity: 0.55; }
   50%      { transform: scale(1.9); opacity: 0;    }
