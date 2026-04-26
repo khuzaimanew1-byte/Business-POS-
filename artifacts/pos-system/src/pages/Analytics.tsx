@@ -497,39 +497,50 @@ function Chart({
   const plotW = Math.max(10, size.w - margin.left - margin.right);
   const plotH = Math.max(10, size.h - margin.top - margin.bottom);
   const baseY = margin.top + plotH;
-  const span = Math.max(1, rangeEnd - rangeStart);
-  const xAt = (ts: number) => margin.left + (plotW * (ts - rangeStart)) / span;
   const yAt = (v: number) =>
     margin.top + plotH * (1 - (v - yMin) / Math.max(1e-6, yMax - yMin));
 
   // ── Time zones, line construction & interaction ──────────────────────
   // Spec model:
-  //   • The X-axis is strictly [rangeStart, rangeEnd]; no edge padding.
-  //   • Data zone   = [rangeStart, dataZoneEnd] where
-  //         dataZoneEnd = min(rangeEnd, now)
-  //     The line ALWAYS spans the full data zone:
-  //         start anchor (rangeStart, 0)
-  //         → flat at 0 until first real activity (step-up there)
-  //         → smooth monotone curve through real data points
-  //         → flat extension at last value to dataZoneEnd
-  //     Between real activities the curve never drops to 0 (monotone cubic),
-  //     so the line is continuous and behaves like a "hold last value" series.
-  //   • Future zone = (dataZoneEnd, rangeEnd], present only when the range
-  //     extends past "now". No line is drawn here, no tooltip / crosshair.
+  //   • The X-axis zooms to fit only the real data span (no dead space at
+  //     either edge). When there's no real data we fall back to the full
+  //     requested range so the axis still makes sense.
+  //   • Data zone   = [effRangeStart, dataZoneEnd] where
+  //         dataZoneEnd = min(effRangeEnd, now)
+  //   • Future zone = (dataZoneEnd, effRangeEnd], shown only when the
+  //     effective range extends past "now". No line is drawn here, no
+  //     tooltip / crosshair.
   const nowTs = Date.now();
-  const dataZoneEnd = Math.min(rangeEnd, nowTs);
-  const plotEndX = margin.left + plotW;
-  const dataZoneEndX = Math.min(plotEndX, Math.max(margin.left, xAt(dataZoneEnd)));
-  const showFutureZone = dataZoneEndX < plotEndX - 0.5;
+  const fullDataZoneEnd = Math.min(rangeEnd, nowTs);
 
-  // Real (visible) activity bins clipped to the data zone.
+  // Real (visible) activity bins clipped to the requested data zone.
   const realIndices: number[] = [];
   for (let i = 0; i < bins.length; i++) {
-    if (bins[i].visible && bins[i].ts >= rangeStart && bins[i].ts <= dataZoneEnd) {
+    if (bins[i].visible && bins[i].ts >= rangeStart && bins[i].ts <= fullDataZoneEnd) {
       realIndices.push(i);
     }
   }
   const realData = realIndices.map(i => ({ ts: bins[i].ts, value: bins[i].value }));
+
+  // Effective X range — collapses dead space on both edges when there is
+  // enough real data to define a meaningful span.
+  const useDataRange = realData.length >= 2;
+  const effRangeStart = useDataRange ? realData[0].ts : rangeStart;
+  const effRangeEnd = useDataRange
+    ? realData[realData.length - 1].ts
+    : rangeEnd;
+  const span = Math.max(1, effRangeEnd - effRangeStart);
+  const xAt = (ts: number) => margin.left + (plotW * (ts - effRangeStart)) / span;
+
+  const dataZoneEnd = Math.min(effRangeEnd, nowTs);
+  const plotEndX = margin.left + plotW;
+  const dataZoneEndX = Math.min(plotEndX, Math.max(margin.left, xAt(dataZoneEnd)));
+  const showFutureZone = dataZoneEndX < plotEndX - 0.5;
+
+  // Only show axis ticks that fall within the effective (zoomed) range.
+  const visibleXTicks = xTicks.filter(
+    (t) => t.ts >= effRangeStart - 0.5 && t.ts <= effRangeEnd + 0.5,
+  );
 
   // Hoverable points = every real activity point. No artificial start
   // anchor, since the line itself no longer reaches the left edge.
@@ -558,10 +569,10 @@ function Chart({
     areaD = `${lineD} L ${lastRealX} ${baseY} L ${firstX} ${baseY} Z`;
   }
 
-  // Hover capture spans the entire data zone (so the start anchor and the
-  // flat-extension area are both reachable). The future zone gets no capture.
+  // Hover capture spans the data zone within the effective range. The
+  // future zone gets no capture.
   const interactiveWidth = Math.max(0, dataZoneEndX - margin.left);
-  const dataZoneSpan = Math.max(1, dataZoneEnd - rangeStart);
+  const dataZoneSpan = Math.max(1, dataZoneEnd - effRangeStart);
 
   const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
     if (interactivePoints.length === 0) return;
@@ -572,7 +583,7 @@ function Chart({
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const rel = Math.min(1, Math.max(0, x / Math.max(1, rect.width)));
-    const ts = rangeStart + rel * dataZoneSpan;
+    const ts = effRangeStart + rel * dataZoneSpan;
     let bestIdx = -1;
     let bestDist = Infinity;
     for (let i = 0; i < interactivePoints.length; i++) {
@@ -689,8 +700,9 @@ function Chart({
           );
         })}
 
-        {/* X labels */}
-        {xTicks.map((t, i) => (
+        {/* X labels — filtered to the effective range so labels never appear
+            in the trimmed dead-space region. */}
+        {visibleXTicks.map((t, i) => (
           <text key={i} x={xAt(t.ts)} y={baseY + 17} fontSize="10" fill="hsl(240 5% 55%)" textAnchor="middle">
             {t.label}
           </text>
