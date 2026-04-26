@@ -538,15 +538,32 @@ function Chart({
     ts: p.ts, value: p.value, isAnchor: false,
   }));
 
-  // Build the line path explicitly. The line is drawn ONLY between the
-  // first and last real activity points — no flat pre-segment to the left
-  // edge and no flat extension to the right.
+  // The data line is STRETCHED to fill the entire data zone:
+  //   • The first real point sits exactly at the plot's left edge.
+  //   • The last real point sits exactly at the data zone's right edge,
+  //     which is `dataZoneEndX` — equal to the plot's right edge when no
+  //     future zone is shown, otherwise the future zone's boundary.
+  // This produces zero pixels of dead space at either end of the line.
+  // Grid lines and X-axis tick labels keep the original time-based
+  // mapping so the calendar context is preserved.
+  const dataPlotLeft = margin.left;
+  const dataPlotRight = Math.max(margin.left, dataZoneEndX);
+  const dataPlotWidth = Math.max(0, dataPlotRight - dataPlotLeft);
+  const dataFirstTs = realData.length > 0 ? realData[0].ts : rangeStart;
+  const dataLastTs =
+    realData.length > 0 ? realData[realData.length - 1].ts : rangeStart;
+  const dataTsSpan = Math.max(1, dataLastTs - dataFirstTs);
+  const xAtData = (ts: number) =>
+    realData.length <= 1
+      ? dataPlotLeft
+      : dataPlotLeft + (dataPlotWidth * (ts - dataFirstTs)) / dataTsSpan;
+
   let lineD = "";
   let areaD = "";
   let firstPt: { x: number; y: number } | null = null;
   let lastPt: { x: number; y: number } | null = null;
   if (realData.length > 0) {
-    const realPts = realData.map(d => ({ x: xAt(d.ts), y: yAt(d.value) }));
+    const realPts = realData.map(d => ({ x: xAtData(d.ts), y: yAt(d.value) }));
     firstPt = realPts[0];
     lastPt = realPts[realPts.length - 1];
 
@@ -555,7 +572,7 @@ function Chart({
       lineD += smoothCurveTo(realPts);
     }
     // Area fill mirrors the line, closed against the baseline between the
-    // first and last real points only.
+    // first and last real points (which now span the full data zone).
     areaD = `${lineD} L ${lastPt.x} ${baseY} L ${firstPt.x} ${baseY} Z`;
   }
   // Show an end-point marker only when the data line has actually
@@ -569,10 +586,9 @@ function Chart({
     realData.length > 0 &&
     realData[realData.length - 1].ts >= dataZoneEnd - 1;
 
-  // Hover capture spans the entire data zone (so the start anchor and the
-  // flat-extension area are both reachable). The future zone gets no capture.
+  // Hover capture spans the entire data zone — i.e. the same horizontal
+  // band the stretched line occupies. The future zone gets no capture.
   const interactiveWidth = Math.max(0, dataZoneEndX - margin.left);
-  const dataZoneSpan = Math.max(1, dataZoneEnd - rangeStart);
 
   const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
     if (interactivePoints.length === 0) return;
@@ -583,7 +599,9 @@ function Chart({
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const rel = Math.min(1, Math.max(0, x / Math.max(1, rect.width)));
-    const ts = rangeStart + rel * dataZoneSpan;
+    // Map mouse position back through the same stretched mapping used to
+    // draw the line, so the crosshair lands exactly on the visible point.
+    const ts = dataFirstTs + rel * (dataLastTs - dataFirstTs);
     let bestIdx = -1;
     let bestDist = Infinity;
     for (let i = 0; i < interactivePoints.length; i++) {
@@ -597,7 +615,7 @@ function Chart({
   const hover = hoverIdx !== null && hoverIdx < interactivePoints.length
     ? interactivePoints[hoverIdx]
     : null;
-  const hoverPx = hover ? xAt(hover.ts) : 0;
+  const hoverPx = hover ? xAtData(hover.ts) : 0;
   const hoverPy = hover ? yAt(hover.value) : 0;
   let ttLeft = 0;
   if (hover) {
@@ -715,16 +733,10 @@ function Chart({
             <path d={lineD} fill="none" stroke="hsl(43 90% 55%)" strokeWidth={2.25}
               strokeLinecap="round" strokeLinejoin="round" />
           )}
-          {/* Endpoint markers — make the start (and the end, when the data
-              has actually completed) of the line unmistakable. */}
-          {firstPt && (
-            <circle
-              cx={firstPt.x} cy={firstPt.y} r={3.75}
-              fill="hsl(43 90% 55%)"
-              stroke="hsl(240 10% 8%)" strokeWidth={1.5}
-            />
-          )}
-          {lastPt && dataIsComplete && (lastPt.x !== firstPt?.x || lastPt.y !== firstPt?.y) && (
+          {/* End-point marker — only when the data line has actually
+              completed within the visible range (so the rightmost edge
+              isn't ambiguous). No marker is drawn at the start. */}
+          {lastPt && dataIsComplete && (
             <circle
               cx={lastPt.x} cy={lastPt.y} r={3.75}
               fill="hsl(43 90% 55%)"
