@@ -543,20 +543,31 @@ function Chart({
   // edge and no flat extension to the right.
   let lineD = "";
   let areaD = "";
+  let firstPt: { x: number; y: number } | null = null;
+  let lastPt: { x: number; y: number } | null = null;
   if (realData.length > 0) {
     const realPts = realData.map(d => ({ x: xAt(d.ts), y: yAt(d.value) }));
-    const firstX = realPts[0].x;
-    const firstY = realPts[0].y;
-    const lastRealX = realPts[realPts.length - 1].x;
+    firstPt = realPts[0];
+    lastPt = realPts[realPts.length - 1];
 
-    lineD = `M ${firstX} ${firstY}`;
+    lineD = `M ${firstPt.x} ${firstPt.y}`;
     if (realPts.length >= 2) {
       lineD += smoothCurveTo(realPts);
     }
     // Area fill mirrors the line, closed against the baseline between the
     // first and last real points only.
-    areaD = `${lineD} L ${lastRealX} ${baseY} L ${firstX} ${baseY} Z`;
+    areaD = `${lineD} L ${lastPt.x} ${baseY} L ${firstPt.x} ${baseY} Z`;
   }
+  // Show an end-point marker only when the data line has actually
+  // "completed" within the visible range. We treat the data as complete
+  // when the last real bin sits at or after the data zone's right edge —
+  // i.e. there is no further room for upcoming data before the future
+  // zone takes over. While the data is still being filled in (last point
+  // is well before "now"), we omit the end dot.
+  const dataIsComplete =
+    lastPt !== null &&
+    realData.length > 0 &&
+    realData[realData.length - 1].ts >= dataZoneEnd - 1;
 
   // Hover capture spans the entire data zone (so the start anchor and the
   // flat-extension area are both reachable). The future zone gets no capture.
@@ -703,6 +714,22 @@ function Chart({
           {lineD && (
             <path d={lineD} fill="none" stroke="hsl(43 90% 55%)" strokeWidth={2.25}
               strokeLinecap="round" strokeLinejoin="round" />
+          )}
+          {/* Endpoint markers — make the start (and the end, when the data
+              has actually completed) of the line unmistakable. */}
+          {firstPt && (
+            <circle
+              cx={firstPt.x} cy={firstPt.y} r={3.75}
+              fill="hsl(43 90% 55%)"
+              stroke="hsl(240 10% 8%)" strokeWidth={1.5}
+            />
+          )}
+          {lastPt && dataIsComplete && (lastPt.x !== firstPt?.x || lastPt.y !== firstPt?.y) && (
+            <circle
+              cx={lastPt.x} cy={lastPt.y} r={3.75}
+              fill="hsl(43 90% 55%)"
+              stroke="hsl(240 10% 8%)" strokeWidth={1.5}
+            />
           )}
         </g>
 
