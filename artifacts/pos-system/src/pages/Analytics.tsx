@@ -1132,11 +1132,12 @@ export default function Analytics() {
           <h1 className="text-[15px] font-semibold tracking-tight">Analytics</h1>
           <div className="flex-1" />
 
-          {/* Notifications — same affordance as POS so the bell is reachable
-              from any page without changing layout. */}
+          {/* Notifications — desktop only in the top bar. On mobile the bell
+              lives as a floating action at the bottom-left of the page so the
+              top bar stays minimal. */}
           <button
             onClick={() => setLocation("/notifications")}
-            className="relative p-2 rounded-full hover:bg-secondary transition-colors duration-200 mr-1"
+            className="hidden sm:inline-flex relative p-2 rounded-full hover:bg-secondary transition-colors duration-200 mr-1"
             aria-label={notifUnread > 0 ? `${notifUnread} new notification${notifUnread === 1 ? "" : "s"}` : "Notifications"}
             data-testid="btn-notifications"
           >
@@ -1293,6 +1294,22 @@ export default function Analytics() {
 
         </div>
       </div>
+
+      {/* ── MOBILE NOTIFICATIONS — floating bottom-left (mobile only) ─── */}
+      <button
+        onClick={() => setLocation("/notifications")}
+        className="sm:hidden fixed bottom-3 left-3 z-20 relative p-2.5 rounded-full bg-card/90 backdrop-blur-md border border-card-border shadow-lg text-muted-foreground hover:text-foreground transition-colors duration-200"
+        aria-label={notifUnread > 0 ? `${notifUnread} new notification${notifUnread === 1 ? "" : "s"}` : "Notifications"}
+        data-testid="btn-notifications-mobile"
+      >
+        <Bell className="w-[18px] h-[18px]" />
+        {notifUnread > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-none flex items-center justify-center border border-background tabular-nums">
+            <span className="notif-bell-pulse" aria-hidden="true" />
+            <span className="relative">{notifUnread > 9 ? "9+" : notifUnread}</span>
+          </span>
+        )}
+      </button>
 
       {/* ── MOBILE SALES/PROFIT TOGGLE — floating bottom-right ──────── */}
       <div className="sm:hidden fixed bottom-3 right-3 z-20">
