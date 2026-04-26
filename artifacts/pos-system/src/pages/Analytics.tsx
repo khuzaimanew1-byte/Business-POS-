@@ -135,9 +135,13 @@ function buildChartData(
   let xTicks: XTick[] = [];
 
   if (mode === "weekly") {
-    rangeStart = startOfDay(now) - 6 * 86400000;
-    rangeEnd = startOfDay(now) + 86400000;
-    rangeLabel = "Last 7 days";
+    // Anchor the week to Monday of the current ISO-style week so the first
+    // tick is always "Mon" regardless of today's day-of-week.
+    const dayOfWeek = now.getDay(); // 0 = Sun … 6 = Sat
+    const daysSinceMonday = (dayOfWeek + 6) % 7; // Mon → 0, Sun → 6
+    rangeStart = startOfDay(now) - daysSinceMonday * 86400000;
+    rangeEnd = rangeStart + 7 * 86400000;
+    rangeLabel = "This week";
     xTicks = makeTicks(rangeStart, rangeEnd - 1, 7, (ts) =>
       new Date(ts).toLocaleDateString(undefined, { weekday: "short" })
     );
@@ -516,12 +520,22 @@ function Chart({
   const realData = realIndices.map(i => ({ ts: bins[i].ts, value: bins[i].value }));
   const lastReal = realData.length > 0 ? realData[realData.length - 1] : null;
 
+  // Day-aggregated modes (weekly/monthly/yearly/most custom ranges) place
+  // each bin at noon-of-day, so the first real bin naturally sits 12h after
+  // rangeStart even when there IS data on the very first day. Treat any
+  // real bin within the first "natural period" as if it starts at rangeStart
+  // — otherwise we would always draw a phantom flat-zero from midnight up to
+  // noon at the chart's left edge (the duplicated start zero).
+  const startBinThreshold = mode === "daily" ? 60_000 : 86_400_000;
+  const firstRealCoversStart =
+    realData.length > 0 && realData[0].ts - rangeStart < startBinThreshold;
+
   // Hoverable points = artificial start anchor (when needed) + every real
   // activity point. The anchor lets the start of the period always have a
   // tooltip ("time, value = 0") even before any sale happens.
   type IPoint = { ts: number; value: number; isAnchor: boolean };
   const interactivePoints: IPoint[] = [];
-  if (realData.length === 0 || realData[0].ts > rangeStart) {
+  if (realData.length === 0 || (realData[0].ts > rangeStart && !firstRealCoversStart)) {
     interactivePoints.push({ ts: rangeStart, value: 0, isAnchor: true });
   }
   for (const p of realData) {
@@ -542,16 +556,22 @@ function Chart({
     const firstX = realPts[0].x;
     const firstY = realPts[0].y;
 
-    lineD = `M ${startX} ${baselineY}`;
-    if (realData[0].ts > rangeStart) {
+    if (firstRealCoversStart) {
+      // First bin falls in the very first period — anchor the line at the
+      // left edge with the first real value (no zero baseline pre-segment).
+      lineD = `M ${startX} ${firstY}`;
+      if (firstX > startX + 0.5) {
+        lineD += ` L ${firstX} ${firstY}`;
+      }
+    } else if (realData[0].ts > rangeStart) {
       // Flat at 0 from rangeStart up to first activity, then vertical step.
-      lineD += ` L ${firstX} ${baselineY}`;
+      lineD = `M ${startX} ${baselineY} L ${firstX} ${baselineY}`;
       if (Math.abs(firstY - baselineY) > 0.01) {
         lineD += ` L ${firstX} ${firstY}`;
       }
-    } else if (Math.abs(firstY - baselineY) > 0.01) {
-      // First activity is exactly at rangeStart but with a non-zero value.
-      lineD += ` L ${startX} ${firstY}`;
+    } else {
+      // First activity is exactly at rangeStart — start the line right there.
+      lineD = `M ${startX} ${firstY}`;
     }
     // Smooth monotone interpolation through the real data points.
     if (realPts.length >= 2) {
