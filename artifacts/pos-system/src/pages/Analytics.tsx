@@ -123,8 +123,7 @@ function buildChartData(
     rangeStart = startOfDay(now) - 6 * 86400000;
     rangeEnd = startOfDay(now) + 86400000;
     rangeLabel = "Last 7 days";
-    // Start-of-day ticks for d = 0..6 → exactly 7 weekday labels (Mon..Sun)
-    // with the first sitting on the chart's left edge.
+    // 7 weekday labels (Mon..Sun) for d = 0..6 …
     for (let d = 0; d < 7; d++) {
       const ts = rangeStart + d * 86400000;
       xTicks.push({
@@ -132,6 +131,12 @@ function buildChartData(
         label: new Date(ts).toLocaleDateString(undefined, { weekday: "short" }),
       });
     }
+    // … plus a final boundary tick exactly at rangeEnd showing the weekday
+    // of the day immediately after the 7-day window.
+    xTicks.push({
+      ts: rangeEnd,
+      label: new Date(rangeEnd).toLocaleDateString(undefined, { weekday: "short" }),
+    });
   } else if (mode === "monthly") {
     rangeStart = startOfMonth(now);
     const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
@@ -143,13 +148,14 @@ function buildChartData(
       const ts = new Date(now.getFullYear(), now.getMonth(), d, 0, 0, 0).getTime();
       xTicks.push({ ts, label: String(d) });
     }
+    // Final boundary tick exactly at rangeEnd (1st of next month → label "1").
+    xTicks.push({ ts: rangeEnd, label: String(new Date(rangeEnd).getDate()) });
   } else if (mode === "yearly") {
     const yr = now.getFullYear();
     rangeStart = startOfYear(now);
     rangeEnd = new Date(yr + 1, 0, 1).getTime();
     rangeLabel = String(yr);
-    // Month-1 (midnight) ticks for m = 0..11 → exactly 12 month labels
-    // (Jan..Dec) with "Jan" sitting on the chart's left edge.
+    // 12 month labels (Jan..Dec) for m = 0..11 …
     for (let m = 0; m < 12; m++) {
       const ts = new Date(yr, m, 1, 0, 0, 0).getTime();
       xTicks.push({
@@ -157,6 +163,11 @@ function buildChartData(
         label: new Date(yr, m, 1).toLocaleDateString(undefined, { month: "short" }),
       });
     }
+    // … plus a final boundary tick exactly at rangeEnd (next year's Jan 1).
+    xTicks.push({
+      ts: rangeEnd,
+      label: new Date(rangeEnd).toLocaleDateString(undefined, { month: "short" }),
+    });
   } else {
     const range = custom ?? {
       from: startOfDay(now) - 6 * 86400000,
