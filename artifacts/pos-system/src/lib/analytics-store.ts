@@ -173,9 +173,12 @@ export function seedDemoIfEmpty() {
   save(events);
 }
 
-// Top up the current Mon→Sun week with demo events when no real activity
-// exists yet for it. Keeps any pre-existing real sales untouched.
+// Top up the current Mon→Sun week with demo events on a per-day basis.
+// Any day in the current week with fewer than MIN_PER_DAY events gets
+// extra demo activity to bring it up to a healthy baseline. Pre-existing
+// real sales are left untouched.
 export function seedCurrentWeekIfEmpty() {
+  const MIN_PER_DAY = 6;
   const now = Date.now();
   const d = new Date(now);
   const dayOfWeek = d.getDay(); // 0 = Sun … 6 = Sat
@@ -184,14 +187,8 @@ export function seedCurrentWeekIfEmpty() {
   weekStart.setHours(0, 0, 0, 0);
   weekStart.setDate(weekStart.getDate() - daysSinceMonday);
   const weekStartMs = weekStart.getTime();
-  const weekEndMs = weekStartMs + 7 * 86400000;
 
   const existing = load();
-  const hasThisWeek = existing.some(
-    (e) => e.ts >= weekStartMs && e.ts < weekEndMs,
-  );
-  if (hasThisWeek) return;
-
   const dowMul = [0.7, 1.05, 1.0, 1.05, 1.15, 1.4, 1.25];
   const hourCurve = [
     0.005, 0.003, 0.002, 0.002, 0.003, 0.008,
@@ -202,17 +199,25 @@ export function seedCurrentWeekIfEmpty() {
 
   const newEvents: SaleEvent[] = [];
   for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
-    const dayStart = new Date(weekStartMs + dayIdx * 86400000);
-    if (dayStart.getTime() > now) break; // don't fabricate future days
+    const dayStartMs = weekStartMs + dayIdx * 86400000;
+    const dayEndMs = dayStartMs + 86400000;
+    if (dayStartMs > now) break; // don't fabricate future days
 
+    const existingForDay = existing.filter(
+      (e) => e.ts >= dayStartMs && e.ts < dayEndMs,
+    ).length;
+    if (existingForDay >= MIN_PER_DAY) continue;
+
+    const dayStart = new Date(dayStartMs);
     const dow = dayStart.getDay();
     const baseEvents = rand(10, 22) * dowMul[dow];
-    const eventsToday = Math.max(
-      3,
+    const targetTotal = Math.max(
+      MIN_PER_DAY,
       Math.round(baseEvents * (0.8 + Math.random() * 0.4)),
     );
+    const need = targetTotal - existingForDay;
 
-    for (let k = 0; k < eventsToday; k++) {
+    for (let k = 0; k < need; k++) {
       let r = Math.random();
       let hour = 12;
       for (let h = 0; h < 24; h++) {
@@ -239,7 +244,7 @@ export function seedCurrentWeekIfEmpty() {
         });
       }
       newEvents.push({
-        id: `seed-week-${dt.getTime()}-${k}`,
+        id: `seed-week-${dt.getTime()}-${k}-${Math.random().toString(36).slice(2, 6)}`,
         ts: dt.getTime(),
         items,
         totalQty: items.reduce((s, i) => s + i.qty, 0),
