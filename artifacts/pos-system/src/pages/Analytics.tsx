@@ -468,6 +468,8 @@ function Chart({
   const [animKey, setAnimKey] = useState(0);
 
   useEffect(() => {
+    // Reset to "no explicit hover" — the render layer will then default the
+    // movable point to the latest real data point for the new dataset.
     setHoverIdx(null);
     setAnimKey((k) => k + 1);
   }, [loadingKey]);
@@ -575,17 +577,6 @@ function Chart({
     // first and last real points (which now span the full data zone).
     areaD = `${lineD} L ${lastPt.x} ${baseY} L ${firstPt.x} ${baseY} Z`;
   }
-  // Show an end-point marker only when the data line has actually
-  // "completed" within the visible range. We treat the data as complete
-  // when the last real bin sits at or after the data zone's right edge —
-  // i.e. there is no further room for upcoming data before the future
-  // zone takes over. While the data is still being filled in (last point
-  // is well before "now"), we omit the end dot.
-  const dataIsComplete =
-    lastPt !== null &&
-    realData.length > 0 &&
-    realData[realData.length - 1].ts >= dataZoneEnd - 1;
-
   // Hover capture spans the entire data zone — i.e. the same horizontal
   // band the stretched line occupies. The future zone gets no capture.
   const interactiveWidth = Math.max(0, dataZoneEndX - margin.left);
@@ -610,11 +601,22 @@ function Chart({
     }
     setHoverIdx(bestIdx >= 0 ? bestIdx : null);
   };
-  const handleLeave = () => setHoverIdx(null);
+  // When the cursor leaves the chart we deliberately do NOT clear the
+  // hover state — the movable point should freeze at its last position
+  // instead of disappearing. The default (when the user has never
+  // interacted) is the latest real data point.
+  const handleLeave = () => {};
   const TT_W_EST = metric === "profit" ? 180 : 200;
-  const hover = hoverIdx !== null && hoverIdx < interactivePoints.length
-    ? interactivePoints[hoverIdx]
-    : null;
+  // Resolve the effective hover index: explicit user hover when set,
+  // otherwise default to the very last real data point so a movable
+  // point + tooltip is always visible.
+  const effectiveHoverIdx =
+    interactivePoints.length === 0
+      ? -1
+      : hoverIdx === null
+        ? interactivePoints.length - 1
+        : Math.max(0, Math.min(interactivePoints.length - 1, hoverIdx));
+  const hover = effectiveHoverIdx >= 0 ? interactivePoints[effectiveHoverIdx] : null;
   const hoverPx = hover ? xAtData(hover.ts) : 0;
   const hoverPy = hover ? yAt(hover.value) : 0;
   let ttLeft = 0;
@@ -732,16 +734,6 @@ function Chart({
           {lineD && (
             <path d={lineD} fill="none" stroke="hsl(43 90% 55%)" strokeWidth={2.25}
               strokeLinecap="round" strokeLinejoin="round" />
-          )}
-          {/* End-point marker — only when the data line has actually
-              completed within the visible range (so the rightmost edge
-              isn't ambiguous). No marker is drawn at the start. */}
-          {lastPt && dataIsComplete && (
-            <circle
-              cx={lastPt.x} cy={lastPt.y} r={3.75}
-              fill="hsl(43 90% 55%)"
-              stroke="hsl(240 10% 8%)" strokeWidth={1.5}
-            />
           )}
         </g>
 
