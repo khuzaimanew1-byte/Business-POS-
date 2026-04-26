@@ -497,50 +497,39 @@ function Chart({
   const plotW = Math.max(10, size.w - margin.left - margin.right);
   const plotH = Math.max(10, size.h - margin.top - margin.bottom);
   const baseY = margin.top + plotH;
+  const span = Math.max(1, rangeEnd - rangeStart);
+  const xAt = (ts: number) => margin.left + (plotW * (ts - rangeStart)) / span;
   const yAt = (v: number) =>
     margin.top + plotH * (1 - (v - yMin) / Math.max(1e-6, yMax - yMin));
 
   // ── Time zones, line construction & interaction ──────────────────────
   // Spec model:
-  //   • The X-axis zooms to fit only the real data span (no dead space at
-  //     either edge). When there's no real data we fall back to the full
-  //     requested range so the axis still makes sense.
-  //   • Data zone   = [effRangeStart, dataZoneEnd] where
-  //         dataZoneEnd = min(effRangeEnd, now)
-  //   • Future zone = (dataZoneEnd, effRangeEnd], shown only when the
-  //     effective range extends past "now". No line is drawn here, no
-  //     tooltip / crosshair.
+  //   • The X-axis is strictly [rangeStart, rangeEnd]; no edge padding.
+  //   • Data zone   = [rangeStart, dataZoneEnd] where
+  //         dataZoneEnd = min(rangeEnd, now)
+  //     The line ALWAYS spans the full data zone:
+  //         start anchor (rangeStart, 0)
+  //         → flat at 0 until first real activity (step-up there)
+  //         → smooth monotone curve through real data points
+  //         → flat extension at last value to dataZoneEnd
+  //     Between real activities the curve never drops to 0 (monotone cubic),
+  //     so the line is continuous and behaves like a "hold last value" series.
+  //   • Future zone = (dataZoneEnd, rangeEnd], present only when the range
+  //     extends past "now". No line is drawn here, no tooltip / crosshair.
   const nowTs = Date.now();
-  const fullDataZoneEnd = Math.min(rangeEnd, nowTs);
-
-  // Real (visible) activity bins clipped to the requested data zone.
-  const realIndices: number[] = [];
-  for (let i = 0; i < bins.length; i++) {
-    if (bins[i].visible && bins[i].ts >= rangeStart && bins[i].ts <= fullDataZoneEnd) {
-      realIndices.push(i);
-    }
-  }
-  const realData = realIndices.map(i => ({ ts: bins[i].ts, value: bins[i].value }));
-
-  // Effective X range — collapses dead space on both edges when there is
-  // enough real data to define a meaningful span.
-  const useDataRange = realData.length >= 2;
-  const effRangeStart = useDataRange ? realData[0].ts : rangeStart;
-  const effRangeEnd = useDataRange
-    ? realData[realData.length - 1].ts
-    : rangeEnd;
-  const span = Math.max(1, effRangeEnd - effRangeStart);
-  const xAt = (ts: number) => margin.left + (plotW * (ts - effRangeStart)) / span;
-
-  const dataZoneEnd = Math.min(effRangeEnd, nowTs);
+  const dataZoneEnd = Math.min(rangeEnd, nowTs);
   const plotEndX = margin.left + plotW;
   const dataZoneEndX = Math.min(plotEndX, Math.max(margin.left, xAt(dataZoneEnd)));
   const showFutureZone = dataZoneEndX < plotEndX - 0.5;
 
-  // Only show axis ticks that fall within the effective (zoomed) range.
-  const visibleXTicks = xTicks.filter(
-    (t) => t.ts >= effRangeStart - 0.5 && t.ts <= effRangeEnd + 0.5,
-  );
+  // Real (visible) activity bins clipped to the data zone.
+  const realIndices: number[] = [];
+  for (let i = 0; i < bins.length; i++) {
+    if (bins[i].visible && bins[i].ts >= rangeStart && bins[i].ts <= dataZoneEnd) {
+      realIndices.push(i);
+    }
+  }
+  const realData = realIndices.map(i => ({ ts: bins[i].ts, value: bins[i].value }));
 
   // Hoverable points = every real activity point. No artificial start
   // anchor, since the line itself no longer reaches the left edge.
@@ -569,10 +558,10 @@ function Chart({
     areaD = `${lineD} L ${lastRealX} ${baseY} L ${firstX} ${baseY} Z`;
   }
 
-  // Hover capture spans the data zone within the effective range. The
-  // future zone gets no capture.
+  // Hover capture spans the entire data zone (so the start anchor and the
+  // flat-extension area are both reachable). The future zone gets no capture.
   const interactiveWidth = Math.max(0, dataZoneEndX - margin.left);
-  const dataZoneSpan = Math.max(1, dataZoneEnd - effRangeStart);
+  const dataZoneSpan = Math.max(1, dataZoneEnd - rangeStart);
 
   const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
     if (interactivePoints.length === 0) return;
@@ -583,7 +572,7 @@ function Chart({
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const rel = Math.min(1, Math.max(0, x / Math.max(1, rect.width)));
-    const ts = effRangeStart + rel * dataZoneSpan;
+    const ts = rangeStart + rel * dataZoneSpan;
     let bestIdx = -1;
     let bestDist = Infinity;
     for (let i = 0; i < interactivePoints.length; i++) {
@@ -700,9 +689,8 @@ function Chart({
           );
         })}
 
-        {/* X labels — filtered to the effective range so labels never appear
-            in the trimmed dead-space region. */}
-        {visibleXTicks.map((t, i) => (
+        {/* X labels */}
+        {xTicks.map((t, i) => (
           <text key={i} x={xAt(t.ts)} y={baseY + 17} fontSize="10" fill="hsl(240 5% 55%)" textAnchor="middle">
             {t.label}
           </text>
@@ -1002,73 +990,6 @@ export default function Analytics() {
   const [isLoading, setIsLoading] = useState(true);
 
   const events = useSaleEvents({ seedIfEmpty: true });
-
-  // ─────────────────────────────────────────────────────────────────────
-  // DEV-ONLY: weekly-mode demo seed (REMOVE BEFORE PRODUCTION)
-  // Runs once on mount. If no sale events exist yet, generates a small
-  // batch of fake events spread across the last 7 days with varying
-  // quantities and profits, then writes them straight to the analytics
-  // store and notifies listeners. Safe to delete this whole block once
-  // the weekly graph no longer needs scaffold data for testing.
-  // ─────────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const LS_KEY = "pos.analytics.events.v3";
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      const existing = raw ? (JSON.parse(raw) as SaleEvent[]) : [];
-      if (existing.length > 0) return;
-
-      const DEMO = [
-        { id: "1", name: "Espresso", price: 3.5, profit: 1.4 },
-        { id: "2", name: "Latte", price: 4.5, profit: 1.8 },
-        { id: "3", name: "Cappuccino", price: 4.0, profit: 1.6 },
-        { id: "12", name: "Sandwich", price: 6.99, profit: 2.5 },
-        { id: "13", name: "Salad Bowl", price: 8.99, profit: 3.2 },
-      ];
-      const now = Date.now();
-      const fake: SaleEvent[] = [];
-      for (let dayAgo = 6; dayAgo >= 0; dayAgo--) {
-        const dayBase = now - dayAgo * 86400000;
-        const eventsThisDay = 4 + Math.floor(Math.random() * 6); // 4–9
-        for (let k = 0; k < eventsThisDay; k++) {
-          const hour = 8 + Math.floor(Math.random() * 12); // 08:00–19:59
-          const minute = Math.floor(Math.random() * 60);
-          const dt = new Date(dayBase);
-          dt.setHours(hour, minute, Math.floor(Math.random() * 60), 0);
-          if (dt.getTime() > now) continue;
-
-          const itemCount = 1 + Math.floor(Math.random() * 3); // 1–3 items
-          const items: SaleItem[] = [];
-          for (let i = 0; i < itemCount; i++) {
-            const p = DEMO[Math.floor(Math.random() * DEMO.length)];
-            const qty = 1 + Math.floor(Math.random() * 4); // 1–4 qty
-            const profitJitter = p.profit * (0.85 + Math.random() * 0.3);
-            items.push({
-              productId: p.id,
-              name: p.name,
-              qty,
-              price: p.price,
-              profit: +profitJitter.toFixed(2),
-            });
-          }
-          fake.push({
-            id: `dev-week-seed-${dt.getTime()}-${k}`,
-            ts: dt.getTime(),
-            items,
-            totalQty: items.reduce((s, i) => s + i.qty, 0),
-            totalSales: items.reduce((s, i) => s + i.price * i.qty, 0),
-            totalProfit: items.reduce((s, i) => s + i.profit * i.qty, 0),
-          });
-        }
-      }
-      fake.sort((a, b) => a.ts - b.ts);
-      localStorage.setItem(LS_KEY, JSON.stringify(fake));
-      window.dispatchEvent(new CustomEvent("pos:analytics-changed"));
-    } catch {
-      /* noop */
-    }
-  }, []);
-  // ───────────────────────── END DEV-ONLY SEED ─────────────────────────
 
   useEffect(() => {
     setIsLoading(true);

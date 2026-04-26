@@ -65,10 +65,7 @@ export function recordSale(items: SaleItem[]) {
 
 export function useSaleEvents(opts?: { seedIfEmpty?: boolean }): SaleEvent[] {
   const [events, setEvents] = useState<SaleEvent[]>(() => {
-    if (opts?.seedIfEmpty) {
-      seedDemoIfEmpty();
-      seedCurrentWeekIfEmpty();
-    }
+    if (opts?.seedIfEmpty) seedDemoIfEmpty();
     return load();
   });
   useEffect(() => {
@@ -171,90 +168,4 @@ export function seedDemoIfEmpty() {
   }
   events.sort((a, b) => a.ts - b.ts);
   save(events);
-}
-
-// Top up the current Mon→Sun week with demo events on a per-day basis.
-// Any day in the current week with fewer than MIN_PER_DAY events gets
-// extra demo activity to bring it up to a healthy baseline. Pre-existing
-// real sales are left untouched.
-export function seedCurrentWeekIfEmpty() {
-  const MIN_PER_DAY = 6;
-  const now = Date.now();
-  const d = new Date(now);
-  const dayOfWeek = d.getDay(); // 0 = Sun … 6 = Sat
-  const daysSinceMonday = (dayOfWeek + 6) % 7;
-  const weekStart = new Date(d);
-  weekStart.setHours(0, 0, 0, 0);
-  weekStart.setDate(weekStart.getDate() - daysSinceMonday);
-  const weekStartMs = weekStart.getTime();
-
-  const existing = load();
-  const dowMul = [0.7, 1.05, 1.0, 1.05, 1.15, 1.4, 1.25];
-  const hourCurve = [
-    0.005, 0.003, 0.002, 0.002, 0.003, 0.008,
-    0.02, 0.04, 0.07, 0.085, 0.075, 0.065,
-    0.085, 0.09, 0.07, 0.055, 0.05, 0.06,
-    0.075, 0.065, 0.04, 0.025, 0.015, 0.008,
-  ];
-
-  const newEvents: SaleEvent[] = [];
-  for (let dayIdx = 0; dayIdx < 7; dayIdx++) {
-    const dayStartMs = weekStartMs + dayIdx * 86400000;
-    const dayEndMs = dayStartMs + 86400000;
-    if (dayStartMs > now) break; // don't fabricate future days
-
-    const existingForDay = existing.filter(
-      (e) => e.ts >= dayStartMs && e.ts < dayEndMs,
-    ).length;
-    if (existingForDay >= MIN_PER_DAY) continue;
-
-    const dayStart = new Date(dayStartMs);
-    const dow = dayStart.getDay();
-    const baseEvents = rand(10, 22) * dowMul[dow];
-    const targetTotal = Math.max(
-      MIN_PER_DAY,
-      Math.round(baseEvents * (0.8 + Math.random() * 0.4)),
-    );
-    const need = targetTotal - existingForDay;
-
-    for (let k = 0; k < need; k++) {
-      let r = Math.random();
-      let hour = 12;
-      for (let h = 0; h < 24; h++) {
-        if (r < hourCurve[h]) { hour = h; break; }
-        r -= hourCurve[h];
-      }
-      const minute = Math.floor(Math.random() * 60);
-      const second = Math.floor(Math.random() * 60);
-      const dt = new Date(dayStart);
-      dt.setHours(hour, minute, second, 0);
-      if (dt.getTime() > now) continue;
-
-      const itemCount = Math.max(1, Math.round(rand(1, 4)));
-      const items: SaleItem[] = [];
-      for (let i = 0; i < itemCount; i++) {
-        const p = DEMO_PRODUCTS[Math.floor(Math.random() * DEMO_PRODUCTS.length)];
-        const qty = Math.max(1, Math.round(rand(1, 3)));
-        items.push({
-          productId: p.id,
-          name: p.name,
-          qty,
-          price: p.price,
-          profit: p.profit,
-        });
-      }
-      newEvents.push({
-        id: `seed-week-${dt.getTime()}-${k}-${Math.random().toString(36).slice(2, 6)}`,
-        ts: dt.getTime(),
-        items,
-        totalQty: items.reduce((s, i) => s + i.qty, 0),
-        totalSales: items.reduce((s, i) => s + i.price * i.qty, 0),
-        totalProfit: items.reduce((s, i) => s + i.profit * i.qty, 0),
-      });
-    }
-  }
-
-  if (newEvents.length === 0) return;
-  const merged = existing.concat(newEvents).sort((a, b) => a.ts - b.ts);
-  save(merged);
 }
