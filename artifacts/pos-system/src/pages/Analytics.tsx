@@ -1003,6 +1003,73 @@ export default function Analytics() {
 
   const events = useSaleEvents({ seedIfEmpty: true });
 
+  // ─────────────────────────────────────────────────────────────────────
+  // DEV-ONLY: weekly-mode demo seed (REMOVE BEFORE PRODUCTION)
+  // Runs once on mount. If no sale events exist yet, generates a small
+  // batch of fake events spread across the last 7 days with varying
+  // quantities and profits, then writes them straight to the analytics
+  // store and notifies listeners. Safe to delete this whole block once
+  // the weekly graph no longer needs scaffold data for testing.
+  // ─────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const LS_KEY = "pos.analytics.events.v3";
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      const existing = raw ? (JSON.parse(raw) as SaleEvent[]) : [];
+      if (existing.length > 0) return;
+
+      const DEMO = [
+        { id: "1", name: "Espresso", price: 3.5, profit: 1.4 },
+        { id: "2", name: "Latte", price: 4.5, profit: 1.8 },
+        { id: "3", name: "Cappuccino", price: 4.0, profit: 1.6 },
+        { id: "12", name: "Sandwich", price: 6.99, profit: 2.5 },
+        { id: "13", name: "Salad Bowl", price: 8.99, profit: 3.2 },
+      ];
+      const now = Date.now();
+      const fake: SaleEvent[] = [];
+      for (let dayAgo = 6; dayAgo >= 0; dayAgo--) {
+        const dayBase = now - dayAgo * 86400000;
+        const eventsThisDay = 4 + Math.floor(Math.random() * 6); // 4–9
+        for (let k = 0; k < eventsThisDay; k++) {
+          const hour = 8 + Math.floor(Math.random() * 12); // 08:00–19:59
+          const minute = Math.floor(Math.random() * 60);
+          const dt = new Date(dayBase);
+          dt.setHours(hour, minute, Math.floor(Math.random() * 60), 0);
+          if (dt.getTime() > now) continue;
+
+          const itemCount = 1 + Math.floor(Math.random() * 3); // 1–3 items
+          const items: SaleItem[] = [];
+          for (let i = 0; i < itemCount; i++) {
+            const p = DEMO[Math.floor(Math.random() * DEMO.length)];
+            const qty = 1 + Math.floor(Math.random() * 4); // 1–4 qty
+            const profitJitter = p.profit * (0.85 + Math.random() * 0.3);
+            items.push({
+              productId: p.id,
+              name: p.name,
+              qty,
+              price: p.price,
+              profit: +profitJitter.toFixed(2),
+            });
+          }
+          fake.push({
+            id: `dev-week-seed-${dt.getTime()}-${k}`,
+            ts: dt.getTime(),
+            items,
+            totalQty: items.reduce((s, i) => s + i.qty, 0),
+            totalSales: items.reduce((s, i) => s + i.price * i.qty, 0),
+            totalProfit: items.reduce((s, i) => s + i.profit * i.qty, 0),
+          });
+        }
+      }
+      fake.sort((a, b) => a.ts - b.ts);
+      localStorage.setItem(LS_KEY, JSON.stringify(fake));
+      window.dispatchEvent(new CustomEvent("pos:analytics-changed"));
+    } catch {
+      /* noop */
+    }
+  }, []);
+  // ───────────────────────── END DEV-ONLY SEED ─────────────────────────
+
   useEffect(() => {
     setIsLoading(true);
     const t = setTimeout(() => setIsLoading(false), 280);
