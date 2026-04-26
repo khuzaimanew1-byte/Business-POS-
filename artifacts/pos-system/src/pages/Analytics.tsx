@@ -135,14 +135,14 @@ function buildChartData(
     rangeStart = startOfDay(now) - 6 * 86400000;
     rangeEnd = startOfDay(now) + 86400000;
     rangeLabel = "Last 7 days";
-    xTicks = makeTicks(rangeStart, rangeEnd, 7, (ts) =>
+    xTicks = makeTicks(rangeStart, rangeEnd - 1, 7, (ts) =>
       new Date(ts).toLocaleDateString(undefined, { weekday: "short" })
     );
   } else if (mode === "monthly") {
     rangeStart = startOfMonth(now);
     rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
     rangeLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-    xTicks = makeTicks(rangeStart, rangeEnd, 7, (ts) =>
+    xTicks = makeTicks(rangeStart, rangeEnd - 86400000, 7, (ts) =>
       String(new Date(ts).getDate())
     );
   } else if (mode === "yearly") {
@@ -150,7 +150,7 @@ function buildChartData(
     rangeStart = startOfYear(now);
     rangeEnd = new Date(yr + 1, 0, 1).getTime();
     rangeLabel = String(yr);
-    xTicks = makeTicks(rangeStart, rangeEnd, 7, (ts) =>
+    xTicks = makeTicks(rangeStart, new Date(yr, 11, 1).getTime(), 7, (ts) =>
       new Date(ts).toLocaleDateString(undefined, { month: "short" })
     );
   } else {
