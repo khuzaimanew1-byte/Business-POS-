@@ -55,7 +55,10 @@ function withZeroAnchors(
       { ts: rangeEnd, value: 0, visible: false },
     ];
   }
-  const out: Bin[] = [{ ts: rangeStart, value: 0, visible: false }];
+  const out: Bin[] = [];
+  if (realPoints.length === 0 || realPoints[0].ts > rangeStart) {
+    out.push({ ts: rangeStart, value: 0, visible: false });
+  }
   for (let i = 0; i < realPoints.length; i++) {
     const cur = realPoints[i];
     const prevTs = i === 0 ? rangeStart : realPoints[i - 1].ts;

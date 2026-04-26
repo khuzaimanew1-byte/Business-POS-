@@ -1,0 +1,29 @@
+Fix the x-axis duplicate label bug in Analytics.tsx.
+There are 3 related issues all caused by makeTicks using rangeEnd (which is an exclusive boundary — the start of the next period) as the last tick timestamp, and withZeroAnchors injecting an unconditional zero anchor at rangeStart.
+Problem 1 — Weekly mode: last tick shows next week's day name (duplicate)
+In the buildChartData function, rangeEnd = startOfDay(now) + 86400000 which is tomorrow. The last generated tick lands on tomorrow's weekday name, which duplicates next week's first label.
+Fix: change the makeTicks call for weekly mode to use rangeEnd - 1 as the end:
+tsxTicks = makeTicks(rangeStart, rangeEnd - 1, 7, (ts) =>
+  new Date(ts).toLocaleDateString(undefined, { weekday: "short" })
+);
+Problem 2 — Monthly mode: last tick shows day "1" of next month (duplicate of a future label)
+rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1) — this is the first day of next month. The last tick renders as "1" which collides visually.
+Fix: use rangeEnd - 86400000 (last day of current month) as the end:
+tsxTicks = makeTicks(rangeStart, rangeEnd - 86400000, 7, (ts) =>
+  String(new Date(ts).getDate())
+);
+Problem 3 — Yearly mode: last tick shows "Jan" of next year (same label as first tick)
+rangeEnd = new Date(yr + 1, 0, 1) — next year's January 1st. So the last tick label is "Jan", same as the first tick.
+Fix: set the end to December 1st of the current year so the last tick is "Dec":
+tsxTicks = makeTicks(rangeStart, new Date(yr, 11, 1).getTime(), 7, (ts) =>
+  new Date(ts).toLocaleDateString(undefined, { month: "short" })
+);
+Problem 4 — Start of chart always shows value=0 even when first data point exists at rangeStart
+In withZeroAnchors, there is always an unconditional zero anchor pushed at rangeStart:
+tsconst out: Bin[] = [{ ts: rangeStart, value: 0, visible: false }];
+This causes the line to always start from zero at the left edge even if real data begins exactly at rangeStart. Fix: only push the zero anchor if the first real data point is not at rangeStart:
+tsconst out: Bin[] = [];
+if (realPoints.length === 0 || realPoints[0].ts > rangeStart) {
+  out.push({ ts: rangeStart, value: 0, visible: false });
+}
+Make only these targeted changes. Do not refactor anything else.
