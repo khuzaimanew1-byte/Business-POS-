@@ -388,7 +388,17 @@ export default function POS() {
       toast.error('"Sold Out" is a system state, not a category');
       return;
     }
-    if (!categories.includes(name)) setCategories(prev => [...prev, name]);
+    if (!categories.includes(name)) {
+      // Always insert before the pinned "Sold Out" system chip so it stays
+      // anchored at the end of the bar.
+      setCategories(prev => {
+        const oosIdx = prev.indexOf(OUT_OF_STOCK_CATEGORY);
+        if (oosIdx === -1) return [...prev, name];
+        const next = prev.slice();
+        next.splice(oosIdx, 0, name);
+        return next;
+      });
+    }
     setIsAddCategoryModalOpen(false);
   };
 
@@ -520,12 +530,31 @@ export default function POS() {
   useShortcut('prevCategory', () => cycleCategory(-1));
   useShortcut('nextCategory', () => cycleCategory(1));
 
-  // Smoothly scroll the active category chip into view whenever it changes.
+  // Smoothly scroll the active category chip into view — but ONLY scroll the
+  // category bar itself, never the page. We previously used Element.scrollIntoView
+  // which walks up the ancestor chain looking for any scrollable container; on
+  // viewports where the category bar fully fits (no horizontal overflow), it
+  // would fall through to the document and shift the entire page sideways
+  // (most visible when picking the last chip). The manual scrollLeft approach
+  // below is bar-local and is a no-op when the bar doesn't overflow, so the
+  // page layout stays perfectly fixed regardless of which chip is selected.
   useEffect(() => {
     const bar = categoryBarRef.current;
     if (!bar) return;
-    const el = bar.querySelector<HTMLElement>(`[data-cat="${CSS.escape(selectedCategory)}"]`);
-    if (el) el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    // Defer to next frame so the active class / chip width settles first.
+    const raf = requestAnimationFrame(() => {
+      const overflow = bar.scrollWidth - bar.clientWidth;
+      if (overflow <= 0) return; // No horizontal overflow — nothing to scroll.
+      const el = bar.querySelector<HTMLElement>(`[data-cat="${CSS.escape(selectedCategory)}"]`);
+      if (!el) return;
+      // Use offset positions (relative to the bar) so we never need to read
+      // bounding rects, which would force layout and could include unrelated
+      // page transforms.
+      const target = el.offsetLeft - (bar.clientWidth - el.offsetWidth) / 2;
+      const clamped = Math.max(0, Math.min(overflow, target));
+      bar.scrollTo({ left: clamped, behavior: 'smooth' });
+    });
+    return () => cancelAnimationFrame(raf);
   }, [selectedCategory]);
 
   // ── Cart-qty chord: Hold C, press a digit (1-9), then Arrow Up/Down ────
@@ -770,10 +799,15 @@ export default function POS() {
               <>
                 <button
                   onClick={() => setSelectedCategory('All')}
+                  data-cat="All"
                   className={`shrink-0 px-3 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 ${selectedCategory === 'All' ? 'text-primary-foreground bg-primary' : 'text-muted-foreground bg-secondary/50'}`}
                 >All</button>
-                {categories.filter(c => c !== 'All').map(cat => (
-                  <div key={cat} className={`shrink-0 flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full border transition-all duration-250 ${selectedCategory === cat ? 'bg-primary/10 border-primary/30' : 'bg-secondary/50 border-border/40'}`}>
+                {/* Editable user categories — "Sold Out" is excluded here because
+                    it's a system state, not a real category, so it must not be
+                    rename-able or delete-able. It's rendered separately below
+                    as a read-only selectable chip after all editable chips. */}
+                {categories.filter(c => c !== 'All' && c !== OUT_OF_STOCK_CATEGORY).map(cat => (
+                  <div key={cat} data-cat={cat} className={`shrink-0 flex items-center gap-1.5 pl-3 pr-1.5 py-1 rounded-full border transition-all duration-250 ${selectedCategory === cat ? 'bg-primary/10 border-primary/30' : 'bg-secondary/50 border-border/40'}`}>
                     <input
                       type="text"
                       value={categoryDrafts[cat] ?? cat}
@@ -791,6 +825,29 @@ export default function POS() {
                     </button>
                   </div>
                 ))}
+                {/* Sold Out — system chip. Always pinned last (after all
+                    editable chips). Selectable to filter the grid, but renders
+                    with no editable input and no delete affordance, so the
+                    user immediately understands it can't be modified. */}
+                {categories.includes(OUT_OF_STOCK_CATEGORY) && (
+                  <button
+                    onClick={() => setSelectedCategory(OUT_OF_STOCK_CATEGORY)}
+                    data-cat={OUT_OF_STOCK_CATEGORY}
+                    aria-label="Sold Out — system tab, not editable"
+                    title="System tab — not editable"
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium border border-dashed transition-all duration-250 ${
+                      selectedCategory === OUT_OF_STOCK_CATEGORY
+                        ? 'border-destructive/70 bg-destructive/15 text-destructive'
+                        : 'border-destructive/40 bg-destructive/5 text-destructive/80 hover:bg-destructive/10 hover:border-destructive/60 hover:text-destructive'
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="inline-block w-1.5 h-1.5 rounded-full bg-destructive shadow-[0_0_0_3px_hsl(var(--destructive)/0.18)]"
+                    />
+                    {OUT_OF_STOCK_CATEGORY}
+                  </button>
+                )}
               </>
             ) : (
               <>

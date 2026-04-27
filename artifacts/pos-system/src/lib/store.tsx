@@ -75,7 +75,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const addCustomCategory = (name: string) => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    setCategories(prev => prev.includes(trimmed) ? prev : [...prev, trimmed]);
+    // Insert *before* the pinned "Sold Out" tab so the system chip always
+    // stays at the very end of the bar regardless of insertion order.
+    setCategories(prev => {
+      if (prev.includes(trimmed)) return prev;
+      const oosIdx = prev.indexOf(OUT_OF_STOCK_CATEGORY);
+      if (oosIdx === -1) return [...prev, trimmed];
+      const next = prev.slice();
+      next.splice(oosIdx, 0, trimmed);
+      return next;
+    });
     setCustomCategories(prev => {
       if (prev.has(trimmed)) return prev;
       const next = new Set(prev);
