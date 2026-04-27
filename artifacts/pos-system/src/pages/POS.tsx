@@ -123,7 +123,17 @@ export default function POS() {
     const q = debouncedSearch.toLowerCase();
     const qn = normalize(q);
     const list = products.filter(p => {
-      const matchesCat = selectedCategory === "All" || p.category === selectedCategory;
+      // Same single-page pipeline for every tab — only the predicate changes.
+      // "Sold Out" is a cross-cutting status filter (stock <= 0), NOT a stored
+      // category, so a sold-out item still shows under its real category tab.
+      let matchesCat: boolean;
+      if (selectedCategory === "All") {
+        matchesCat = true;
+      } else if (selectedCategory === OUT_OF_STOCK_CATEGORY) {
+        matchesCat = p.stock <= 0;
+      } else {
+        matchesCat = p.category === selectedCategory;
+      }
       if (!matchesCat) return false;
       if (!q) return true;
       const qcn = normalize(p.quickCode || quickCode(p.name));

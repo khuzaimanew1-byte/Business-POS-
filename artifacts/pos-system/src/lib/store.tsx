@@ -16,8 +16,6 @@ export type Product = {
   stock: number;
   image?: string;
   profit?: number;
-  /** Remembered when product is auto-moved into "Out of Stock"; restored when stock returns. */
-  originalCategory?: Category;
 };
 
 export const INITIAL_CATEGORIES: Category[] = ["All", "Drinks", "Snacks", "Electronics", "Clothing", "Food"];
@@ -55,30 +53,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [customCategories, setCustomCategories] = useState<Set<string>>(() => new Set());
 
-  // ── Auto Out-of-Stock category management ────────────────────────────────
-  // Whenever a product hits stock=0, remember its original category and move
-  // it to the special "Out of Stock" bucket. When stock returns, restore it.
-  useEffect(() => {
-    setProducts(prev => {
-      let changed = false;
-      const next = prev.map(p => {
-        if (p.stock <= 0 && p.category !== OUT_OF_STOCK_CATEGORY) {
-          changed = true;
-          return { ...p, originalCategory: p.originalCategory ?? p.category, category: OUT_OF_STOCK_CATEGORY };
-        }
-        if (p.stock > 0 && p.category === OUT_OF_STOCK_CATEGORY) {
-          changed = true;
-          const restore = p.originalCategory && p.originalCategory !== OUT_OF_STOCK_CATEGORY ? p.originalCategory : "All";
-          const { originalCategory: _omit, ...rest } = p;
-          return { ...rest, category: restore };
-        }
-        return p;
-      });
-      return changed ? next : prev;
-    });
-  }, [products]);
-
-  // Keep "Out of Stock" category present and pinned last whenever any product is out.
+  // ── "Sold Out" tab visibility ────────────────────────────────────────────
+  // "Sold Out" is a virtual filter (stock = 0), NOT a stored category value
+  // on products. Products always keep their real category — when a product
+  // runs out it still appears under its own category tab AND under the
+  // shared "Sold Out" tab (which the consumer renders as a stock<=0 filter).
+  // We only manage tab presence here: the chip is appended (pinned last) when
+  // any product is out, and removed when none are.
   useEffect(() => {
     const hasOOS = products.some(p => p.stock <= 0);
     setCategories(prev => {

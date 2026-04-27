@@ -1,0 +1,83 @@
+Refactor the category system so that all categories render inside one shared page layout. The “Sold Out” category must not have its own page, route, or layout. It should behave exactly like any other category, with only a data filter difference.
+
+🔹 1. Eliminate Separate Page Logic
+Current Issue:
+“Sold Out” (or any category) is treated as a separate page/screen
+Required Change:
+Remove any concept of:
+dedicated page
+separate route
+conditional layout branching
+Target State:
+
+There is only one category page, reused for all categories.
+
+🔹 2. Introduce a Single Source of Truth: Active Category
+Concept:
+
+Maintain one state:
+
+activeCategory
+
+Behavior:
+Clicking any category tab (including “Sold Out”) should:
+update this state
+NOT navigate to a new page
+🔹 3. Keep Layout Static, Swap Data Only
+Structure should remain constant:
+Header
+Category tabs
+Product grid/list
+Spacing/layout system
+Only thing that changes:
+
+The dataset being rendered
+
+🔹 4. Implement Category-Based Filtering (Not Page Switching)
+Data Flow:
+Use the same product source for all categories
+Apply filtering based on activeCategory
+For “Sold Out”:
+
+Filter condition:
+
+items where stock = 0
+
+For other categories:
+Existing category-based filters continue as-is
+🔹 5. Reuse the Same Product Grid + Card System
+Ensure:
+Same grid component is used
+Same card component is used
+Same responsive behavior
+
+👉 No alternate rendering paths for any category
+
+🔹 6. Remove Conditional Layout Branches
+Audit and clean:
+Any logic like:
+“if category is X → render different layout”
+Remove it
+Replace with:
+unified render pipeline driven by filtered data
+🔹 7. Maintain Visual Consistency
+
+Across all categories:
+
+Same spacing
+Same alignment
+Same animation behavior
+Same interaction model
+Only allowed difference:
+Data content
+Minor state indicators (like “Sold Out” badge on cards)
+🔹 8. URL / Navigation Behavior (If Applicable)
+
+If routing exists:
+
+Avoid route changes per category
+Optionally use:
+query param
+internal state only
+
+👉 No full page transitions
