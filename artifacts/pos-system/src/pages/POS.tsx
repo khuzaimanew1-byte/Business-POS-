@@ -879,12 +879,6 @@ export default function POS() {
               const isTopMatch = product.id === topMatchId;
               const isSelected = selectedIds.has(product.id);
               const isHighlighted = product.id === highlightId;
-              // On the dedicated "Sold Out" tab the tab itself already conveys
-              // status, so we suppress the per-card SOLD OUT stamp and image
-              // dimming. This keeps the grid layout & card visuals identical
-              // to every other category tab — only the dataset changes.
-              const onSoldOutTab = selectedCategory === OUT_OF_STOCK_CATEGORY;
-              const showSoldOutTreatment = product.stock <= 0 && !onSoldOutTab;
               const cardCommonProps = {
                 'data-testid': `card-product-${product.id}`,
                 'data-quick-code': qc,
@@ -917,10 +911,10 @@ export default function POS() {
                       <img
                         src={currentImage}
                         alt={product.name}
-                        className={`w-full h-full object-cover transition-all duration-400 ease-in-out group-hover:scale-[1.015] ${showSoldOutTreatment ? 'opacity-55 grayscale-[0.6]' : ''}`}
+                        className={`w-full h-full object-cover transition-all duration-400 ease-in-out group-hover:scale-[1.015] ${product.stock <= 0 ? 'opacity-55 grayscale-[0.6]' : ''}`}
                       />
                     ) : (
-                      <div className={`w-full h-full bg-secondary flex items-center justify-center text-xl font-bold text-muted-foreground/30 ${showSoldOutTreatment ? 'opacity-55' : ''}`}>
+                      <div className={`w-full h-full bg-secondary flex items-center justify-center text-xl font-bold text-muted-foreground/30 ${product.stock <= 0 ? 'opacity-55' : ''}`}>
                         {renderInitials(product.name)}
                       </div>
                     )}
@@ -1000,11 +994,11 @@ export default function POS() {
                       </button>
                     )}
 
-                    {/* Sold Out — status overlay shown only when the card is
-                        out of stock AND we're NOT on the dedicated Sold Out
-                        tab (where the tab itself already conveys status, so
-                        the per-card stamp would be redundant noise). */}
-                    {showSoldOutTreatment && !isEditMode && (
+                    {/* Sold Out — system state, NOT a category. Auto-applied
+                        when stock hits 0 and removed when stock returns.
+                        Rendered as a tilted red stamp overlay so it reads as
+                        a status layer, never confusable with a filter or tag. */}
+                    {product.stock <= 0 && !isEditMode && (
                       <div
                         className="sold-out-stamp absolute inset-0 flex items-center justify-center pointer-events-none"
                         aria-label="Sold out"
