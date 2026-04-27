@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { Home, BarChart2, Plus, Settings, Bell, Calendar as CalendarIcon, Check, Search, ArrowLeft } from "lucide-react";
+import { Home, BarChart2, Plus, Settings, Bell, Calendar as CalendarIcon, Check, Search, ArrowLeft, ShoppingBag, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -1297,47 +1297,56 @@ export default function Analytics() {
         </div>
       </div>
 
-      {/* ── MOBILE FLOATING NOTIFICATION BELL ─────────────────────────
-          Replaces the header bell on mobile. Sits at the bottom-right,
-          above the Sales/Profit toggle, so it's always reachable with the
-          thumb regardless of scroll position. */}
-      <button
-        onClick={() => setLocation("/notifications")}
-        className="notif-fab sm:hidden fixed bottom-14 right-3 z-30 flex items-center justify-center w-12 h-12 rounded-full bg-card/95 backdrop-blur-md border border-card-border shadow-lg active:scale-95 transition-transform duration-150"
-        aria-label={notifUnread > 0 ? `${notifUnread} new notification${notifUnread === 1 ? "" : "s"}` : "Notifications"}
-        data-testid="btn-notifications-fab"
-      >
-        <Bell className="w-[19px] h-[19px] text-foreground" />
-        {notifUnread > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-none flex items-center justify-center border-2 border-background tabular-nums">
-            <span className="notif-bell-pulse" aria-hidden="true" />
-            <span className="relative">{notifUnread > 9 ? "9+" : notifUnread}</span>
-          </span>
-        )}
-      </button>
-
-      {/* ── MOBILE SALES/PROFIT TOGGLE — floating bottom-right ──────── */}
+      {/* ── MOBILE SALES / PROFIT SEGMENTED CONTROL ─────────────────────
+          Sleek dark segmented control with a sliding gold indicator.
+          The indicator is a single absolute element that translates between
+          the two segments on metric change, producing a smooth motion. The
+          gold glow uses the theme's --primary token so it stays in sync
+          with the rest of the Command Center palette. */}
       <div className="sm:hidden fixed bottom-3 right-3 z-20">
-        <div className="flex gap-1 p-0.5 bg-card/90 backdrop-blur-md border border-card-border rounded-full shadow-lg">
+        <div
+          role="tablist"
+          aria-label="Chart metric"
+          className="metric-segmented relative flex items-center w-[180px] h-9 p-1 rounded-full bg-[hsl(240_10%_6%/0.92)] border border-[hsl(240_10%_18%/0.9)] shadow-[0_4px_18px_rgba(0,0,0,0.45)] backdrop-blur-md overflow-hidden"
+        >
+          {/* Sliding gold indicator — single element, translated on metric change */}
+          <span
+            aria-hidden="true"
+            className={`metric-indicator absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-primary shadow-[0_0_0_1px_hsl(var(--primary)/0.4),0_0_14px_hsl(var(--primary)/0.55),0_2px_8px_hsl(var(--primary)/0.35)] transition-transform duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              metric === "sales" ? "translate-x-0" : "translate-x-full"
+            }`}
+          />
+
+          {/* Sales segment */}
           <button
+            role="tab"
+            aria-selected={metric === "sales"}
             onClick={() => setMetric("sales")}
-            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 ${
+            data-testid="btn-metric-sales"
+            className={`relative z-10 flex-1 h-full inline-flex items-center justify-center gap-1.5 rounded-full text-[11px] font-semibold tracking-tight transition-colors duration-200 ${
               metric === "sales"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-primary-foreground"
+                : "text-muted-foreground/80 hover:text-foreground"
             }`}
           >
-            Sales
+            <ShoppingBag className="w-3.5 h-3.5" strokeWidth={2.25} />
+            <span>Sales</span>
           </button>
+
+          {/* Profit segment */}
           <button
+            role="tab"
+            aria-selected={metric === "profit"}
             onClick={() => setMetric("profit")}
-            className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all duration-200 ${
+            data-testid="btn-metric-profit"
+            className={`relative z-10 flex-1 h-full inline-flex items-center justify-center gap-1.5 rounded-full text-[11px] font-semibold tracking-tight transition-colors duration-200 ${
               metric === "profit"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
+                ? "text-primary-foreground"
+                : "text-muted-foreground/80 hover:text-foreground"
             }`}
           >
-            Profit
+            <TrendingUp className="w-3.5 h-3.5" strokeWidth={2.25} />
+            <span>Profit</span>
           </button>
         </div>
       </div>
