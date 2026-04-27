@@ -21,7 +21,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
 
-import { useStore, type Product, type Category } from "@/lib/store";
+import { useStore, type Product, type Category, OUT_OF_STOCK_CATEGORY } from "@/lib/store";
 import { useSettings, formatCurrency } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
 import { useNotifications } from "@/lib/notifications-store";
@@ -785,18 +785,36 @@ export default function POS() {
             ) : (
               <>
                 {categories.map(cat => {
+                  // "Sold Out" is a status indicator, not a normal category —
+                  // give it an alert-tinted, dashed-border appearance with a
+                  // small leading dot so it reads as "items unavailable".
+                  const isSoldOut = cat === OUT_OF_STOCK_CATEGORY;
+                  const isActive = selectedCategory === cat;
+                  let chipClass: string;
+                  if (isSoldOut) {
+                    chipClass = isActive
+                      ? 'shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 border border-dashed border-destructive/70 bg-destructive/15 text-destructive shadow-[0_0_0_1px_hsl(var(--destructive)/0.15)]'
+                      : 'shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 border border-dashed border-destructive/45 bg-destructive/5 text-destructive/85 hover:bg-destructive/10 hover:border-destructive/60 hover:text-destructive';
+                  } else {
+                    chipClass = isActive
+                      ? 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 text-primary-foreground bg-primary shadow-sm'
+                      : 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 text-muted-foreground/60 hover:bg-secondary hover:text-foreground/90';
+                  }
                   const btn = (
                     <button
                       key={cat}
                       onClick={() => setSelectedCategory(cat)}
                       data-testid={`btn-category-${cat}`}
                       data-cat={cat}
-                      className={`shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 ${
-                        selectedCategory === cat
-                          ? 'text-primary-foreground bg-primary shadow-sm'
-                          : 'text-muted-foreground/60 hover:bg-secondary hover:text-foreground/90'
-                      }`}
+                      aria-label={isSoldOut ? `Sold Out — items currently unavailable` : cat}
+                      className={chipClass}
                     >
+                      {isSoldOut && (
+                        <span
+                          aria-hidden="true"
+                          className="inline-block w-1.5 h-1.5 rounded-full bg-destructive shadow-[0_0_0_3px_hsl(var(--destructive)/0.18)]"
+                        />
+                      )}
                       {cat}
                     </button>
                   );

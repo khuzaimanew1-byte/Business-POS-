@@ -2,7 +2,10 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 
 export type Category = string;
 
-export const OUT_OF_STOCK_CATEGORY = "Out of Stock";
+// Display label for the auto-managed sold-out bucket. The variable name is
+// kept as `OUT_OF_STOCK_CATEGORY` for code-history continuity; the visible
+// label is "Sold Out" (a status indicator, not a real category).
+export const OUT_OF_STOCK_CATEGORY = "Sold Out";
 
 export type Product = {
   id: string;

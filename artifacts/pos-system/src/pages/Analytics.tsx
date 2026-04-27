@@ -1129,14 +1129,17 @@ export default function Analytics() {
           >
             <ArrowLeft size={18} />
           </button>
-          <h1 className="text-[15px] font-semibold tracking-tight">Analytics</h1>
+          {/* Title is desktop-only — mobile keeps the header minimal so the
+              chart gets every available pixel and the top area stays clean. */}
+          <h1 className="hidden sm:block text-[15px] font-semibold tracking-tight">Analytics</h1>
           <div className="flex-1" />
 
-          {/* Notifications — same affordance as POS so the bell is reachable
-              from any page without changing layout. */}
+          {/* Notifications bell — desktop header only. On mobile the bell is
+              presented as a floating action button (see below) for thumb
+              reach and a less crowded header. */}
           <button
             onClick={() => setLocation("/notifications")}
-            className="relative p-2 rounded-full hover:bg-secondary transition-colors duration-200 mr-1"
+            className="hidden sm:inline-flex relative p-2 rounded-full hover:bg-secondary transition-colors duration-200 mr-1"
             aria-label={notifUnread > 0 ? `${notifUnread} new notification${notifUnread === 1 ? "" : "s"}` : "Notifications"}
             data-testid="btn-notifications"
           >
@@ -1293,6 +1296,25 @@ export default function Analytics() {
 
         </div>
       </div>
+
+      {/* ── MOBILE FLOATING NOTIFICATION BELL ─────────────────────────
+          Replaces the header bell on mobile. Sits at the bottom-right,
+          above the Sales/Profit toggle, so it's always reachable with the
+          thumb regardless of scroll position. */}
+      <button
+        onClick={() => setLocation("/notifications")}
+        className="notif-fab sm:hidden fixed bottom-14 right-3 z-30 flex items-center justify-center w-12 h-12 rounded-full bg-card/95 backdrop-blur-md border border-card-border shadow-lg active:scale-95 transition-transform duration-150"
+        aria-label={notifUnread > 0 ? `${notifUnread} new notification${notifUnread === 1 ? "" : "s"}` : "Notifications"}
+        data-testid="btn-notifications-fab"
+      >
+        <Bell className="w-[19px] h-[19px] text-foreground" />
+        {notifUnread > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-none flex items-center justify-center border-2 border-background tabular-nums">
+            <span className="notif-bell-pulse" aria-hidden="true" />
+            <span className="relative">{notifUnread > 9 ? "9+" : notifUnread}</span>
+          </span>
+        )}
+      </button>
 
       {/* ── MOBILE SALES/PROFIT TOGGLE — floating bottom-right ──────── */}
       <div className="sm:hidden fixed bottom-3 right-3 z-20">
