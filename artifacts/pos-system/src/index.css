@@ -291,6 +291,41 @@
   }
 }
 
+/* ── Global custom scrollbar ──────────────────────────────────────────────
+   Replaces the default browser scrollbar everywhere (page, dropdowns,
+   panels, modals). Thin, modern, subtle track, clean rounded thumb that
+   becomes slightly more visible on hover. Uses theme variables so it
+   adapts to dark/light. The `.scrollbar-none` and `.no-scrollbar` utility
+   classes (defined elsewhere in this file) still opt-out for places that
+   intentionally hide their scrollbar. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 0.28) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--muted-foreground) / 0.28);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background-color 160ms ease;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: hsl(var(--muted-foreground) / 0.55);
+}
+*::-webkit-scrollbar-thumb:active {
+  background-color: hsl(var(--muted-foreground) / 0.7);
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 .glass-panel {
   background: rgba(30, 30, 36, 0.6);
   backdrop-filter: blur(12px);

@@ -8,11 +8,10 @@ import { useSaleEvents, type SaleEvent, type SaleItem } from "@/lib/analytics-st
 import { PRODUCTS_META, getProductMeta, colorForProduct, type ProductMeta } from "@/lib/products-meta";
 import { useSettings, CURRENCY_SYMBOLS } from "@/lib/settings";
 
-type Mode = "daily" | "weekly" | "monthly" | "yearly" | "custom";
+type Mode = "weekly" | "monthly" | "yearly" | "custom";
 type Metric = "sales" | "profit";
 
 const MODES: { id: Mode; label: string }[] = [
-  { id: "daily", label: "Daily" },
   { id: "weekly", label: "Weekly" },
   { id: "monthly", label: "Monthly" },
   { id: "yearly", label: "Yearly" },
@@ -96,37 +95,6 @@ function buildChartData(
       const ts = n < 2 ? start : start + ((end - start) * i) / (n - 1);
       return { ts, label: labelFn(ts) };
     });
-
-  if (mode === "daily") {
-    const rangeStart = startOfDay(now);
-    const rangeEnd = rangeStart + 86400000;
-    const byMinute = new Map<number, number>();
-    for (const e of events) {
-      if (e.ts < rangeStart || e.ts >= rangeEnd) continue;
-      const k = Math.floor(e.ts / 60000) * 60000;
-      byMinute.set(k, (byMinute.get(k) ?? 0) + valueOf(e));
-    }
-    const real: Bin[] = Array.from(byMinute.entries())
-      .sort((a, b) => a[0] - b[0])
-      .map(([ts, value]) => ({ ts, value, visible: true }));
-    const xTicks: XTick[] = makeTicks(rangeStart, rangeEnd, 7, (ts) => {
-      if (ts >= rangeEnd - 60000) return "11:59 PM";
-      return new Date(ts).toLocaleTimeString(undefined, {
-        hour: "numeric", minute: "2-digit", hour12: true,
-      });
-    });
-    return {
-      bins: withZeroAnchors(real, rangeStart, rangeEnd, 2 * 60000),
-      rangeStart,
-      rangeEnd,
-      rangeLabel: now.toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "short",
-        day: "numeric",
-      }),
-      xTicks,
-    };
-  }
 
   let rangeStart: number;
   let rangeEnd: number;
@@ -624,7 +592,6 @@ function Chart({
   }
   const fmtTooltipTime = (ts: number) => {
     const d = new Date(ts);
-    if (mode === "daily") return d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", hour12: true });
     if (mode === "yearly") return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     if (mode === "weekly") return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
     if (mode === "monthly") return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
