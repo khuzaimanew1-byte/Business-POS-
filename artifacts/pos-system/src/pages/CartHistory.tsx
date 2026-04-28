@@ -277,15 +277,28 @@ export default function CartHistory() {
                     // Most-recent → solid; older → progressively dimmed dot.
                     const dotOpacity = Math.max(0.3, 1 - idx * 0.18);
                     return (
+                      // Note: no `overflow-hidden` here — that would scope
+                      // the sticky header to the card itself (which has no
+                      // internal scroll) and stop it from sticking to the
+                      // ScrollArea viewport. Rounded corners are preserved
+                      // by giving the header/footer rows their own matching
+                      // border-radius.
                       <div
                         key={order.id}
-                        className="bg-secondary/30 rounded-xl border border-border/50 overflow-hidden"
+                        className="bg-secondary/30 rounded-xl border border-border/50"
                         data-testid={`order-card-${order.id}`}
                       >
                         <button
                           type="button"
                           onClick={() => toggle(order.id)}
-                          className="w-full flex items-center gap-3 px-3.5 py-3 text-left hover:bg-secondary/40 transition-colors"
+                          className={`w-full flex items-center gap-3 px-3.5 py-3 text-left transition-colors rounded-t-xl ${
+                            isOpen
+                              // Sticky scope = the ScrollArea viewport.
+                              // When the card scrolls past, the header
+                              // travels with it and naturally disappears.
+                              ? "sticky top-0 z-10 bg-secondary/95 backdrop-blur-sm border-b border-border/40 hover:bg-secondary"
+                              : "rounded-b-xl hover:bg-secondary/40"
+                          }`}
                           aria-expanded={isOpen}
                         >
                           <span
@@ -310,7 +323,9 @@ export default function CartHistory() {
                           />
                         </button>
                         {isOpen && (
-                          <div className="px-3 pb-3 pt-3 flex flex-col gap-2 border-t border-border/40">
+                          // Divider is now provided by the sticky header's
+                          // border-b above, so no border-t is needed here.
+                          <div className="px-3 pb-3 pt-3 flex flex-col gap-2">
                             {order.items.map((item, i) => (
                               <OrderItemRow
                                 key={`${order.id}-${i}`}
