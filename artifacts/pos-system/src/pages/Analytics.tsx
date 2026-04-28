@@ -727,12 +727,27 @@ function Chart({
         ))}
 
         {/* Line + area — drawn ONLY through real data points; never extends
-            into the future zone. */}
-        <g key={animKey} className="chart-reveal">
-          {areaD && <path d={areaD} fill="url(#aFill)" />}
+            into the future zone.
+            Entry animation: the line draws left → right via stroke-dashoffset
+            (pathLength={1} normalises the length so the dash math works for
+            any shape). The area fades in just behind it. The wrapping <g>
+            keeps `key={animKey}` so the animation re-fires whenever the
+            underlying data window changes. */}
+        <g key={animKey}>
+          {areaD && (
+            <path d={areaD} fill="url(#aFill)" className="analytics-area-fade" />
+          )}
           {lineD && (
-            <path d={lineD} fill="none" stroke="hsl(43 90% 55%)" strokeWidth={2.25}
-              strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d={lineD}
+              fill="none"
+              stroke="hsl(43 90% 55%)"
+              strokeWidth={2.25}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              pathLength={1}
+              className="analytics-line-draw"
+            />
           )}
         </g>
 
@@ -903,11 +918,16 @@ function TopProductsBar({
                       className="relative w-full flex items-end"
                       style={{ height: BAR_CHART_H }}
                     >
-                      {/* The bar itself */}
+                      {/* The bar itself.
+                          Entry animation: `bar-rise-in` reveals the bar from
+                          the baseline up via clip-path so the top glow stripe
+                          unmasks naturally. Per-bar stagger comes from the
+                          inline animationDelay — bars rise left → right. */}
                       <div
-                        className="relative w-full transition-all duration-500 ease-out rounded-t-sm"
+                        className="bar-rise-in relative w-full transition-all duration-500 ease-out rounded-t-sm"
                         style={{
                           height: barH,
+                          animationDelay: `${i * 70}ms`,
                           background: isZero
                             ? "hsl(240 6% 20%)"
                             : `linear-gradient(180deg, ${color} 0%, color-mix(in oklab, ${color} 50%, hsl(240 10% 8%)) 100%)`,

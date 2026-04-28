@@ -91,12 +91,13 @@ export default function NotificationsPage() {
             {visible.length === 0 ? (
               <EmptyState tab={tab} />
             ) : (
-              visible.map(n => (
+              visible.map((n, i) => (
                 <NotificationBar
                   key={n.id}
                   notification={n}
                   onAction={() => handleAction(n)}
                   onDismiss={() => dismiss(n.id)}
+                  index={i}
                 />
               ))
             )}
@@ -148,10 +149,14 @@ function NotificationBar({
   notification,
   onAction,
   onDismiss,
+  index = 0,
 }: {
   notification: Notification;
   onAction: () => void;
   onDismiss: () => void;
+  /** Position in the rendered list — used purely to stagger the
+   *  right-to-left slide-in entry animation. */
+  index?: number;
 }) {
   const isAlert = notification.type === "alert";
   const Icon = isAlert ? AlertOctagon : AlertTriangle;
@@ -166,7 +171,8 @@ function NotificationBar({
 
   return (
     <div
-      className={`notif-bar group flex items-center gap-3 px-3 sm:px-4 py-3 rounded-xl border ${accent} transition-colors`}
+      className={`notif-bar notif-row-in group flex items-center gap-3 px-3 sm:px-4 py-3 rounded-xl border ${accent} transition-colors`}
+      style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
       data-testid={`notif-${notification.kind}-${notification.productId}`}
     >
       <div className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${iconBg}`}>

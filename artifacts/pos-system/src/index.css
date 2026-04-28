@@ -75,6 +75,78 @@
   transform-origin: bottom center;
 }
 
+/* ── Page entry animations ────────────────────────────────────────────────
+   Each key page gets its own distinct entry feel — short, soft, and never
+   blocking interaction. Durations stay <800ms so repeated navigation never
+   feels heavy. Performance modes (fast/ultra) shorten them further.       */
+
+/* Analytics — line draws left → right.
+   Pair this class with `pathLength={1}` on the SVG <path>, which normalises
+   the geometric length to 1, so the dasharray/offset values below work for
+   any line shape. */
+@keyframes analytics-line-draw-anim {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
+.analytics-line-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: analytics-line-draw-anim 720ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+/* Area fill fades in just behind the line so it never "pops" before the
+   line has begun drawing. */
+@keyframes analytics-area-fade-anim {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.analytics-area-fade {
+  animation: analytics-area-fade-anim 560ms cubic-bezier(0.4, 0, 0.2, 1) 180ms both;
+}
+
+/* Analytics — Top-5 bars rise from the baseline. clip-path is used (not
+   transform: scaleY) so the bar's internal glow stripe at the top is
+   revealed naturally as it's "uncovered" rather than squashed. Per-bar
+   stagger is applied inline via style.animationDelay. */
+@keyframes bar-rise-in-anim {
+  from { clip-path: inset(100% 0 0 0); opacity: 0.55; }
+  to   { clip-path: inset(0 0 0 0);    opacity: 1; }
+}
+.bar-rise-in {
+  animation: bar-rise-in-anim 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Notifications — list rows slide in from the right. Stagger is applied
+   inline via style.animationDelay using the row index. */
+@keyframes notif-row-in-anim {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.notif-row-in {
+  animation: notif-row-in-anim 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Add-Product — form sections soft-fade upward, sequentially. Stagger via
+   inline style.animationDelay. */
+@keyframes form-section-in-anim {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.form-section-in {
+  animation: form-section-in-anim 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Performance-mode shortening — keeps "fast" / "ultra" feeling snappy. */
+:root[data-perf="fast"]  .analytics-line-draw { animation-duration: 520ms; }
+:root[data-perf="ultra"] .analytics-line-draw { animation-duration: 360ms; }
+:root[data-perf="fast"]  .analytics-area-fade { animation-duration: 380ms; animation-delay: 130ms; }
+:root[data-perf="ultra"] .analytics-area-fade { animation-duration: 240ms; animation-delay: 90ms;  }
+:root[data-perf="fast"]  .bar-rise-in         { animation-duration: 380ms; }
+:root[data-perf="ultra"] .bar-rise-in         { animation-duration: 260ms; }
+:root[data-perf="fast"]  .notif-row-in        { animation-duration: 220ms; }
+:root[data-perf="ultra"] .notif-row-in        { animation-duration: 150ms; }
+:root[data-perf="fast"]  .form-section-in     { animation-duration: 250ms; }
+:root[data-perf="ultra"] .form-section-in     { animation-duration: 170ms; }
+
 /* Slow opacity "breathing" of the future-zone overlay. Subconscious cue
    that the area is alive but not yet defined — no movement, no text. */
 @keyframes future-zone-breathe-anim {

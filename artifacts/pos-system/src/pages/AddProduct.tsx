@@ -449,7 +449,12 @@ export default function AddProduct() {
       <main className="max-w-5xl mx-auto px-3 sm:px-8 pt-6 sm:pt-9 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-[minmax(160px,200px)_minmax(0,1fr)] gap-6 sm:gap-8">
           {/* ── LEFT: IMAGE ─────────────────────────────────────── */}
-          <section className="md:sticky md:top-20 self-start max-w-[200px] mx-auto md:mx-0 w-full">
+          {/* Entry animation: form sections soft-fade upward in sequence.
+              Stagger via inline animationDelay keeps the cascade subtle. */}
+          <section
+            className="form-section-in md:sticky md:top-20 self-start max-w-[200px] mx-auto md:mx-0 w-full"
+            style={{ animationDelay: "0ms" }}
+          >
             <div
               onClick={() => fileInputRef.current?.click()}
               onDragOver={e => { e.preventDefault(); setDragOver(true); }}
@@ -520,7 +525,10 @@ export default function AddProduct() {
           </section>
 
           {/* ── RIGHT: STRUCTURED INPUT FLOW ─────────────────────── */}
-          <section className="flex flex-col gap-5">
+          <section
+            className="form-section-in flex flex-col gap-5"
+            style={{ animationDelay: "90ms" }}
+          >
             {/* Row 1: Product Name | Quick Code */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <TraceField
