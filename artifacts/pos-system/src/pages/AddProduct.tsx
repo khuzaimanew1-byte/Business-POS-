@@ -421,7 +421,7 @@ export default function AddProduct() {
 
   // ── render ────────────────────────────────────────────────────────────
   return (
-    <div className="page-enter-vertical min-h-screen w-full bg-background text-foreground dark add-product-page">
+    <div className="min-h-screen w-full bg-background text-foreground dark add-product-page">
       {/* Header (page-local, no global nav) */}
       <header className="h-14 sm:h-16 flex items-center justify-between px-3 sm:px-7 sticky top-0 z-20 bg-background/85 backdrop-blur-md border-b border-border/40">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">

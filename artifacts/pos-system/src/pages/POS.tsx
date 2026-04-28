@@ -651,7 +651,7 @@ export default function POS() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="page-enter-horizontal flex h-screen w-full overflow-hidden bg-background text-foreground dark">
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground dark">
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} />
 

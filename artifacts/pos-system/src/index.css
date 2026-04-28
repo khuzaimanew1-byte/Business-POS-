@@ -91,9 +91,7 @@
 .analytics-line-draw {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  /* Uses the unified slow/ease tokens so every long-form reveal in the app
-     shares the same temporal signature. */
-  animation: analytics-line-draw-anim var(--motion-slow) var(--motion-ease-out) both;
+  animation: analytics-line-draw-anim 720ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 /* Area fill fades in just behind the line so it never "pops" before the
    line has begun drawing. */
@@ -102,7 +100,7 @@
   to   { opacity: 1; }
 }
 .analytics-area-fade {
-  animation: analytics-area-fade-anim var(--motion-slow) var(--motion-ease-out) 180ms both;
+  animation: analytics-area-fade-anim 560ms cubic-bezier(0.4, 0, 0.2, 1) 180ms both;
 }
 
 /* Analytics — Top-5 bars rise from the baseline. clip-path is used (not
@@ -114,7 +112,7 @@
   to   { clip-path: inset(0 0 0 0);    opacity: 1; }
 }
 .bar-rise-in {
-  animation: bar-rise-in-anim var(--motion-slow) var(--motion-ease) both;
+  animation: bar-rise-in-anim 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 /* Notifications — list rows slide in from the right. Stagger is applied
@@ -124,7 +122,7 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 .notif-row-in {
-  animation: notif-row-in-anim var(--motion-base) var(--motion-ease) both;
+  animation: notif-row-in-anim 320ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 /* Add-Product — form sections soft-fade upward, sequentially. Stagger via
@@ -134,7 +132,7 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 .form-section-in {
-  animation: form-section-in-anim var(--motion-base) var(--motion-ease) both;
+  animation: form-section-in-anim 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 /* Performance-mode shortening — keeps "fast" / "ultra" feeling snappy. */
@@ -290,105 +288,6 @@
   }
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    /* Prevents the brief horizontal scrollbar that page-enter transforms
-       could otherwise introduce when a page slides in 14px from the right. */
-    overflow-x: hidden;
-  }
-}
-
-/* ── Unified motion system ────────────────────────────────────────────────
-   Single source of truth for the entire app's motion language. Every
-   animation in the app should reference these tokens (or a derivative)
-   rather than declaring ad-hoc durations/easings — that's what makes the
-   experience feel coherent rather than "every page animates differently".
-
-   ▸ Timing scale
-     fast  = micro-interactions (button press, hover, icon feedback)
-     base  = small UI state changes (hover lift, color tween)
-     slow  = list/section reveals, chart redraw
-     page  = full-page entry transition
-
-   ▸ Easing
-     --motion-ease            — primary "settle-in" easing for entries
-     --motion-ease-out        — used when something should land softly
-     --motion-ease-in-out     — used for symmetric loops (pulse, breathe)  */
-:root {
-  --motion-fast:        140ms;
-  --motion-base:        220ms;
-  --motion-slow:        420ms;
-  --motion-page:        300ms;
-  --motion-ease:        cubic-bezier(0.2, 0.8, 0.2, 1);
-  --motion-ease-out:    cubic-bezier(0.4, 0, 0.2, 1);
-  --motion-ease-in-out: cubic-bezier(0.4, 0, 0.6, 1);
-}
-
-/* Page transition system.
-   Every page applies one of `.page-enter-horizontal` or `.page-enter-vertical`
-   to its root element. Horizontal feel = top-level navigation (POS,
-   Analytics, Notifications, Cart History). Vertical feel = "modal-shaped"
-   destinations the user opens from a button (Add Product, Settings).
-   Wouter remounts route components on navigation, so the entry animation
-   fires automatically every time the user lands on a page. */
-@keyframes page-enter-horizontal-anim {
-  from { opacity: 0; transform: translate3d(14px, 0, 0); }
-  to   { opacity: 1; transform: translate3d(0, 0, 0); }
-}
-@keyframes page-enter-vertical-anim {
-  from { opacity: 0; transform: translate3d(0, 18px, 0); }
-  to   { opacity: 1; transform: translate3d(0, 0, 0); }
-}
-.page-enter-horizontal {
-  animation: page-enter-horizontal-anim var(--motion-page) var(--motion-ease) both;
-  /* will-change keeps the transform on its own composited layer so the
-     entry stays at 60fps even on lower-end mobile. */
-  will-change: transform, opacity;
-}
-.page-enter-vertical {
-  animation: page-enter-vertical-anim var(--motion-page) var(--motion-ease) both;
-  will-change: transform, opacity;
-}
-
-/* Universal micro-interactions ─────────────────────────────────────────
-   Every native <button> gets a subtle press feedback. Specificity is kept
-   low (no `:where()`, no extra ID/class hooks) so component-level
-   `active:scale-*` Tailwind utilities and explicit transforms can still
-   override. Opt out per-element with the `.no-press` class. */
-button:not(:disabled):not(.no-press) {
-  transition: transform var(--motion-fast) var(--motion-ease-out);
-}
-button:not(:disabled):not(.no-press):active {
-  transform: scale(0.97);
-}
-
-/* Card lift utility — opt-in. Apply `.card-lift` to any card-style
-   surface to give it a subtle hover elevation. Used for "secondary"
-   elements in the motion hierarchy (lighter than buttons). */
-.card-lift {
-  transition: transform var(--motion-base) var(--motion-ease-out),
-              box-shadow var(--motion-base) var(--motion-ease-out);
-}
-.card-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.45);
-}
-
-/* Performance modes shorten the page transition too — keeps "fast"/"ultra"
-   feeling instant. */
-:root[data-perf="fast"]  .page-enter-horizontal,
-:root[data-perf="fast"]  .page-enter-vertical   { animation-duration: 220ms; }
-:root[data-perf="ultra"] .page-enter-horizontal,
-:root[data-perf="ultra"] .page-enter-vertical   { animation-duration: 150ms; }
-
-/* Respect the user's OS-level "reduce motion" preference — disable the
-   page slide entirely (just keep the fade) and shorten micro-interactions
-   so nothing feels jarring. */
-@media (prefers-reduced-motion: reduce) {
-  .page-enter-horizontal,
-  .page-enter-vertical {
-    animation-duration: 1ms;
-  }
-  button:not(:disabled):not(.no-press):active {
-    transform: none;
   }
 }
 
