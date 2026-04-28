@@ -295,48 +295,46 @@
    Replaces the default browser scrollbar everywhere (page, dropdowns,
    panels, modals). Thin, modern, subtle track, clean rounded thumb that
    becomes slightly more visible on hover. Uses theme variables so it
-   adapts to dark/light. The `.scrollbar-none` and `.no-scrollbar` utility
-   classes (defined elsewhere in this file) still opt-out for places that
-   intentionally hide their scrollbar. */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 0.28) transparent;
-}
-*::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-*::-webkit-scrollbar-thumb {
-  background-color: hsl(var(--muted-foreground) / 0.28);
-  border-radius: 9999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-  transition: background-color 160ms ease;
-}
-*::-webkit-scrollbar-thumb:hover {
-  background-color: hsl(var(--muted-foreground) / 0.55);
-}
-*::-webkit-scrollbar-thumb:active {
-  background-color: hsl(var(--muted-foreground) / 0.7);
-}
-*::-webkit-scrollbar-corner {
-  background: transparent;
-}
+   adapts to dark/light. Defined inside `@layer base` so the existing
+   `.scrollbar-none` / `.no-scrollbar` utility classes (in `@layer utilities`)
+   still win the cascade for places that intentionally hide their bar. */
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.28) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.28);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 160ms ease;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.55);
+  }
+  *::-webkit-scrollbar-thumb:active {
+    background-color: hsl(var(--muted-foreground) / 0.7);
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 
-/* ── Page-level scrollbar opt-outs ─────────────────────────────────────────
-   Some routes own the entire viewport scroll (the document/html element
-   scrolls, not an inner container). To hide the scrollbar on those pages
-   without disabling scrolling, we target the root scroll container while
-   the page is mounted via `:has()`. Scrolling itself stays fully intact —
-   only the visual scrollbar is removed. */
-html:has(.add-product-page) {
-  scrollbar-width: none;
-}
-html:has(.add-product-page)::-webkit-scrollbar {
-  display: none;
+  /* Page-level scrollbar opt-out: when the Add Products page is mounted,
+     hide the document scrollbar without disabling scrolling. */
+  html:has(.add-product-page) {
+    scrollbar-width: none;
+  }
+  html:has(.add-product-page)::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .glass-panel {
