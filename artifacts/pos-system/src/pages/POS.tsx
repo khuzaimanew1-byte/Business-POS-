@@ -25,6 +25,7 @@ import { useStore, type Product, type Category, OUT_OF_STOCK_CATEGORY } from "@/
 import { useSettings, formatCurrency } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
 import { useNotifications } from "@/lib/notifications-store";
+import { recordSale } from "@/lib/analytics-store";
 
 type CartItem = {
   product: Product;
@@ -373,6 +374,16 @@ export default function POS() {
 
   const checkout = () => {
     if (cartItems.length === 0) return;
+    // Persist the completed order so Cart History (and Analytics) can
+    // surface it. Profit is optional on Product — fall back to 0 so legacy
+    // products that never set a profit don't break the math.
+    recordSale(cartItems.map((ci) => ({
+      productId: ci.product.id,
+      name: ci.product.name,
+      qty: ci.quantity,
+      price: ci.product.price,
+      profit: ci.product.profit ?? 0,
+    })));
     setCartItems([]);
     setIsCartOpen(false);
     toast.success("Checkout successful!", { icon: <Check className="text-green-500" /> });
@@ -1298,7 +1309,7 @@ export default function POS() {
                 <TooltipTrigger asChild>
                   <button
                     type="button"
-                    onClick={() => setLocation("/analytics")}
+                    onClick={() => setLocation("/cart-history")}
                     aria-label="Order History"
                     data-testid="btn-order-history"
                     className="p-1.5 rounded-md text-primary hover:text-primary/80 transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50"

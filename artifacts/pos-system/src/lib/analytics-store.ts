@@ -48,6 +48,23 @@ function save(events: SaleEvent[]) {
   }
 }
 
+// Daily-reset boundary used by Cart History.
+//   • The boundary is the most recent 7 AM (local time).
+//   • Before 7 AM today → boundary is yesterday's 7 AM.
+//   • At/after 7 AM today → boundary is today's 7 AM.
+// Cart History filters orders to those with ts >= this value, which gives
+// the user a fresh "today's orders" list every morning without ever
+// mutating the underlying analytics data.
+export function getTodayResetTimestamp(): number {
+  const now = new Date();
+  const reset = new Date(now);
+  reset.setHours(7, 0, 0, 0);
+  if (reset.getTime() > now.getTime()) {
+    reset.setDate(reset.getDate() - 1);
+  }
+  return reset.getTime();
+}
+
 export function recordSale(items: SaleItem[]) {
   if (!items.length) return;
   const evt: SaleEvent = {

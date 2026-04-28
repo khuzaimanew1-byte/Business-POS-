@@ -1,0 +1,16 @@
+Create a Cart History page in the POS section of the app.
+Page behavior:
+This page opens when the user clicks the history icon in the cart panel header. It shows all orders completed today via checkout. History resets automatically at 7 AM every day — any orders from before 7 AM today are cleared. If no orders exist, show an empty state.
+Data source:
+Pull completed orders from the same data store that the checkout flow writes to. Every time a user completes a checkout, that order should be saved with a timestamp, list of items, quantities, prices, and total profit. This page reads from that store and filters to only show orders from after today's 7 AM reset point.
+
+Layout — Mobile:
+Full page with a back button in the header. Header shows "Today's Orders" as title and "Resets at 7 AM" as subtitle. A count badge on the right shows how many orders there are. Below the header is a scrollable list of order cards. Each card is a collapsed dropdown showing the time of checkout and a summary like "3 items · 5 OMR". Tapping a card expands it to show the items inside. All cards start collapsed. At the very bottom of the page, fixed above nothing, is a profit strip showing "Today's Profit" label and the total profit value.
+Layout — Desktop:
+Full page with a back button and header same as mobile. The body is a two-panel layout. Left panel is narrower and shows the list of orders — each order is a clickable row showing time and summary. One order is always active and highlighted. At the bottom of the left panel is the Today's Profit value. Right panel shows the detail of the selected order — its items listed out and an order total at the bottom.
+
+Empty state — both displays:
+Show a large cart icon with a small clock icon overlaid on its bottom right corner. Below it show "No orders today" in muted text and a secondary line saying "Completed checkouts will appear here".
+
+Order items style — same as cart items panel:
+Each item in an expanded order should look exactly like items in the current cart panel. That means a square product image thumbnail on the left, product name and unit price below it in the middle, and total price with quantity on the right. No quantity controls since these are completed orders — just display the values. Items are in a list, each in its own row with a subtle dark background card and border, consistent with the app's dark theme.

@@ -8,6 +8,7 @@ import Analytics from "@/pages/Analytics";
 import AddProduct from "@/pages/AddProduct";
 import SettingsPage from "@/pages/Settings";
 import NotificationsPage from "@/pages/Notifications";
+import CartHistory from "@/pages/CartHistory";
 import { StoreProvider } from "@/lib/store";
 import { SettingsProvider } from "@/lib/settings";
 import { ShortcutsProvider } from "@/lib/shortcuts";
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/add-product" component={AddProduct} />
       <Route path="/settings" component={SettingsPage} />
       <Route path="/notifications" component={NotificationsPage} />
+      <Route path="/cart-history" component={CartHistory} />
       <Route component={NotFound} />
     </Switch>
   );
