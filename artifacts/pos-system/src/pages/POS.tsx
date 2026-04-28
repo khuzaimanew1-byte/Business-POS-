@@ -45,8 +45,37 @@ export default function POS() {
   const [selectedCategory, setSelectedCategory] = useState<Category>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  // ── Cart persistence ────────────────────────────────────────────────────
+  // The cart is treated as a long-lived working state — items and the open/
+  // closed state both survive navigation, page reloads, and checkout. Items
+  // are only ever removed by an explicit user action (per-item trash, or
+  // the cart trash control). Checkout records the sale but leaves the cart
+  // intact so the operator stays in control of when it's cleared.
+  const CART_ITEMS_KEY = "pos.cart.items.v1";
+  const CART_OPEN_KEY = "pos.cart.open.v1";
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const raw = localStorage.getItem(CART_ITEMS_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? (parsed as CartItem[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(CART_OPEN_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(CART_ITEMS_KEY, JSON.stringify(cartItems)); } catch { /* quota / disabled */ }
+  }, [cartItems]);
+  useEffect(() => {
+    try { localStorage.setItem(CART_OPEN_KEY, isCartOpen ? "1" : "0"); } catch { /* quota / disabled */ }
+  }, [isCartOpen]);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [cartFlash, setCartFlash] = useState(false);
 
@@ -377,6 +406,11 @@ export default function POS() {
     // Persist the completed order so Cart History (and Analytics) can
     // surface it. Profit is optional on Product — fall back to 0 so legacy
     // products that never set a profit don't break the math.
+    //
+    // NOTE: We intentionally do NOT clear the cart or close the cart bar
+    // here — the cart behaves as persistent working state. Items remain
+    // until the user explicitly removes them (per-item or via the cart's
+    // own controls), and the open/closed state is a user decision.
     recordSale(cartItems.map((ci) => ({
       productId: ci.product.id,
       name: ci.product.name,
@@ -384,8 +418,6 @@ export default function POS() {
       price: ci.product.price,
       profit: ci.product.profit ?? 0,
     })));
-    setCartItems([]);
-    setIsCartOpen(false);
     toast.success("Checkout successful!", { icon: <Check className="text-green-500" /> });
   };
 
