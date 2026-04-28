@@ -326,6 +326,19 @@
   background: transparent;
 }
 
+/* ── Page-level scrollbar opt-outs ─────────────────────────────────────────
+   Some routes own the entire viewport scroll (the document/html element
+   scrolls, not an inner container). To hide the scrollbar on those pages
+   without disabling scrolling, we target the root scroll container while
+   the page is mounted via `:has()`. Scrolling itself stays fully intact —
+   only the visual scrollbar is removed. */
+html:has(.add-product-page) {
+  scrollbar-width: none;
+}
+html:has(.add-product-page)::-webkit-scrollbar {
+  display: none;
+}
+
 .glass-panel {
   background: rgba(30, 30, 36, 0.6);
   backdrop-filter: blur(12px);
