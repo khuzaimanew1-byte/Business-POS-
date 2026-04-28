@@ -326,6 +326,23 @@
   background: transparent;
 }
 
+/* Re-declare opt-outs OUTSIDE any @layer so they always beat the
+   non-layered global rules above (CSS layered rules always lose to
+   non-layered rules regardless of selector specificity). Used by the
+   POS category bar, Settings tab strip, and any other intentionally
+   hidden scroller. */
+.scrollbar-none,
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 .glass-panel {
   background: rgba(30, 30, 36, 0.6);
   backdrop-filter: blur(12px);
