@@ -162,14 +162,18 @@ export default function CartHistory() {
   const selectedOrderTotal = selectedOrder?.totalSales ?? 0;
 
   // ── Sub-views ────────────────────────────────────────────────────────────
+  // Subtitle stays minimal — the order count moves into a left-aligned pill
+  // sitting next to the title (matches the mobile pill style, just placed
+  // on the left rather than floating on the far right).
   const headerSubtitle = (
     <p className="text-[11px] text-muted-foreground leading-tight mt-0.5">
       Resets at 7 AM
-      <span className="hidden sm:inline">
-        {orders.length > 0 ? ` · ${orderCountLabel}` : ""}
-      </span>
     </p>
   );
+
+  // Reusable pill — same look as the mobile right-aligned badge.
+  const countPillClasses =
+    "bg-primary/15 text-primary text-[11px] font-semibold px-2.5 py-1 rounded-full tabular-nums shrink-0";
 
   // Footer segments — each is a self-contained labelled stat. Layout
   // (column counts, dividers) is driven by the wrapper, not the segment.
@@ -240,16 +244,27 @@ export default function CartHistory() {
           <ArrowLeft size={18} />
         </button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-[15px] sm:text-base font-semibold tracking-tight leading-tight">
-            Today's Orders
-          </h1>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-[15px] sm:text-base font-semibold tracking-tight leading-tight truncate">
+              Today's Orders
+            </h1>
+            {/* Desktop pill — sits next to the title on the LEFT, same
+                pill styling as the mobile badge below. */}
+            {orders.length > 0 && (
+              <div
+                className={`hidden sm:inline-flex ${countPillClasses}`}
+                data-testid="badge-order-count-desktop"
+              >
+                {orderCountLabel}
+              </div>
+            )}
+          </div>
           {headerSubtitle}
         </div>
-        {/* Mobile-only count badge — desktop shows the count inline in the
-            subtitle (matches the reference). */}
+        {/* Mobile-only count pill — kept on the right as before. */}
         {orders.length > 0 && (
           <div
-            className="sm:hidden bg-primary/15 text-primary text-[11px] font-semibold px-2.5 py-1 rounded-full tabular-nums shrink-0"
+            className={`sm:hidden ${countPillClasses}`}
             data-testid="badge-order-count"
           >
             {orderCountLabel}
