@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { 
   Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
   ShoppingCart, Trash2, Minus, Check, Camera, MousePointer,
-  FolderInput, ChevronRight, LogOut, History
+  FolderInput, ChevronRight, LogOut, Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1218,25 +1218,6 @@ export default function POS() {
           </div>
         </div>
 
-        {/* ── ORDER HISTORY — floating circular button above cart strip ────
-            Sits just above the left edge of the "Current Order" bar so it's
-            always reachable without obscuring the strip itself. Position is
-            anchored to the cart strip's bottom (which already accounts for
-            the mobile bottom nav via --mobile-nav-height), so it tracks the
-            strip on every viewport. The strip itself is z-20 — this button
-            is z-25 so it sits visually above the strip but below the mobile
-            bottom nav (z-30). Click currently routes to Analytics, which is
-            the existing surface that lists past sale events; we can swap to
-            a dedicated history sheet later without changing the trigger. */}
-        <button
-          onClick={(e) => { e.stopPropagation(); setLocation("/analytics"); }}
-          aria-label="Order history"
-          title="Order history"
-          data-testid="btn-order-history"
-          className="order-history-fab fixed left-3 sm:left-[76px] bottom-[calc(var(--mobile-nav-height,0px)+4rem)] sm:bottom-[5rem] z-[25] flex items-center justify-center w-10 h-10 rounded-full bg-card/95 backdrop-blur-md border border-card-border shadow-[0_4px_14px_rgba(0,0,0,0.45),0_0_18px_hsl(var(--primary)/0.16)] hover:border-primary/55 hover:shadow-[0_4px_14px_rgba(0,0,0,0.5),0_0_22px_hsl(var(--primary)/0.36)] active:scale-95 transition-all duration-200"
-        >
-          <History className="w-[17px] h-[17px] text-primary" strokeWidth={2.25} />
-        </button>
       </main>
 
       {/* ── MOBILE BOTTOM NAV (hidden on desktop) ─────────────────────────── */}
@@ -1307,9 +1288,33 @@ export default function POS() {
           <h2 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
             <ShoppingCart className="w-4 h-4" /> Cart Items
           </h2>
-          <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)} className="rounded-full">
-            <X className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            {/* Order History — bare gold clock icon, no background or
+                border. Tooltip "Order History" appears just below the icon
+                on hover. This is the only entry point to history; the
+                floating cart-strip button has been removed. */}
+            <TooltipProvider delayDuration={200}>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    onClick={() => setLocation("/analytics")}
+                    aria-label="Order History"
+                    data-testid="btn-order-history"
+                    className="p-1.5 rounded-md text-primary hover:text-primary/80 transition-colors duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-primary/50"
+                  >
+                    <Clock className="w-[18px] h-[18px]" strokeWidth={2} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" sideOffset={6} className="text-[11px] px-2 py-1">
+                  Order History
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)} className="rounded-full">
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Items */}

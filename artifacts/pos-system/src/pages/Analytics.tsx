@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
-import { Home, BarChart2, Plus, Settings, Bell, Calendar as CalendarIcon, Check, Search, ArrowLeft, ShoppingBag, TrendingUp } from "lucide-react";
+import { Home, BarChart2, Plus, Settings, Calendar as CalendarIcon, Check, Search, ArrowLeft, ShoppingBag, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSaleEvents, type SaleEvent, type SaleItem } from "@/lib/analytics-store";
 import { PRODUCTS_META, getProductMeta, colorForProduct, type ProductMeta } from "@/lib/products-meta";
 import { useSettings, CURRENCY_SYMBOLS } from "@/lib/settings";
-import { useNotifications } from "@/lib/notifications-store";
 
 type Mode = "daily" | "weekly" | "monthly" | "yearly" | "custom";
 type Metric = "sales" | "profit";
@@ -737,6 +736,25 @@ function Chart({
           )}
         </g>
 
+        {/* Empty-state — when there is NO real activity in the data zone,
+            float a soft centered message above the baseline so the chart
+            never reads as "broken / loading". Subtle muted color blends
+            with the dark theme. */}
+        {realData.length === 0 && (
+          <text
+            x={margin.left + plotW / 2}
+            y={margin.top + plotH / 2}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize="12"
+            fill="hsl(240 5% 50%)"
+            letterSpacing="0.02em"
+            pointerEvents="none"
+          >
+            No activity for this period
+          </text>
+        )}
+
         {/* Future zone — multi-layer atmosphere:
               1. Soft horizontal gradient fade (atmosphere)
               2. Slow opacity "breathing" overlay (anticipation cue)
@@ -1011,7 +1029,6 @@ export default function Analytics() {
   const [, setLocation] = useLocation();
   const { settings } = useSettings();
   const sym = CURRENCY_SYMBOLS[settings.currency];
-  const { unreadCount: notifUnread } = useNotifications();
   const [mode, setMode] = useState<Mode>("monthly");
   const [metric, setMetric] = useState<Metric>("sales");
   const [custom, setCustom] = useState<{ from: number; to: number } | null>(null);
@@ -1133,24 +1150,6 @@ export default function Analytics() {
               chart gets every available pixel and the top area stays clean. */}
           <h1 className="hidden sm:block text-[15px] font-semibold tracking-tight">Analytics</h1>
           <div className="flex-1" />
-
-          {/* Notifications bell — desktop header only. On mobile the bell is
-              presented as a floating action button (see below) for thumb
-              reach and a less crowded header. */}
-          <button
-            onClick={() => setLocation("/notifications")}
-            className="hidden sm:inline-flex relative p-2 rounded-full hover:bg-secondary transition-colors duration-200 mr-1"
-            aria-label={notifUnread > 0 ? `${notifUnread} new notification${notifUnread === 1 ? "" : "s"}` : "Notifications"}
-            data-testid="btn-notifications"
-          >
-            <Bell className="text-muted-foreground hover:text-foreground transition-colors duration-200 w-[17px] h-[17px]" />
-            {notifUnread > 0 && (
-              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-none flex items-center justify-center border border-background tabular-nums">
-                <span className="notif-bell-pulse" aria-hidden="true" />
-                <span className="relative">{notifUnread > 9 ? "9+" : notifUnread}</span>
-              </span>
-            )}
-          </button>
 
           {/* Time mode pills — natural, no card border */}
           <div className="flex items-center gap-0.5">
