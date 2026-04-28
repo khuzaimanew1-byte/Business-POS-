@@ -244,27 +244,15 @@ export default function CartHistory() {
           <ArrowLeft size={18} />
         </button>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-[15px] sm:text-base font-semibold tracking-tight leading-tight truncate">
-              Today's Orders
-            </h1>
-            {/* Desktop pill — sits next to the title on the LEFT, same
-                pill styling as the mobile badge below. */}
-            {orders.length > 0 && (
-              <div
-                className={`hidden sm:inline-flex ${countPillClasses}`}
-                data-testid="badge-order-count-desktop"
-              >
-                {orderCountLabel}
-              </div>
-            )}
-          </div>
+          <h1 className="text-[15px] sm:text-base font-semibold tracking-tight leading-tight truncate">
+            Today's Orders
+          </h1>
           {headerSubtitle}
         </div>
-        {/* Mobile-only count pill — kept on the right as before. */}
+        {/* Count pill — right side of the top bar on every viewport. */}
         {orders.length > 0 && (
           <div
-            className={`sm:hidden ${countPillClasses}`}
+            className={countPillClasses}
             data-testid="badge-order-count"
           >
             {orderCountLabel}
