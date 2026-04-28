@@ -232,7 +232,7 @@ export default function CartHistory() {
   // Root is locked to viewport height with overflow-hidden so the bottom bar
   // is always pinned. The middle <main> owns its own scroll regions.
   return (
-    <div className="h-screen bg-background flex flex-col overflow-hidden">
+    <div className="page-enter-horizontal h-screen bg-background flex flex-col overflow-hidden">
       {/* ── HEADER ──────────────────────────────────────────────────── */}
       <header className="h-14 sm:h-16 flex items-center gap-3 px-3 sm:px-6 border-b border-border bg-background/90 backdrop-blur-sm shrink-0">
         <button

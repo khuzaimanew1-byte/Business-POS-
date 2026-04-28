@@ -49,7 +49,7 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+    <div className="page-enter-horizontal flex h-screen w-full overflow-hidden bg-background text-foreground">
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Header — back arrow + title (matches Analytics header treatment) */}

@@ -45,7 +45,7 @@ export default function SettingsPage() {
   useShortcut('nextSettingsTab', () => cycleSection(1));
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden">
+    <div className="page-enter-vertical flex h-screen bg-background text-foreground overflow-hidden">
 <main className={`flex-1 flex flex-col min-w-0 transition-all duration-400 ease-out ${mounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4'}`}>
         {/* Top bar */}
         <header className="h-14 sm:h-16 flex items-center px-3 sm:px-6 shrink-0 bg-background/90 backdrop-blur-sm sticky top-0 z-10 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)]">
