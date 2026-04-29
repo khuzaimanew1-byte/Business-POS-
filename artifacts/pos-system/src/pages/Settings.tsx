@@ -3,6 +3,7 @@ import { useLocation } from "wouter";
 import {
   Home, BarChart2, Plus, Settings as SettingsIcon, ArrowLeft,
   Zap, Keyboard, Package, BarChart3, ShieldCheck, Sliders, Globe, ArrowRight,
+  CornerDownLeft, ArrowUpRight, Info,
 } from "lucide-react";
 import {
   useSettings,
@@ -16,12 +17,11 @@ import { useStore } from "@/lib/store";
 import { useShortcut } from "@/lib/shortcuts";
 import { toast } from "sonner";
 
-type SectionId = "performance" | "region" | "input" | "shortcuts" | "defaults" | "data" | "safety";
+type SectionId = "experience" | "region" | "shortcuts" | "defaults" | "data" | "safety";
 
 const SECTIONS: { id: SectionId; label: string; icon: React.ReactNode }[] = [
-  { id: "performance", label: "Performance",     icon: <Zap size={15} /> },
+  { id: "experience",  label: "Experience",      icon: <Sliders size={15} /> },
   { id: "region",      label: "Region",          icon: <Globe size={15} /> },
-  { id: "input",       label: "Input Behavior",  icon: <Sliders size={15} /> },
   { id: "shortcuts",   label: "Shortcuts",       icon: <Keyboard size={15} /> },
   { id: "defaults",    label: "Defaults",        icon: <Package size={15} /> },
   { id: "data",        label: "Data & Analytics",icon: <BarChart3 size={15} /> },
@@ -30,7 +30,7 @@ const SECTIONS: { id: SectionId; label: string; icon: React.ReactNode }[] = [
 
 export default function SettingsPage() {
   const [, setLocation] = useLocation();
-  const [section, setSection] = useState<SectionId>("performance");
+  const [section, setSection] = useState<SectionId>("experience");
   const [mounted, setMounted] = useState(false);
   useEffect(() => { const t = setTimeout(() => setMounted(true), 10); return () => clearTimeout(t); }, []);
 
@@ -99,9 +99,8 @@ export default function SettingsPage() {
 
             {/* Content */}
             <div key={section} className="flex-1 min-w-0 animate-in fade-in slide-in-from-right-2 duration-300">
-              {section === "performance" && <PerformanceSection />}
+              {section === "experience"  && <ExperienceSection />}
               {section === "region"      && <RegionSection />}
-              {section === "input"       && <InputBehaviorSection />}
               {section === "shortcuts"   && <ShortcutsSection />}
               {section === "defaults"    && <DefaultsSection />}
               {section === "data"        && <DataSection />}
@@ -227,22 +226,160 @@ function Kbd({ children }: { children: React.ReactNode }) {
 }
 
 // ── Sections ──────────────────────────────────────────────────────────────
-function PerformanceSection() {
+
+/* ── Experience tab ────────────────────────────────────────────────────────
+   Combines what used to be two separate tabs (Performance + Input Behavior)
+   into a single, scannable surface:
+     • Left column  — Animation Speed: 3 selectable cards (radio-style),
+                      one per motion preset, each with a glyph that
+                      visually represents the curve (sine / zigzag / flat).
+     • Right column — Input Behaviour: 4 toggle rows for keyboard-flow
+                      preferences during fast data entry.
+   On mobile both columns stack: Animation Speed first, then Input
+   Behaviour, preserving the same row anatomy. */
+
+// Custom glyphs for the speed cards. Lucide doesn't ship clean sine /
+// zigzag / flat-line single-glyph icons, so we draw them inline. They all
+// share the same 24×24 canvas and a 1.75 stroke so they read as a set.
+function WaveSineIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M2 12 C 5 5, 8 5, 11 12 S 17 19, 20 12" />
+    </svg>
+  );
+}
+function WaveZigIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polyline points="2,16 6,8 10,16 14,8 18,16 22,8" />
+    </svg>
+  );
+}
+function WaveFlatIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <line x1="3" y1="12" x2="21" y2="12" />
+    </svg>
+  );
+}
+
+// Shared row-icon tile — small rounded square that holds the glyph. Visual
+// weight shifts based on whether its row is "active" (selected speed card
+// or any toggle row, since toggles always feel "on" structurally).
+function RowIconTile({ children, active = false }: { children: React.ReactNode; active?: boolean }) {
+  return (
+    <div
+      className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center transition-colors duration-200 ${
+        active
+          ? 'bg-primary/15 text-primary'
+          : 'bg-secondary/60 text-muted-foreground'
+      }`}
+      aria-hidden
+    >
+      {children}
+    </div>
+  );
+}
+
+function ExperienceSection() {
   const { settings, update } = useSettings();
+
+  const SPEEDS: { value: PerformanceMode; label: string; hint: string; icon: React.ReactNode }[] = [
+    { value: "smooth", label: "Smooth",     hint: "Full motion", icon: <WaveSineIcon /> },
+    { value: "fast",   label: "Fast",       hint: "Reduced",     icon: <WaveZigIcon  /> },
+    { value: "ultra",  label: "Ultra Fast", hint: "No motion",   icon: <WaveFlatIcon /> },
+  ];
+
+  // `key` here matches the SettingsState boolean field. Order mirrors the
+  // reference image: Enter → Auto-focus → Shake → Inline errors.
+  const TOGGLES: { key: "enterNavigation" | "autoFocusNext" | "inputShake" | "inlineErrors";
+                   label: string; sub: string; icon: React.ReactNode }[] = [
+    { key: "enterNavigation", label: "Enter navigates", sub: "Jump to next field",   icon: <CornerDownLeft size={18} strokeWidth={2} /> },
+    { key: "autoFocusNext",   label: "Auto-focus",      sub: "Focus on field fill",  icon: <ArrowUpRight   size={18} strokeWidth={2} /> },
+    { key: "inputShake",      label: "Shake on error",  sub: "Vibrate on rejection", icon: <Zap            size={18} strokeWidth={2} /> },
+    { key: "inlineErrors",    label: "Inline errors",   sub: "Show under field",     icon: <Info           size={18} strokeWidth={2} /> },
+  ];
+
   return (
     <>
-      <SectionHeader title="Performance" desc="Tune system-wide motion to match your hardware and preference." />
-      <Block label="Animation speed" desc="Applies instantly across the system.">
-        <Segmented
-          value={settings.performance}
-          onChange={v => update("performance", v)}
-          options={[
-            { value: "smooth", label: "Smooth",     sub: "Default — full motion" },
-            { value: "fast",   label: "Fast",       sub: "Reduced animation" },
-            { value: "ultra",  label: "Ultra Fast", sub: "No animation" },
-          ]}
-        />
-      </Block>
+      <SectionHeader title="Experience" desc="Motion and input-flow preferences in one place." />
+
+      {/* Two columns on laptop, stacked on mobile. Same row anatomy
+          (icon left, text right) used for both groups so the surface
+          reads as one cohesive setting. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
+        {/* ── Animation Speed ─────────────────────────────────────────── */}
+        <div>
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 mb-3">
+            Animation Speed
+          </h3>
+          <div className="flex flex-col gap-2">
+            {SPEEDS.map(opt => {
+              const active = settings.performance === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => update("performance", opt.value)}
+                  aria-pressed={active}
+                  data-testid={`speed-${opt.value}`}
+                  className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all duration-200 ${
+                    active
+                      ? 'border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(212,175,90,0.12)]'
+                      : 'border-border/50 bg-white/[0.015] hover:border-border hover:bg-white/[0.03]'
+                  }`}
+                >
+                  <RowIconTile active={active}>{opt.icon}</RowIconTile>
+                  <div className="min-w-0 flex flex-col leading-tight">
+                    <span className={`text-sm font-medium ${active ? 'text-foreground' : 'text-foreground/85'}`}>
+                      {opt.label}
+                    </span>
+                    <span className="text-xs text-muted-foreground mt-0.5">{opt.hint}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Input Behaviour ─────────────────────────────────────────── */}
+        <div>
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 mb-3">
+            Input Behaviour
+          </h3>
+          <div className="flex flex-col gap-2">
+            {TOGGLES.map(t => {
+              const checked = settings[t.key];
+              return (
+                <div
+                  key={t.key}
+                  className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-border/50 bg-white/[0.015]"
+                  data-testid={`toggle-row-${t.key}`}
+                >
+                  <RowIconTile active>{t.icon}</RowIconTile>
+                  <div className="flex-1 min-w-0 flex flex-col leading-tight">
+                    <span className="text-sm font-medium text-foreground">{t.label}</span>
+                    <span className="text-xs text-muted-foreground mt-0.5">{t.sub}</span>
+                  </div>
+                  <button
+                    role="switch"
+                    aria-checked={checked}
+                    aria-label={t.label}
+                    onClick={() => update(t.key, !checked)}
+                    data-testid={`toggle-${t.key}`}
+                    className={`relative shrink-0 w-10 h-6 rounded-full transition-colors duration-200 ${checked ? 'bg-primary' : 'bg-secondary'}`}
+                  >
+                    <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </>
   );
 }
@@ -640,21 +777,6 @@ function formatZone(d: Date, timeZone: string): { abbr: string; offset: string }
   }
 
   return { abbr, offset };
-}
-
-function InputBehaviorSection() {
-  const { settings, update } = useSettings();
-  return (
-    <>
-      <SectionHeader title="Input Behavior" desc="Tweak how form inputs behave during fast data entry." />
-      <Block>
-        <Toggle checked={settings.enterNavigation} onChange={v => update("enterNavigation", v)} label="Enter navigates fields" desc="Press Enter to advance to the next input." />
-        <Toggle checked={settings.autoFocusNext}   onChange={v => update("autoFocusNext", v)}   label="Auto-focus next input" desc="Move focus automatically when a field is filled." />
-        <Toggle checked={settings.inputShake}      onChange={v => update("inputShake", v)}      label="Shake on invalid input" desc="Subtle vibration when a value is rejected." />
-        <Toggle checked={settings.inlineErrors}    onChange={v => update("inlineErrors", v)}    label="Show inline errors" desc="Display validation messages under the field." />
-      </Block>
-    </>
-  );
 }
 
 function ShortcutsSection() {
