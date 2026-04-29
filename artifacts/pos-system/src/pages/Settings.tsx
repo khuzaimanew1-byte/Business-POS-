@@ -857,9 +857,8 @@ function ShortcutsSection() {
                 ],
               },
               {
-                title: "Modals",
+                title: "Products",
                 actions: [
-                  "createProduct",
                   "addProduct",
                   "createAndAnother",
                   "toggleEditMode",
@@ -951,6 +950,7 @@ function ShortcutsSection() {
                     System
                   </h3>
                   <div className="flex flex-col">
+                    {renderRow("createProduct")}
                     {SYSTEM_ROWS.map(row => (
                       <div
                         key={row.label}
