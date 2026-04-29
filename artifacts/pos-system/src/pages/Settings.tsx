@@ -377,10 +377,13 @@ function CurrencyRatesBlock() {
           className={`sm:flex-1 ${cardBase} ${settings.currency === "USD" ? cardActive : cardInactive} ${editing ? "cursor-default" : "cursor-pointer"}`}
           data-testid="card-usd"
         >
-          <div className={eyebrowCls}>USD</div>
-          <div className="flex items-baseline gap-1">
-            <span className={`${unitCls} text-primary`}>$</span>
-            <span className={valueCls}>1</span>
+          {/* Single horizontal row — code on left, symbol+value on right */}
+          <div className="flex items-center justify-between gap-2">
+            <div className={`${eyebrowCls} !mb-0`}>USD</div>
+            <div className="flex items-baseline gap-1">
+              <span className={`${unitCls} text-primary`}>$</span>
+              <span className={valueCls}>1</span>
+            </div>
           </div>
         </button>
 
@@ -404,27 +407,30 @@ function CurrencyRatesBlock() {
           className={`flex-1 ${cardBase} ${settings.currency === "PKR" ? cardActive : cardInactive} ${editing ? "cursor-default" : "cursor-pointer"}`}
           data-testid="card-pkr"
         >
-          <div className={eyebrowCls}>PKR</div>
-          {editing ? (
-            <div className="relative h-6 -my-0.5">
-              <span className={`absolute left-0 top-1/2 -translate-y-1/2 ${unitCls} pointer-events-none`}>Rs</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={pkr}
-                onChange={e => setPkr(e.target.value.replace(/[^0-9.]/g, ''))}
-                onClick={e => e.stopPropagation()}
-                autoFocus
-                className={`w-full h-full pl-7 pr-1 bg-transparent border-0 border-b border-primary/50 focus:border-primary outline-none transition-colors duration-200 ${valueCls}`}
-                data-testid="input-rate-pkr"
-              />
-            </div>
-          ) : (
-            <div className="flex items-baseline gap-1.5">
-              <span className={unitCls}>Rs</span>
-              <span className={valueCls}>{dispPkr}</span>
-            </div>
-          )}
+          {/* Single horizontal row — code on left, symbol+value on right */}
+          <div className="flex items-center justify-between gap-2">
+            <div className={`${eyebrowCls} !mb-0`}>PKR</div>
+            {editing ? (
+              <div className="relative h-6 -my-0.5 flex-1 max-w-[7rem]">
+                <span className={`absolute left-0 top-1/2 -translate-y-1/2 ${unitCls} pointer-events-none`}>Rs</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={pkr}
+                  onChange={e => setPkr(e.target.value.replace(/[^0-9.]/g, ''))}
+                  onClick={e => e.stopPropagation()}
+                  autoFocus
+                  className={`w-full h-full pl-7 pr-1 text-right bg-transparent border-0 border-b border-primary/50 focus:border-primary outline-none transition-colors duration-200 ${valueCls}`}
+                  data-testid="input-rate-pkr"
+                />
+              </div>
+            ) : (
+              <div className="flex items-baseline gap-1.5">
+                <span className={unitCls}>Rs</span>
+                <span className={valueCls}>{dispPkr}</span>
+              </div>
+            )}
+          </div>
         </button>
 
         {/* OMR card — no arrow before it */}
@@ -435,26 +441,29 @@ function CurrencyRatesBlock() {
           className={`flex-1 ${cardBase} ${settings.currency === "OMR" ? cardActive : cardInactive} ${editing ? "cursor-default" : "cursor-pointer"}`}
           data-testid="card-omr"
         >
-          <div className={eyebrowCls}>OMR</div>
-          {editing ? (
-            <div className="relative h-6 -my-0.5">
-              <span className={`absolute left-0 top-1/2 -translate-y-1/2 ${unitCls} pointer-events-none`}>R.O</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={omr}
-                onChange={e => setOmr(e.target.value.replace(/[^0-9.]/g, ''))}
-                onClick={e => e.stopPropagation()}
-                className={`w-full h-full pl-10 pr-1 bg-transparent border-0 border-b border-primary/50 focus:border-primary outline-none transition-colors duration-200 ${valueCls}`}
-                data-testid="input-rate-omr"
-              />
-            </div>
-          ) : (
-            <div className="flex items-baseline gap-1.5">
-              <span className={unitCls}>R.O</span>
-              <span className={valueCls}>{dispOmr}</span>
-            </div>
-          )}
+          {/* Single horizontal row — code on left, symbol+value on right */}
+          <div className="flex items-center justify-between gap-2">
+            <div className={`${eyebrowCls} !mb-0`}>OMR</div>
+            {editing ? (
+              <div className="relative h-6 -my-0.5 flex-1 max-w-[7rem]">
+                <span className={`absolute left-0 top-1/2 -translate-y-1/2 ${unitCls} pointer-events-none`}>R.O</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={omr}
+                  onChange={e => setOmr(e.target.value.replace(/[^0-9.]/g, ''))}
+                  onClick={e => e.stopPropagation()}
+                  className={`w-full h-full pl-10 pr-1 text-right bg-transparent border-0 border-b border-primary/50 focus:border-primary outline-none transition-colors duration-200 ${valueCls}`}
+                  data-testid="input-rate-omr"
+                />
+              </div>
+            ) : (
+              <div className="flex items-baseline gap-1.5">
+                <span className={unitCls}>R.O</span>
+                <span className={valueCls}>{dispOmr}</span>
+              </div>
+            )}
+          </div>
         </button>
         </div>
       </div>
@@ -523,35 +532,34 @@ function TimeZoneBlock() {
                 }`}
                 aria-hidden="true"
               />
-              {/* Inner grid —
-                    • Mobile (<sm):  2-column grid.
-                                     Row 1: [name+badge | clock-right]
-                                     Row 2: [meta · spans both cols]
-                    • Desktop (sm+): single column → name, time, meta stack.
+              {/* Row container — name+subtitle stacked on the LEFT, live
+                  clock on the RIGHT, vertically centered against the stack.
                   pr-5 reserves space on the right for the absolute dot. */}
-              <div className="grid gap-x-3 gap-y-1.5 grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-1 pr-5">
-                {/* Country name + auto-detected badge */}
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[11px] font-semibold text-foreground/95 leading-none truncate">
-                    {meta.label}
-                  </span>
-                  {isAuto && (
-                    <span
-                      className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-semibold leading-none"
-                      title="Detected from your browser"
-                    >
-                      <span className="w-1 h-1 rounded-full bg-primary" />
-                      Auto
+              <div className="flex items-center justify-between gap-3 pr-5">
+                {/* Left column: country name (+ Auto badge) above subtitle */}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[11px] font-semibold text-foreground/95 leading-none truncate">
+                      {meta.label}
                     </span>
-                  )}
+                    {isAuto && (
+                      <span
+                        className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-semibold leading-none"
+                        title="Detected from your browser"
+                      >
+                        <span className="w-1 h-1 rounded-full bg-primary" />
+                        Auto
+                      </span>
+                    )}
+                  </div>
+                  {/* Subtitle: abbr + UTC offset */}
+                  <div className="mt-1.5 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium leading-none">
+                    {abbr === offset ? offset : <>{abbr} <span className="opacity-70">· {offset}</span></>}
+                  </div>
                 </div>
-                {/* Live clock — right side of row 1 on mobile, own row on desktop */}
-                <div className="text-base font-mono font-semibold tabular-nums text-foreground leading-none whitespace-nowrap justify-self-end sm:justify-self-start">
+                {/* Right side: live clock — middle-aligned with the left stack */}
+                <div className="shrink-0 text-base font-mono font-semibold tabular-nums text-foreground leading-none whitespace-nowrap">
                   {time}
-                </div>
-                {/* Meta: abbr + UTC offset — full width row 2 on mobile, own row on desktop */}
-                <div className="col-span-2 sm:col-span-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium leading-none">
-                  {abbr === offset ? offset : <>{abbr} <span className="opacity-70">· {offset}</span></>}
                 </div>
               </div>
             </button>
