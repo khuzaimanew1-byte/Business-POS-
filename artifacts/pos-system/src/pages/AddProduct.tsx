@@ -597,18 +597,7 @@ export default function AddProduct() {
                 placeholder={settings.currency === 'OMR' ? '0.000' : '0.00'}
                 required
                 inputRef={priceInputRef}
-                prefix={
-                  // Default = neutral; only an active validation error promotes
-                  // the symbol to the destructive tone, matching the rule used
-                  // throughout the app (no yellow on input icons).
-                  <span
-                    className={`font-semibold transition-colors duration-200 ${
-                      transientError.price ? 'text-destructive' : 'text-muted-foreground'
-                    }`}
-                  >
-                    {currencySymbol}
-                  </span>
-                }
+                prefix={<span className="text-primary font-semibold">{currencySymbol}</span>}
                 testId="input-price"
                 inputClassName={`no-spinners-ap tabular-nums ${shake.price ? 'shake-anim-input' : ''}`}
                 onKeyDown={(e) => handleFieldEnter('price', e)}
@@ -686,15 +675,7 @@ export default function AddProduct() {
                   onFocus={() => setProfitFocused(true)}
                   onBlur={() => { setProfitFocused(false); setProfit(p => normalizeMoney(p)); }}
                   prefix={
-                    // Same rule as Price: default neutral, destructive only when
-                    // the input is in an error state (overshoot or hard error).
-                    <span
-                      className={`font-semibold transition-colors duration-200 ${
-                        (profitTooHigh || transientError.profit) ? 'text-destructive' : 'text-muted-foreground'
-                      }`}
-                    >
-                      {currencySymbol}
-                    </span>
+                    <span className={`font-semibold ${profitTooHigh ? 'text-destructive' : 'text-muted-foreground'}`}>{currencySymbol}</span>
                   }
                   hint={
                     transientError.profit
