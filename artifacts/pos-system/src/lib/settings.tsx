@@ -75,11 +75,44 @@ export const DEFAULT_RATES: ExchangeRates = {
   OMR: 0.385,
 };
 
+/**
+ * Concatenation-ready currency prefixes — `${SYMBOL}${number}` always reads
+ * naturally:  "$100"  •  "Rs 100"  •  "R.O 1.250"
+ * USD has no trailing space; PKR/OMR include one because their multi-letter
+ * codes need separation from the number. Use `getCurrencySymbol()` if you
+ * need the bare symbol (e.g. as an input-field prefix where the row already
+ * adds its own gap).
+ */
 export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
   USD: "$",
   PKR: "Rs ",
-  OMR: "", // OMR uses suffix format instead — see formatCurrency
+  OMR: "R.O ",
 };
+
+/** Bare currency symbol (no trailing whitespace) — for input prefixes etc. */
+export function getCurrencySymbol(currency: CurrencyCode): string {
+  return CURRENCY_SYMBOLS[currency].trimEnd();
+}
+
+/** Decimal places enforced for a currency (OMR is always 3, others use the user's setting). */
+export function currencyDecimals(currency: CurrencyCode, fallback: number): number {
+  return currency === "OMR" ? 3 : fallback;
+}
+
+/**
+ * Normalize a numeric input string to the canonical decimal precision for
+ * the given currency. Used on input blur so OMR values always settle as
+ * "1.000", "2.500", "0.000" etc. Empty / non-numeric strings are returned
+ * unchanged so the user can keep typing freely.
+ */
+export function formatAmountForCurrency(value: string, currency: CurrencyCode): string {
+  if (currency !== "OMR") return value;          // only OMR has the strict rule
+  const trimmed = value.trim();
+  if (trimmed === "") return value;
+  const n = parseFloat(trimmed);
+  if (isNaN(n)) return value;
+  return n.toFixed(3);
+}
 
 // ── Region (timezone) ─────────────────────────────────────────────────────
 export type RegionKey = "US" | "PK" | "OM";
@@ -232,15 +265,20 @@ function formatNumberTrimmed(v: number, decimals: number): string {
 
 /**
  * Format `v` (assumed USD-base) into the active currency string.
- * - USD: "$3.5"
- * - PKR: "Rs 980"
- * - OMR: "1.348 (OMR)"
+ * - USD: "$3.5"           (user-set decimals, trailing zeros trimmed)
+ * - PKR: "Rs 980"         (user-set decimals, trailing zeros trimmed)
+ * - OMR: "R.O 1.250"      (always 3 decimals, trailing zeros KEPT)
+ *
+ * OMR is the only currency with a strict precision rule — value `1` always
+ * renders as `1.000`, `2.5` as `2.500`, and `0` as `0.000`.
  */
 export function formatCurrency(v: number, s: SettingsState): string {
   const converted = convertFromUSD(v, s);
-  const rounded = applyRounding(converted, s.decimals, s.rounding);
-  const num = formatNumberTrimmed(rounded, s.decimals);
-  if (s.currency === "OMR") return `${num} OMR`;
+  const decimals = currencyDecimals(s.currency, s.decimals);
+  const rounded = applyRounding(converted, decimals, s.rounding);
+  const num = s.currency === "OMR"
+    ? rounded.toFixed(3)                         // keep trailing zeros for OMR
+    : formatNumberTrimmed(rounded, decimals);
   return `${CURRENCY_SYMBOLS[s.currency]}${num}`;
 }
 

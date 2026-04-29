@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { useLocation } from "wouter";
 import { ArrowLeft, Plus, Check, X, ChevronDown, FolderPlus, Loader2, Trash2, Upload } from "lucide-react";
 import { useStore, normalizeCode, type Product } from "@/lib/store";
-import { useSettings } from "@/lib/settings";
+import { useSettings, getCurrencySymbol, formatAmountForCurrency } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
 import { toast } from "sonner";
 import {
@@ -172,6 +172,14 @@ export default function AddProduct() {
   const priceNum = parseFloat(price);
   const profitNum = parseFloat(profit);
   const stockNum = parseInt(stock, 10);
+
+  // Active currency symbol (USD → "$", PKR → "Rs", OMR → "R.O") — recomputed
+  // on every render so a Settings change updates Price/Profit prefixes
+  // instantly without a refresh.
+  const currencySymbol = getCurrencySymbol(settings.currency);
+
+  /** On blur of a money input, snap OMR values to exactly 3 decimals. */
+  const normalizeMoney = (raw: string) => formatAmountForCurrency(raw, settings.currency);
 
   const fullQuickCode = `#${quickCodeRaw}`;
   const codeIsDuplicate = useMemo(() => {
@@ -581,14 +589,15 @@ export default function AddProduct() {
                 label="Price"
                 value={price}
                 onChange={v => { setPrice(v); if (transientError.price) clearError('price'); }}
+                onBlur={() => setPrice(p => normalizeMoney(p))}
                 type="number"
-                step="0.01"
+                step={settings.currency === 'OMR' ? '0.001' : '0.01'}
                 min="0"
                 inputMode="decimal"
-                placeholder="0.00"
+                placeholder={settings.currency === 'OMR' ? '0.000' : '0.00'}
                 required
                 inputRef={priceInputRef}
-                prefix={<span className="text-primary font-semibold">$</span>}
+                prefix={<span className="text-primary font-semibold">{currencySymbol}</span>}
                 testId="input-price"
                 inputClassName={`no-spinners-ap tabular-nums ${shake.price ? 'shake-anim-input' : ''}`}
                 onKeyDown={(e) => handleFieldEnter('price', e)}
@@ -656,17 +665,17 @@ export default function AddProduct() {
                   value={profit}
                   onChange={v => { setProfit(v); if (transientError.profit) clearError('profit'); }}
                   type="number"
-                  step="0.01"
+                  step={settings.currency === 'OMR' ? '0.001' : '0.01'}
                   min="0"
                   inputMode="decimal"
-                  placeholder="0.00"
+                  placeholder={settings.currency === 'OMR' ? '0.000' : '0.00'}
                   required
                   inputRef={profitInputRef}
                   invalid={profitTooHigh || !!transientError.profit}
                   onFocus={() => setProfitFocused(true)}
-                  onBlur={() => setProfitFocused(false)}
+                  onBlur={() => { setProfitFocused(false); setProfit(p => normalizeMoney(p)); }}
                   prefix={
-                    <span className={`font-semibold ${profitTooHigh ? 'text-destructive' : 'text-muted-foreground'}`}>$</span>
+                    <span className={`font-semibold ${profitTooHigh ? 'text-destructive' : 'text-muted-foreground'}`}>{currencySymbol}</span>
                   }
                   hint={
                     transientError.profit
