@@ -324,9 +324,9 @@ function CurrencyRatesBlock() {
     "border-border/50 bg-white/[0.015] hover:border-border hover:bg-white/[0.03]";
 
   // Tier classes — single source of truth so all three cards stay in lockstep.
-  const eyebrowCls = "text-[11px] uppercase tracking-wider text-muted-foreground/80 font-semibold mb-1";
+  const eyebrowCls = "text-sm uppercase tracking-wider text-muted-foreground/80 font-semibold mb-1";
   const valueCls   = "text-base font-mono font-semibold text-foreground tabular-nums leading-none";
-  const unitCls    = "text-base font-semibold text-muted-foreground leading-none";
+  const unitCls    = "text-xs font-semibold text-muted-foreground leading-none";
 
   return (
     <div>
