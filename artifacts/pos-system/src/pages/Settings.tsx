@@ -350,16 +350,24 @@ function ExperienceSection() {
           <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 mb-3">
             Input Behaviour
           </h3>
-          <div className="flex flex-col gap-2">
+          <div className="rounded-2xl bg-white/[0.025] divide-y divide-white/[0.06] overflow-hidden">
             {TOGGLES.map(t => {
               const checked = settings[t.key];
+              const isInlineErrors = t.key === "inlineErrors";
               return (
                 <div
                   key={t.key}
-                  className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-border/50 bg-white/[0.015]"
+                  className="flex items-center gap-4 px-4 py-3.5"
                   data-testid={`toggle-row-${t.key}`}
                 >
-                  <RowIconTile active>{t.icon}</RowIconTile>
+                  <div
+                    className={`shrink-0 flex items-center justify-center ${
+                      isInlineErrors ? 'text-[#b3372f]' : 'text-muted-foreground/80'
+                    }`}
+                    aria-hidden
+                  >
+                    {t.icon}
+                  </div>
                   <div className="flex-1 min-w-0 flex flex-col leading-tight">
                     <span className="text-sm font-medium text-foreground">{t.label}</span>
                     <span className="text-xs text-muted-foreground mt-0.5">{t.sub}</span>
@@ -370,7 +378,11 @@ function ExperienceSection() {
                     aria-label={t.label}
                     onClick={() => update(t.key, !checked)}
                     data-testid={`toggle-${t.key}`}
-                    className={`relative shrink-0 w-10 h-6 rounded-full transition-colors duration-200 ${checked ? 'bg-primary' : 'bg-secondary'}`}
+                    className={`relative shrink-0 w-10 h-6 rounded-full transition-all duration-200 ${
+                      checked
+                        ? 'bg-primary shadow-[0_0_0_3px_rgba(212,175,90,0.18)]'
+                        : 'bg-secondary'
+                    }`}
                   >
                     <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
                   </button>
