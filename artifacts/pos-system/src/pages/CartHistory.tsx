@@ -10,7 +10,7 @@ import {
   getTodayResetTimestamp,
   type SaleItem,
 } from "@/lib/analytics-store";
-import { useSettings, formatCurrency } from "@/lib/settings";
+import { useSettings, formatCurrency, Money } from "@/lib/settings";
 import { getProductMeta } from "@/lib/products-meta";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -35,10 +35,8 @@ function renderInitials(name: string): string {
 // quantity controls (these are completed, immutable orders).
 function OrderItemRow({
   item,
-  fmtCur,
 }: {
   item: SaleItem;
-  fmtCur: (v: number) => string;
 }) {
   const meta = getProductMeta(item.productId, item.name);
   return (
@@ -64,13 +62,12 @@ function OrderItemRow({
       <div className="flex-1 min-w-0 flex flex-col justify-center px-3 py-2.5">
         <div className="flex justify-between items-start mb-1 gap-2">
           <h4 className="font-medium text-sm truncate">{item.name}</h4>
-          <span className="font-semibold text-sm tabular-nums shrink-0">
-            {fmtCur(item.price * item.qty)}
-          </span>
+          <Money value={item.price * item.qty} className="font-semibold text-sm shrink-0" />
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground">
-            {fmtCur(item.price)} / ea
+          <span className="text-xs text-muted-foreground inline-flex items-baseline gap-1">
+            <Money value={item.price} />
+            <span>/ ea</span>
           </span>
           <span className="text-xs text-muted-foreground tabular-nums">
             × {item.qty}
@@ -330,7 +327,6 @@ export default function CartHistory() {
                               <OrderItemRow
                                 key={`${order.id}-${i}`}
                                 item={item}
-                                fmtCur={fmtCur}
                               />
                             ))}
                             <div className="flex items-center justify-between pt-1 px-1">
@@ -422,7 +418,6 @@ export default function CartHistory() {
                         <OrderItemRow
                           key={`detail-${selectedOrder.id}-${i}`}
                           item={item}
-                          fmtCur={fmtCur}
                         />
                       ))}
                     </div>

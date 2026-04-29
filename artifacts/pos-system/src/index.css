@@ -324,6 +324,41 @@
               letter-spacing 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* `<Money>` — splits a currency amount into a subtle symbol + emphasized
+   value, with currency-aware gap so "$" stays tight while "Rs" and "R.O"
+   get visual breathing room. The component itself lives in settings.tsx;
+   this is purely the visual contract. */
+:root            { --money-gap: 0.12em; }
+:root[data-currency="PKR"] { --money-gap: 0.32em; }
+:root[data-currency="OMR"] { --money-gap: 0.38em; }
+.money {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--money-gap);
+  /* Don't let the gap break the line between symbol and value. */
+  white-space: nowrap;
+}
+.money-symbol {
+  /* Lighter than the parent (which is usually 600/700) so the symbol reads
+     as a prefix rather than blending into the digits. Opacity adds the
+     "secondary emphasis" the spec calls for without muting color entirely. */
+  font-weight: 500;
+  opacity: 0.7;
+}
+.money-value {
+  /* Inherit color, weight, size from the parent — only enforce tabular
+     numerals so prices line up cleanly across cards/totals. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Add-Product input prefix — push the floating label right when the active
+   currency has a wider symbol so it never sits on top of the prefix. The
+   default "left: 36px" in the trace-field <style> block targets a 1-char
+   "$" symbol; PKR ("Rs") and OMR ("R.O") need more room. The lifted-label
+   position (left: 14px) is unaffected because that snaps to the border. */
+:root[data-currency="PKR"] .trace-field.has-prefix .trace-label:not(.is-lifted) { left: 46px; }
+:root[data-currency="OMR"] .trace-field.has-prefix .trace-label:not(.is-lifted) { left: 56px; }
+
 /* ── Global custom scrollbar ──────────────────────────────────────────────
    Replaces the default browser scrollbar everywhere (page, dropdowns,
    panels, modals). Thin, modern, subtle track, clean rounded thumb that

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { useStore, type Product, type Category, OUT_OF_STOCK_CATEGORY } from "@/lib/store";
-import { useSettings, formatCurrency } from "@/lib/settings";
+import { useSettings, formatCurrency, Money } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
 import { useNotifications } from "@/lib/notifications-store";
 import { recordSale } from "@/lib/analytics-store";
@@ -1171,7 +1171,10 @@ export default function POS() {
                           {product.name}
                         </TooltipContent>
                       </Tooltip>
-                      <p className="font-semibold text-primary leading-none text-[13px] sm:text-[16px]">{fmtCur(product.price)}</p>
+                      <Money
+                        value={product.price}
+                        className="font-semibold text-primary leading-none text-[13px] sm:text-[16px]"
+                      />
                       <div className="flex items-center justify-between mt-1">
                         <span className="text-muted-foreground text-[11px] sm:text-[14px] leading-none">Stock: {product.stock}</span>
                         <button
@@ -1256,9 +1259,10 @@ export default function POS() {
               </p>
             </div>
           </div>
-          <div className="currency-hero font-bold text-primary tracking-tight text-xl sm:text-2xl">
-            {fmtCur(cartTotal)}
-          </div>
+          <Money
+            value={cartTotal}
+            className="currency-hero font-bold text-primary tracking-tight text-xl sm:text-2xl"
+          />
         </div>
 
       </main>
@@ -1383,10 +1387,13 @@ export default function POS() {
                   <div className="flex-1 min-w-0 flex flex-col justify-center px-3 py-2.5">
                     <div className="flex justify-between items-start mb-1">
                       <h4 className="font-medium text-sm truncate pr-2">{item.product.name}</h4>
-                      <span className="font-semibold text-sm">{fmtCur(item.product.price * item.quantity)}</span>
+                      <Money value={item.product.price * item.quantity} className="font-semibold text-sm" />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">{fmtCur(item.product.price)} / ea</span>
+                      <span className="text-xs text-muted-foreground inline-flex items-baseline gap-1">
+                        <Money value={item.product.price} />
+                        <span>/ ea</span>
+                      </span>
                       <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
                         <button onClick={() => updateCartQty(item.product.id, item.quantity - 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-minus-${item.product.id}`}>
                           <Minus className="w-3 h-3" />
@@ -1412,7 +1419,7 @@ export default function POS() {
         <div className="p-4 border-t border-border bg-background shrink-0 pb-safe">
           <div className="flex justify-between font-bold text-lg mb-4 text-foreground">
             <span>Total</span>
-            <span className="currency-hero text-primary">{fmtCur(cartTotal)}</span>
+            <Money value={cartTotal} className="currency-hero text-primary" />
           </div>
           <Button className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold rounded-xl transition-all duration-200" disabled={cartItems.length === 0} onClick={checkout} data-testid="btn-checkout">
             Checkout

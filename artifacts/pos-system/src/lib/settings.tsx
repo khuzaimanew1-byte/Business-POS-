@@ -291,9 +291,65 @@ export function formatCurrency(v: number, s: SettingsState): string {
   return `${CURRENCY_SYMBOLS[s.currency]}${num}`;
 }
 
+/**
+ * Same as `formatCurrency()` but returns the symbol and value as separate
+ * strings so callers can render them as independent elements with distinct
+ * visual treatment (e.g. lighter symbol + emphasized value). The symbol
+ * comes from `getCurrencySymbol()` so it never carries the trailing space —
+ * spacing is owned by the consumer's layout (typically the `<Money>` flex
+ * gap), which lets it scale per-currency.
+ */
+export function formatCurrencyParts(
+  v: number,
+  s: SettingsState,
+): { symbol: string; value: string } {
+  const converted = convertFromUSD(v, s);
+  const decimals = currencyDecimals(s.currency, s.decimals);
+  const rounded = applyRounding(converted, decimals, s.rounding);
+  const value = s.currency === "OMR"
+    ? rounded.toFixed(3)
+    : formatNumberTrimmed(rounded, decimals);
+  return { symbol: getCurrencySymbol(s.currency), value };
+}
+
 export function useCurrency() {
   const { settings } = useSettings();
   return useMemo(() => (v: number) => formatCurrency(v, settings), [settings]);
+}
+
+/**
+ * Renders a currency amount as `{symbol}{gap}{value}` using two distinct
+ * spans so that:
+ *   - The symbol gets a lighter, slightly subdued treatment (font-weight
+ *     500, opacity 0.7) — it reads as a label, not part of the digits.
+ *   - The value carries the full emphasis from the parent (font-weight,
+ *     color, size all inherit) plus tabular numerals for clean alignment.
+ *   - The gap between them is currency-aware (set via the `--money-gap`
+ *     CSS variable on `:root[data-currency=…]`), so "$" stays glued while
+ *     "R.O" and "Rs" get the breathing room they need.
+ *
+ * Drop-in replacement anywhere `formatCurrency()` was being used inside
+ * JSX. Keeps every existing parent class (size, color, weight) intact.
+ */
+export function Money({
+  value,
+  className = "",
+  symbolClassName = "",
+  valueClassName = "",
+}: {
+  value: number;
+  className?: string;
+  symbolClassName?: string;
+  valueClassName?: string;
+}) {
+  const { settings } = useSettings();
+  const { symbol, value: amount } = formatCurrencyParts(value, settings);
+  return (
+    <span className={`money ${className}`}>
+      <span className={`money-symbol ${symbolClassName}`}>{symbol}</span>
+      <span className={`money-value ${valueClassName}`}>{amount}</span>
+    </span>
+  );
 }
 
 // ── Shortcut helpers ──────────────────────────────────────────────────────
