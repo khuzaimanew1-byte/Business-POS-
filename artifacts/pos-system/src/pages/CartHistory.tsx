@@ -185,7 +185,7 @@ export default function CartHistory() {
           Revenue
         </span>
         <span
-          className="text-base sm:text-lg font-bold text-primary tabular-nums leading-tight mt-0.5 truncate"
+          className="currency-hero text-base sm:text-lg font-bold text-primary tabular-nums leading-tight mt-0.5 truncate"
           data-testid="text-revenue"
         >
           {fmtCur(totalRevenue)}
@@ -202,7 +202,7 @@ export default function CartHistory() {
       <div className="flex items-baseline gap-1.5 mt-0.5 min-w-0">
         <TrendingUp className="w-3.5 h-3.5 text-primary/80 shrink-0 self-center" strokeWidth={2.25} />
         <span
-          className="text-base sm:text-lg font-bold text-primary tabular-nums leading-tight truncate"
+          className="currency-hero text-base sm:text-lg font-bold text-primary tabular-nums leading-tight truncate"
           data-testid="text-profit"
         >
           {fmtCur(totalProfit)}
@@ -220,7 +220,7 @@ export default function CartHistory() {
         </span>
       </div>
       <span
-        className="text-lg lg:text-xl font-bold text-primary tabular-nums shrink-0"
+        className="currency-hero text-lg lg:text-xl font-bold text-primary tabular-nums shrink-0"
         data-testid="text-order-total"
       >
         {fmtCur(selectedOrderTotal)}

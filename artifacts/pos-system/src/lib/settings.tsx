@@ -225,6 +225,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.setAttribute("data-perf", settings.performance);
   }, [settings.performance]);
 
+  // Drive currency-aware spacing/scale through a global data attribute.
+  // CSS reacts via :root[data-currency="OMR" | "PKR" | "USD"] selectors,
+  // tightening tracking and gently shrinking hero displays for the
+  // multi-character symbols ("Rs ", "R.O ") so they don't feel cramped
+  // next to "$".
+  useEffect(() => {
+    document.documentElement.setAttribute("data-currency", settings.currency);
+  }, [settings.currency]);
+
   const value = useMemo<Ctx>(() => ({
     settings,
     update: (k, v) => setSettings(prev => ({ ...prev, [k]: v })),

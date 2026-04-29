@@ -291,6 +291,39 @@
   }
 }
 
+/* ── Currency-aware sizing & tracking ────────────────────────────────────
+   The currency symbol changes width dramatically between currencies:
+     USD   "$"   ── 1 char, glued
+     PKR   "Rs " ── 3 chars + space
+     OMR   "R.O" ── 4 chars + space, plus a strict 3-decimal number
+   To keep prominent currency displays from feeling cramped or breaking
+   their containers when the user switches currency, we expose two CSS
+   variables that scale font-size and tighten tracking. They're set on
+   :root[data-currency="…"] and consumed by the `.currency-hero` helper
+   used on big totals (cart strip total, checkout total, history footer
+   totals, selected-order total). Values are intentionally subtle so the
+   change reads as "polished" rather than "resized".                       */
+:root {
+  --currency-scale: 1;
+  --currency-tracking: 0;
+}
+:root[data-currency="PKR"] {
+  --currency-scale: 0.96;
+  --currency-tracking: -0.005em;
+}
+:root[data-currency="OMR"] {
+  --currency-scale: 0.92;
+  --currency-tracking: -0.012em;
+}
+.currency-hero {
+  font-size: calc(1em * var(--currency-scale));
+  letter-spacing: var(--currency-tracking);
+  font-variant-numeric: tabular-nums;
+  /* Smooth the transition when currency changes at runtime. */
+  transition: font-size 180ms cubic-bezier(0.4, 0, 0.2, 1),
+              letter-spacing 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* ── Global custom scrollbar ──────────────────────────────────────────────
    Replaces the default browser scrollbar everywhere (page, dropdowns,
    panels, modals). Thin, modern, subtle track, clean rounded thumb that

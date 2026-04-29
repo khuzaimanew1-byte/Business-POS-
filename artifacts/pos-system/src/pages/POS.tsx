@@ -1256,7 +1256,7 @@ export default function POS() {
               </p>
             </div>
           </div>
-          <div className="font-bold text-primary tracking-tight text-xl sm:text-2xl">
+          <div className="currency-hero font-bold text-primary tracking-tight text-xl sm:text-2xl">
             {fmtCur(cartTotal)}
           </div>
         </div>
@@ -1412,7 +1412,7 @@ export default function POS() {
         <div className="p-4 border-t border-border bg-background shrink-0 pb-safe">
           <div className="flex justify-between font-bold text-lg mb-4 text-foreground">
             <span>Total</span>
-            <span className="text-primary">{fmtCur(cartTotal)}</span>
+            <span className="currency-hero text-primary">{fmtCur(cartTotal)}</span>
           </div>
           <Button className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold rounded-xl transition-all duration-200" disabled={cartItems.length === 0} onClick={checkout} data-testid="btn-checkout">
             Checkout
