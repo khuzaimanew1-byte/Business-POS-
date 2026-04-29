@@ -4,8 +4,9 @@ import {
   Home, BarChart2, Plus, Settings as SettingsIcon, ArrowLeft,
   Zap, Keyboard, Package, BarChart3, ShieldCheck, Sliders, Globe, ArrowRight,
   CornerDownLeft, ArrowUpRight, Info,
-  Database, FlaskConical, Clock, RotateCcw, Undo2, ShieldAlert, Lock,
+  Database, FlaskConical, Clock, RotateCcw, Undo2, ShieldAlert, Lock, SquareDashed,
 } from "lucide-react";
+import { useSaleEvents } from "@/lib/analytics-store";
 import {
   useSettings,
   type PerformanceMode, type CurrencyCode, type RoundingMode, type RetentionMode, type DecimalPrecision,
@@ -1020,69 +1021,15 @@ function DefaultsSection() {
 }
 
 /* ── Data & Safety ─────────────────────────────────────────────────────────
-   Single tab merging the old "Data & Analytics" and "Safety" tabs. Layout:
-   • SectionHeader (title + subtitle)
-   • Sticky summary bar (demo / retention / protection)
-   • Card 1 — Analytics    (Demo Data, Data Retention, Reset Analytics)
-   • Card 2 — Deletion Protection
-        (Undo Delete, Confirm Before Delete, Bulk Delete Protection,
-         Strict Confirmation — disabled when Confirm Before Delete is off)
-   All option rows share the same anatomy:
-        [icon + label/desc] · [state chip] · [toggle / button]
-   No persisted setting keys are renamed; we only added `retentionDays`
-   for the new "Custom" preset which is a thin additive extension. */
+   Minimal, heading-only layout. No cards, no chips, no descriptions — just
+   tight rows with naked icons. The Data Retention bar reflects how full the
+   selected window actually is, based on the oldest stored sale event. */
 
-const RETENTION_PRESETS: { value: RetentionMode; label: string; days: number | null }[] = [
-  { value: "7d",     label: "7 days",   days: 7 },
-  { value: "30d",    label: "30 days",  days: 30 },
-  { value: "all",    label: "All time", days: null },
-  { value: "custom", label: "Custom",   days: null },
+const RETENTION_PRESETS: { value: RetentionMode; label: string; ms: number | null }[] = [
+  { value: "1y",  label: "1 Year",   ms: 365 * 86_400_000 },
+  { value: "2y",  label: "2 Years",  ms: 2 * 365 * 86_400_000 },
+  { value: "all", label: "All Time", ms: null },
 ];
-
-function retentionDays(mode: RetentionMode, custom: number): number | null {
-  switch (mode) {
-    case "7d":     return 7;
-    case "30d":    return 30;
-    case "custom": return Math.max(1, Math.round(custom)) || 1;
-    case "all":    return null;
-  }
-}
-
-function retentionLabel(mode: RetentionMode, custom: number): string {
-  if (mode === "all") return "All time";
-  const d = retentionDays(mode, custom);
-  return `${d} day${d === 1 ? "" : "s"}`;
-}
-
-/** Visual scale for the timeline bar — `null` means full width (All time). */
-function retentionFill(mode: RetentionMode, custom: number): number {
-  if (mode === "all") return 1;
-  const d = retentionDays(mode, custom) ?? 1;
-  // Map 1..365 days onto a gentle log curve so 7d still feels visible.
-  const clamped = Math.min(365, Math.max(1, d));
-  return Math.min(1, Math.log10(clamped + 1) / Math.log10(366));
-}
-
-function StateChip({
-  tone = "muted",
-  children,
-}: {
-  tone?: "muted" | "on" | "off" | "warn" | "danger";
-  children: React.ReactNode;
-}) {
-  const map: Record<string, string> = {
-    muted:  "bg-secondary/60 text-muted-foreground",
-    on:     "bg-primary/15 text-primary",
-    off:    "bg-secondary/50 text-muted-foreground",
-    warn:   "bg-amber-400/10 text-amber-300",
-    danger: "bg-destructive/15 text-destructive",
-  };
-  return (
-    <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded ${map[tone]}`}>
-      {children}
-    </span>
-  );
-}
 
 function MiniSwitch({
   checked,
@@ -1119,8 +1066,6 @@ function MiniSwitch({
 function OptionRow({
   icon,
   label,
-  desc,
-  chip,
   control,
   disabled,
   hint,
@@ -1128,260 +1073,258 @@ function OptionRow({
   children,
 }: {
   icon: React.ReactNode;
-  label: string;
-  desc?: string;
-  chip?: React.ReactNode;
+  label: React.ReactNode;
   control?: React.ReactNode;
   disabled?: boolean;
   hint?: React.ReactNode;
   destructive?: boolean;
   children?: React.ReactNode;
 }) {
+  const testId = typeof label === "string"
+    ? label.toLowerCase().replace(/\s+/g, "-")
+    : "row";
   return (
     <div
-      className={`px-4 py-4 transition-opacity duration-200 ${disabled ? 'opacity-50' : ''}`}
-      data-testid={`row-${label.toLowerCase().replace(/\s+/g, "-")}`}
+      className={`py-3 transition-opacity duration-200 ${disabled ? 'opacity-50' : ''}`}
+      data-testid={`row-${testId}`}
     >
-      <div className="flex items-center gap-4">
-        <div
-          className={`shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${
-            destructive ? 'text-destructive bg-destructive/10' : 'text-muted-foreground bg-white/[0.025]'
+      <div className="flex items-center gap-3">
+        <span
+          className={`shrink-0 inline-flex items-center justify-center ${
+            destructive ? 'text-destructive' : 'text-muted-foreground'
           }`}
           aria-hidden
         >
           {icon}
-        </div>
-        <div className="flex-1 min-w-0 flex flex-col leading-tight">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`text-sm font-medium ${destructive ? 'text-destructive' : 'text-foreground'}`}>
-              {label}
-            </span>
-            {chip}
-          </div>
-          {desc && <span className="text-xs text-muted-foreground mt-0.5">{desc}</span>}
-        </div>
+        </span>
+        <span className={`flex-1 min-w-0 text-sm font-medium ${destructive ? 'text-destructive' : 'text-foreground'}`}>
+          {label}
+        </span>
         {control && <div className="shrink-0">{control}</div>}
       </div>
       {hint && (
-        <div className="mt-2 ml-[3.25rem] text-[11px] text-amber-300/90 inline-flex items-center gap-1.5">
+        <div className="mt-1.5 ml-7 text-[11px] text-amber-300/90 inline-flex items-center gap-1.5">
           <Info size={12} /> {hint}
         </div>
       )}
-      {children && <div className="mt-3 ml-[3.25rem]">{children}</div>}
+      {children && <div className="mt-3 ml-7">{children}</div>}
     </div>
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <section className="rounded-2xl bg-white/[0.02] border border-border/40 overflow-hidden">
-      <header className="px-4 pt-4 pb-2">
-        <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80">
-          {title}
-        </h3>
-      </header>
-      <div className="divide-y divide-white/[0.05]">{children}</div>
-    </section>
+    <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 mb-1">
+      {children}
+    </h3>
   );
+}
+
+function formatDate(ts: number): string {
+  return new Date(ts).toLocaleDateString(undefined, {
+    year: "numeric", month: "short", day: "numeric",
+  });
 }
 
 function DataSafetySection() {
   const { settings, update } = useSettings();
+  const events = useSaleEvents({ seedIfEmpty: settings.demoData });
 
-  // Protection score: 0–4 toggles enabled. Strict counts only when Confirm
-  // Before Delete is on (it can't actually run otherwise).
-  const protectionCount =
-    (settings.enableUndoDelete ? 1 : 0) +
-    (settings.confirmBeforeDelete ? 1 : 0) +
-    (settings.bulkDeleteProtection ? 1 : 0) +
-    (settings.confirmBeforeDelete && settings.strictConfirm ? 1 : 0);
-  const protectionLabel =
-    protectionCount >= 4 ? "Strong" :
-    protectionCount >= 2 ? "Standard" :
-    protectionCount >= 1 ? "Light" : "Off";
-  const protectionTone: "on" | "warn" | "off" =
-    protectionCount >= 2 ? "on" : protectionCount >= 1 ? "warn" : "off";
+  // Oldest event timestamp = "last stored data date" (anchor for the bar).
+  const oldestTs = useMemo(
+    () => (events.length ? events.reduce((m, e) => Math.min(m, e.ts), events[0].ts) : null),
+    [events],
+  );
+  const now = Date.now();
+  const actualSpan = oldestTs ? now - oldestTs : 0;
+  const selected = RETENTION_PRESETS.find(p => p.value === settings.retention) ?? RETENTION_PRESETS[2];
+  const selectedMs = selected.ms;
+  // % between last stored date and current date inside the selected window.
+  // All Time → always full. Selected ≤ actual stored span → full.
+  const percent =
+    selectedMs == null
+      ? 100
+      : oldestTs == null
+        ? 0
+        : actualSpan >= selectedMs
+          ? 100
+          : Math.round((actualSpan / selectedMs) * 100);
 
-  const fill = retentionFill(settings.retention, settings.retentionDays);
+  // Lightweight undo counter persisted across sessions.
+  const [undoCount, setUndoCount] = useState<number>(() => {
+    try { return parseInt(localStorage.getItem("pos.undo-delete.count.v1") || "0", 10) || 0; }
+    catch { return 0; }
+  });
+  useEffect(() => {
+    const refresh = () => {
+      try { setUndoCount(parseInt(localStorage.getItem("pos.undo-delete.count.v1") || "0", 10) || 0); }
+      catch { /* noop */ }
+    };
+    window.addEventListener("storage", refresh);
+    window.addEventListener("pos:undo-delete-count", refresh);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("pos:undo-delete-count", refresh);
+    };
+  }, []);
+
   const strictDisabled = !settings.confirmBeforeDelete;
 
   return (
     <>
-      <SectionHeader title="Data & Safety" desc="Demo data, analytics retention, and the guardrails that prevent accidental loss — all in one place." />
+      <SectionHeader title="Data & Safety" />
 
-      {/* Sticky summary bar — quick read of the current state. */}
-      <div className="sticky top-0 z-10 -mx-2 mb-6 px-3 py-2.5 rounded-xl bg-secondary/40 backdrop-blur-md border border-border/40 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
-        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-          <FlaskConical size={12} />
-          Demo
-          <StateChip tone={settings.demoData ? "on" : "off"}>{settings.demoData ? "On" : "Off"}</StateChip>
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-          <Clock size={12} />
-          Retention
-          <StateChip tone="muted">{retentionLabel(settings.retention, settings.retentionDays)}</StateChip>
-        </span>
-        <span className="inline-flex items-center gap-1.5 text-muted-foreground">
-          <ShieldCheck size={12} />
-          Protection
-          <StateChip tone={protectionTone}>{protectionLabel}</StateChip>
-        </span>
-      </div>
+      <div className="flex flex-col gap-7">
+        {/* ── Analytics ─────────────────────────────────────────────────── */}
+        <section>
+          <SectionTitle>Analytics</SectionTitle>
+          <div className="divide-y divide-white/[0.05]">
+            <OptionRow
+              icon={<FlaskConical size={18} strokeWidth={1.75} />}
+              label="Demo data"
+              control={
+                <MiniSwitch checked={settings.demoData} onChange={v => update("demoData", v)} label="Demo data" />
+              }
+            />
 
-      <div className="flex flex-col gap-5">
-        {/* ── Card 1: Analytics ──────────────────────────────────────────── */}
-        <Card title="Analytics">
-          <OptionRow
-            icon={<FlaskConical size={18} strokeWidth={1.75} />}
-            label="Demo data"
-            desc="Use sample data for charts when no real activity exists."
-            chip={<StateChip tone={settings.demoData ? "on" : "off"}>{settings.demoData ? "On" : "Off"}</StateChip>}
-            control={
-              <MiniSwitch checked={settings.demoData} onChange={v => update("demoData", v)} label="Demo data" />
-            }
-          >
-            {settings.demoData && (
-              <div className="text-[11px] text-muted-foreground/90 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-primary/[0.05] border border-primary/20">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-                Charts will overlay sample data when no real activity exists.
+            <OptionRow
+              icon={<Clock size={18} strokeWidth={1.75} />}
+              label="Data retention"
+            >
+              <div className="flex flex-wrap gap-1.5">
+                {RETENTION_PRESETS.map(p => {
+                  const active = settings.retention === p.value;
+                  return (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => update("retention", p.value)}
+                      aria-pressed={active}
+                      data-testid={`retention-${p.value}`}
+                      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-200 ${
+                        active
+                          ? 'border-primary/55 bg-primary/[0.1] text-primary'
+                          : 'border-border/50 bg-white/[0.02] text-muted-foreground hover:border-border hover:text-foreground'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
               </div>
-            )}
-          </OptionRow>
 
-          <OptionRow
-            icon={<Clock size={18} strokeWidth={1.75} />}
-            label="Data retention"
-            desc="How long analytics history is kept."
-            chip={<StateChip tone="muted">{retentionLabel(settings.retention, settings.retentionDays)}</StateChip>}
-          >
-            <div className="flex flex-wrap gap-1.5">
-              {RETENTION_PRESETS.map(p => {
-                const active = settings.retention === p.value;
-                return (
-                  <button
-                    key={p.value}
-                    type="button"
-                    onClick={() => update("retention", p.value)}
-                    aria-pressed={active}
-                    data-testid={`retention-${p.value}`}
-                    className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-200 ${
-                      active
-                        ? 'border-primary/55 bg-primary/[0.1] text-primary'
-                        : 'border-border/50 bg-white/[0.02] text-muted-foreground hover:border-border hover:text-foreground'
-                    }`}
+              {/* Bar: % of the selected window currently filled by stored data */}
+              <div className="mt-4 max-w-sm">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1.5">
+                  <span data-testid="text-oldest-date">
+                    {oldestTs ? formatDate(oldestTs) : "No data"}
+                  </span>
+                  <span
+                    data-testid="text-retention-percent"
+                    className="font-semibold text-foreground tabular-nums"
                   >
-                    {p.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Timeline-style visual bar */}
-            <div className="mt-3 h-1.5 w-full max-w-sm rounded-full bg-white/[0.04] overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-primary/70 to-primary rounded-full transition-[width] duration-300"
-                style={{ width: `${Math.max(4, fill * 100)}%` }}
-                aria-hidden
-              />
-            </div>
-            <div className="mt-1 flex justify-between max-w-sm text-[10px] uppercase tracking-wider text-muted-foreground/70">
-              <span>Now</span>
-              <span>{retentionLabel(settings.retention, settings.retentionDays)}</span>
-            </div>
-
-            {/* Custom input — only visible for the Custom preset */}
-            {settings.retention === "custom" && (
-              <div className="mt-3 inline-flex items-center gap-2 text-xs">
-                <label htmlFor="retentionDays" className="text-muted-foreground">Keep for</label>
-                <input
-                  id="retentionDays"
-                  type="number"
-                  min={1}
-                  max={3650}
-                  value={settings.retentionDays}
-                  onChange={e => {
-                    const n = parseInt(e.target.value, 10);
-                    update("retentionDays", isNaN(n) ? 1 : Math.max(1, Math.min(3650, n)));
-                  }}
-                  className="w-20 px-2 py-1 rounded-md bg-white/[0.03] border border-border/60 text-foreground text-xs focus:outline-none focus:border-primary/60"
-                  data-testid="input-retention-days"
-                />
-                <span className="text-muted-foreground">days</span>
+                    {percent}%
+                  </span>
+                  <span data-testid="text-current-date">{formatDate(now)}</span>
+                </div>
+                <div
+                  className="h-1.5 w-full rounded-full bg-white/[0.04] overflow-hidden"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={percent}
+                >
+                  <div
+                    className="h-full bg-gradient-to-r from-primary/70 to-primary rounded-full transition-[width] duration-300"
+                    style={{ width: `${Math.max(2, percent)}%` }}
+                    aria-hidden
+                  />
+                </div>
               </div>
-            )}
-          </OptionRow>
+            </OptionRow>
 
-          <OptionRow
-            icon={<RotateCcw size={18} strokeWidth={1.75} />}
-            label="Reset analytics"
-            desc="Clears stored analytics events. This cannot be undone."
-            destructive
-            chip={<StateChip tone="danger">Destructive</StateChip>}
-            control={
-              <button
-                onClick={() => {
-                  try { localStorage.removeItem("pos.analytics.v1"); } catch {}
-                  toast.success("Analytics data cleared");
-                }}
-                data-testid="button-reset-analytics"
-                className="px-3 py-1.5 rounded-lg text-xs font-medium text-destructive border border-destructive/30 hover:bg-destructive/10 active:scale-[0.97] transition-all duration-200"
-              >
-                Reset
-              </button>
-            }
-          />
-        </Card>
+            <OptionRow
+              icon={<RotateCcw size={18} strokeWidth={1.75} />}
+              label="Reset analytics"
+              destructive
+              control={
+                <button
+                  onClick={() => {
+                    try { localStorage.removeItem("pos.analytics.events.v3"); } catch {}
+                    toast.success("Analytics data cleared");
+                  }}
+                  data-testid="button-reset-analytics"
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-destructive border border-destructive/30 hover:bg-destructive/10 active:scale-[0.97] transition-all duration-200"
+                >
+                  Reset
+                </button>
+              }
+            />
+          </div>
+        </section>
 
-        {/* ── Card 2: Deletion Protection ────────────────────────────────── */}
-        <Card title="Deletion Protection">
-          <OptionRow
-            icon={<Undo2 size={18} strokeWidth={1.75} />}
-            label="Undo delete"
-            desc="Show a brief undo toast after deleting."
-            chip={<StateChip tone={settings.enableUndoDelete ? "on" : "off"}>{settings.enableUndoDelete ? "Enabled" : "Disabled"}</StateChip>}
-            control={
-              <MiniSwitch checked={settings.enableUndoDelete} onChange={v => update("enableUndoDelete", v)} label="Undo delete" />
-            }
-          />
-          <OptionRow
-            icon={<ShieldAlert size={18} strokeWidth={1.75} />}
-            label="Confirm before delete"
-            desc="Show a confirmation dialog for destructive actions."
-            chip={<StateChip tone={settings.confirmBeforeDelete ? "on" : "off"}>{settings.confirmBeforeDelete ? "Enabled" : "Disabled"}</StateChip>}
-            control={
-              <MiniSwitch checked={settings.confirmBeforeDelete} onChange={v => update("confirmBeforeDelete", v)} label="Confirm before delete" />
-            }
-          />
-          <OptionRow
-            icon={<ShieldCheck size={18} strokeWidth={1.75} />}
-            label="Bulk delete protection"
-            desc="Always require confirmation when deleting more than one item."
-            chip={<StateChip tone={settings.bulkDeleteProtection ? "on" : "off"}>{settings.bulkDeleteProtection ? "Protected" : "Unprotected"}</StateChip>}
-            control={
-              <MiniSwitch checked={settings.bulkDeleteProtection} onChange={v => update("bulkDeleteProtection", v)} label="Bulk delete protection" />
-            }
-          />
-          <OptionRow
-            icon={<Lock size={18} strokeWidth={1.75} />}
-            label="Strict confirmation"
-            desc="Require typing the item name to confirm destructive actions."
-            disabled={strictDisabled}
-            hint={strictDisabled ? "Enable “Confirm before delete” first." : undefined}
-            chip={
-              strictDisabled
-                ? <StateChip tone="off">Needs confirmation</StateChip>
-                : <StateChip tone={settings.strictConfirm ? "on" : "off"}>{settings.strictConfirm ? "Enabled" : "Disabled"}</StateChip>
-            }
-            control={
-              <MiniSwitch
-                checked={settings.strictConfirm}
-                onChange={v => update("strictConfirm", v)}
-                disabled={strictDisabled}
-                label="Strict confirmation"
-              />
-            }
-          />
-        </Card>
+        {/* ── Deletion Protection ───────────────────────────────────────── */}
+        <section>
+          <SectionTitle>Deletion Protection</SectionTitle>
+          <div className="divide-y divide-white/[0.05]">
+            <OptionRow
+              icon={<Undo2 size={18} strokeWidth={1.75} />}
+              label={
+                <span className="inline-flex items-baseline gap-2">
+                  Undo delete
+                  <span
+                    className="text-[11px] font-normal tabular-nums text-muted-foreground"
+                    data-testid="text-undo-count"
+                  >
+                    · {undoCount}
+                  </span>
+                </span>
+              }
+              control={
+                <MiniSwitch checked={settings.enableUndoDelete} onChange={v => update("enableUndoDelete", v)} label="Undo delete" />
+              }
+            />
+            <OptionRow
+              icon={<ShieldAlert size={18} strokeWidth={1.75} />}
+              label={
+                <span className="inline-flex items-center gap-2">
+                  Confirm before delete
+                  <span
+                    title="Opens a confirmation dialog"
+                    aria-label="Opens a confirmation dialog"
+                    className="inline-flex items-center justify-center w-4 h-4 rounded-[3px] border border-border/70 text-muted-foreground/80"
+                  >
+                    <SquareDashed size={10} strokeWidth={2} />
+                  </span>
+                </span>
+              }
+              control={
+                <MiniSwitch checked={settings.confirmBeforeDelete} onChange={v => update("confirmBeforeDelete", v)} label="Confirm before delete" />
+              }
+            />
+            <OptionRow
+              icon={<ShieldCheck size={18} strokeWidth={1.75} />}
+              label="Bulk delete protection"
+              control={
+                <MiniSwitch checked={settings.bulkDeleteProtection} onChange={v => update("bulkDeleteProtection", v)} label="Bulk delete protection" />
+              }
+            />
+            <OptionRow
+              icon={<Lock size={18} strokeWidth={1.75} />}
+              label="Strict confirmation"
+              disabled={strictDisabled}
+              hint={strictDisabled ? "Enable “Confirm before delete” first." : undefined}
+              control={
+                <MiniSwitch
+                  checked={settings.strictConfirm}
+                  onChange={v => update("strictConfirm", v)}
+                  disabled={strictDisabled}
+                  label="Strict confirmation"
+                />
+              }
+            />
+          </div>
+        </section>
       </div>
     </>
   );
