@@ -359,7 +359,16 @@ function ExperienceSection() {
                   className="flex items-center gap-3 px-3.5 py-3 rounded-xl border border-border/50 bg-white/[0.015]"
                   data-testid={`toggle-row-${t.key}`}
                 >
-                  <RowIconTile active>{t.icon}</RowIconTile>
+                  {/* Input-Behaviour tiles intentionally use a neutral chrome
+                      (no brand yellow) — the toggle to the right is the sole
+                      on/off affordance, so the icon stays a calm white glyph
+                      on a subtle dark surface. */}
+                  <div
+                    className="shrink-0 w-9 h-9 rounded-lg flex items-center justify-center bg-secondary/60 text-foreground"
+                    aria-hidden
+                  >
+                    {t.icon}
+                  </div>
                   <div className="flex-1 min-w-0 flex flex-col leading-tight">
                     <span className="text-sm font-medium text-foreground">{t.label}</span>
                     <span className="text-xs text-muted-foreground mt-0.5">{t.sub}</span>
