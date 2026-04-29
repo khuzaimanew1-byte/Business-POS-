@@ -360,14 +360,21 @@ function CurrencyRatesBlock() {
         )}
       </div>
 
-      {/* USD → PKR  OMR — arrow appears between USD and PKR only */}
-      <div className="flex items-stretch gap-2">
+      {/* Layout —
+            • Mobile (<sm):   USD (full width)
+                              ↓ arrow
+                              [PKR | OMR] side-by-side
+            • Desktop (sm+):  USD → PKR  OMR  (single row)
+          The PKR+OMR sub-wrapper uses `sm:contents` so on desktop it
+          collapses out of the layout and PKR/OMR become direct children of
+          the outer flex row, giving all three cards equal share. */}
+      <div className="flex flex-col sm:flex-row sm:items-stretch gap-2">
         {/* USD card — locked base, never editable */}
         <button
           type="button"
           onClick={() => select("USD")}
           disabled={editing}
-          className={`flex-1 ${cardBase} ${settings.currency === "USD" ? cardActive : cardInactive} ${editing ? "cursor-default" : "cursor-pointer"}`}
+          className={`sm:flex-1 ${cardBase} ${settings.currency === "USD" ? cardActive : cardInactive} ${editing ? "cursor-default" : "cursor-pointer"}`}
           data-testid="card-usd"
         >
           <div className={eyebrowCls}>USD</div>
@@ -377,16 +384,18 @@ function CurrencyRatesBlock() {
           </div>
         </button>
 
-        {/* Arrow — between USD and PKR only. self-stretch makes the icon
-            container the full card height; the icon itself is large enough
-            to read as a real connector rather than a tick mark. */}
+        {/* Arrow — points down on mobile, right on desktop. self-stretch
+            on the cross-axis makes it span the full card height on desktop;
+            on mobile it just sits in its own thin row, horizontally centered. */}
         <div
-          className="flex items-center justify-center shrink-0 self-stretch px-1 text-muted-foreground/60"
+          className="flex items-center justify-center shrink-0 self-stretch px-1 py-0.5 sm:py-0 text-muted-foreground/60"
           aria-hidden="true"
         >
-          <ArrowRight size={26} strokeWidth={1.5} />
+          <ArrowRight size={26} strokeWidth={1.5} className="rotate-90 sm:rotate-0" />
         </div>
 
+        {/* PKR + OMR — own flex row on mobile, dissolved into outer row on desktop */}
+        <div className="flex gap-2 sm:contents">
         {/* PKR card */}
         <button
           type="button"
@@ -447,6 +456,7 @@ function CurrencyRatesBlock() {
             </div>
           )}
         </button>
+        </div>
       </div>
     </div>
   );
@@ -485,7 +495,8 @@ function TimeZoneBlock() {
   return (
     <div>
       <h3 className="text-sm font-semibold tracking-tight mb-2.5">Time zone</h3>
-      <div className="grid grid-cols-3 gap-2">
+      {/* Cards: stacked full-width on mobile, 3-column row on desktop. */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {order.map(key => {
           const meta = REGIONS[key];
           const isActive = settings.region === key;
@@ -505,34 +516,43 @@ function TimeZoneBlock() {
               data-testid={`card-region-${key.toLowerCase()}`}
               aria-pressed={isActive}
             >
-              {/* Active dot — top-right corner */}
+              {/* Active dot — top-right corner, both layouts */}
               <span
                 className={`absolute top-2.5 right-2.5 inline-block w-2 h-2 rounded-full transition-all duration-200 ${
                   isActive ? "bg-primary shadow-[0_0_6px_rgba(212,175,90,0.7)]" : "bg-muted-foreground/25"
                 }`}
                 aria-hidden="true"
               />
-              {/* Country name + auto-detected badge — same line, leaves room
-                  on the right for the active dot. */}
-              <div className="flex items-center gap-1.5 mb-1.5 pr-5 min-w-0">
-                <span className="text-[11px] font-semibold text-foreground/95 leading-none truncate">
-                  {meta.label}
-                </span>
-                {isAuto && (
-                  <span
-                    className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-semibold leading-none"
-                    title="Detected from your browser"
-                  >
-                    <span className="w-1 h-1 rounded-full bg-primary" />
-                    Auto
+              {/* Inner grid —
+                    • Mobile (<sm):  2-column grid.
+                                     Row 1: [name+badge | clock-right]
+                                     Row 2: [meta · spans both cols]
+                    • Desktop (sm+): single column → name, time, meta stack.
+                  pr-5 reserves space on the right for the absolute dot. */}
+              <div className="grid gap-x-3 gap-y-1.5 grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-1 pr-5">
+                {/* Country name + auto-detected badge */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[11px] font-semibold text-foreground/95 leading-none truncate">
+                    {meta.label}
                   </span>
-                )}
-              </div>
-              <div className="text-base font-mono font-semibold tabular-nums text-foreground leading-none mb-1.5">
-                {time}
-              </div>
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium leading-none">
-                {abbr === offset ? offset : <>{abbr} <span className="opacity-70">· {offset}</span></>}
+                  {isAuto && (
+                    <span
+                      className="shrink-0 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-semibold leading-none"
+                      title="Detected from your browser"
+                    >
+                      <span className="w-1 h-1 rounded-full bg-primary" />
+                      Auto
+                    </span>
+                  )}
+                </div>
+                {/* Live clock — right side of row 1 on mobile, own row on desktop */}
+                <div className="text-base font-mono font-semibold tabular-nums text-foreground leading-none whitespace-nowrap justify-self-end sm:justify-self-start">
+                  {time}
+                </div>
+                {/* Meta: abbr + UTC offset — full width row 2 on mobile, own row on desktop */}
+                <div className="col-span-2 sm:col-span-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium leading-none">
+                  {abbr === offset ? offset : <>{abbr} <span className="opacity-70">· {offset}</span></>}
+                </div>
               </div>
             </button>
           );
