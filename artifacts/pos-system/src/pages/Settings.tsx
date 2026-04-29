@@ -857,14 +857,6 @@ function ShortcutsSection() {
                 ],
               },
               {
-                title: "Products",
-                actions: [
-                  "addProduct",
-                  "createAndAnother",
-                  "toggleEditMode",
-                ],
-              },
-              {
                 title: "Actions",
                 actions: [
                   "toggleSearch",
@@ -874,8 +866,22 @@ function ShortcutsSection() {
                   "nextSettingsTab",
                 ],
               },
+              {
+                title: "Products",
+                actions: [
+                  "addProduct",
+                  "createAndAnother",
+                  "toggleEditMode",
+                ],
+              },
             ];
-            const known = new Set(GROUPS.flatMap(g => g.actions));
+            // Actions shown only in System: don't let orphan-sweep dump them
+            // into one of the visible groups.
+            const SYSTEM_ONLY_ACTIONS: ShortcutAction[] = ["createProduct"];
+            const known = new Set<ShortcutAction>([
+              ...GROUPS.flatMap(g => g.actions),
+              ...SYSTEM_ONLY_ACTIONS,
+            ]);
             const orphans = actions.filter(a => !known.has(a));
             if (orphans.length) GROUPS[GROUPS.length - 1].actions.push(...orphans);
 
