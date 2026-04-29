@@ -1115,12 +1115,17 @@ export default function POS() {
                         <div className="flex-1 min-w-0">
                           <label className="text-muted-foreground uppercase tracking-wide block mb-0.5" style={{ fontSize: '7px' }}>Price</label>
                           <div className="relative">
-                            <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-primary font-bold text-[10px]">$</span>
+                            {/* Inline price-edit prefix — neutral by default to
+                                match the app-wide rule that no input icon
+                                carries the brand-yellow tint. The focus border
+                                still uses primary, which is a focus-state
+                                indicator, not an icon. */}
+                            <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-muted-foreground font-bold text-[10px] transition-colors duration-200">$</span>
                             <input
                               type="number"
                               value={editDrafts[product.id]?.price ?? ''}
                               onChange={e => updateDraft(product.id, 'price', e.target.value)}
-                              className="w-full bg-secondary/60 border border-border/40 rounded pl-3.5 pr-1 py-0.5 text-primary font-bold focus:border-primary/50 focus:outline-none no-spinners transition-colors duration-200 text-[11px]"
+                              className="w-full bg-secondary/60 border border-border/40 rounded pl-3.5 pr-1 py-0.5 text-foreground font-bold focus:border-primary/50 focus:outline-none no-spinners transition-colors duration-200 text-[11px]"
                               step="0.01" min="0"
                             />
                           </div>
