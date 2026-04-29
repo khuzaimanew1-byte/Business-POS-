@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 export type PerformanceMode = "smooth" | "fast" | "ultra";
 export type CurrencyCode = "PKR" | "USD" | "OMR";
 export type RoundingMode = "standard" | "floor" | "ceiling";
-export type RetentionMode = "1y" | "2y" | "all";
+export type RetentionMode = "1y" | "2y" | "5y" | "all" | "custom";
 export type DecimalPrecision = 0 | 1 | 2 | 3;
 
 // ── Shortcuts ─────────────────────────────────────────────────────────────
@@ -157,6 +157,8 @@ export type SettingsState = {
   defaultCategory: string;
   demoData: boolean;
   retention: RetentionMode;
+  /** Days kept when `retention === "custom"`. Ignored otherwise. */
+  retentionDays: number;
   confirmBeforeDelete: boolean;
   enableUndoDelete: boolean;
   bulkDeleteProtection: boolean;
@@ -181,6 +183,7 @@ const DEFAULTS: SettingsState = {
   defaultCategory: "",
   demoData: true,
   retention: "all",
+  retentionDays: 60,
   confirmBeforeDelete: true,
   enableUndoDelete: false,
   bulkDeleteProtection: true,
@@ -204,7 +207,7 @@ function load(): SettingsState {
     if (!raw) return DEFAULTS;
     const parsed = JSON.parse(raw);
     // Migrate legacy retention values ("7d", "30d", "custom") to "all".
-    const validRetention: RetentionMode[] = ["1y", "2y", "all"];
+    const validRetention: RetentionMode[] = ["1y", "2y", "5y", "all", "custom"];
     const retention: RetentionMode = validRetention.includes(parsed?.retention)
       ? parsed.retention
       : "all";

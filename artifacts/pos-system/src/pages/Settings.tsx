@@ -4,9 +4,8 @@ import {
   Home, BarChart2, Plus, Settings as SettingsIcon, ArrowLeft,
   Zap, Keyboard, Package, BarChart3, ShieldCheck, Sliders, Globe, ArrowRight,
   CornerDownLeft, ArrowUpRight, Info,
-  Database, FlaskConical, Clock, RotateCcw, Undo2, ShieldAlert, Lock, SquareDashed,
+  Database, FlaskConical, Clock, RotateCcw, Undo2, ShieldAlert, Lock, Layers,
 } from "lucide-react";
-import { useSaleEvents } from "@/lib/analytics-store";
 import {
   useSettings,
   type PerformanceMode, type CurrencyCode, type RoundingMode, type RetentionMode, type DecimalPrecision,
@@ -1025,10 +1024,12 @@ function DefaultsSection() {
    tight rows with naked icons. The Data Retention bar reflects how full the
    selected window actually is, based on the oldest stored sale event. */
 
-const RETENTION_PRESETS: { value: RetentionMode; label: string; ms: number | null }[] = [
-  { value: "1y",  label: "1 Year",   ms: 365 * 86_400_000 },
-  { value: "2y",  label: "2 Years",  ms: 2 * 365 * 86_400_000 },
-  { value: "all", label: "All Time", ms: null },
+const RETENTION_OPTIONS: { value: RetentionMode; label: string }[] = [
+  { value: "1y",     label: "1 Year" },
+  { value: "2y",     label: "2 Years" },
+  { value: "5y",     label: "5 Years" },
+  { value: "all",    label: "All Time" },
+  { value: "custom", label: "Custom" },
 ];
 
 function MiniSwitch({
@@ -1120,35 +1121,8 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-function formatDate(ts: number): string {
-  return new Date(ts).toLocaleDateString(undefined, {
-    year: "numeric", month: "short", day: "numeric",
-  });
-}
-
 function DataSafetySection() {
   const { settings, update } = useSettings();
-  const events = useSaleEvents({ seedIfEmpty: settings.demoData });
-
-  // Oldest event timestamp = "last stored data date" (anchor for the bar).
-  const oldestTs = useMemo(
-    () => (events.length ? events.reduce((m, e) => Math.min(m, e.ts), events[0].ts) : null),
-    [events],
-  );
-  const now = Date.now();
-  const actualSpan = oldestTs ? now - oldestTs : 0;
-  const selected = RETENTION_PRESETS.find(p => p.value === settings.retention) ?? RETENTION_PRESETS[2];
-  const selectedMs = selected.ms;
-  // % between last stored date and current date inside the selected window.
-  // All Time → always full. Selected ≤ actual stored span → full.
-  const percent =
-    selectedMs == null
-      ? 100
-      : oldestTs == null
-        ? 0
-        : actualSpan >= selectedMs
-          ? 100
-          : Math.round((actualSpan / selectedMs) * 100);
 
   // Lightweight undo counter persisted across sessions.
   const [undoCount, setUndoCount] = useState<number>(() => {
@@ -1190,58 +1164,38 @@ function DataSafetySection() {
             <OptionRow
               icon={<Clock size={18} strokeWidth={1.75} />}
               label="Data retention"
-            >
-              <div className="flex flex-wrap gap-1.5">
-                {RETENTION_PRESETS.map(p => {
-                  const active = settings.retention === p.value;
-                  return (
-                    <button
-                      key={p.value}
-                      type="button"
-                      onClick={() => update("retention", p.value)}
-                      aria-pressed={active}
-                      data-testid={`retention-${p.value}`}
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-200 ${
-                        active
-                          ? 'border-primary/55 bg-primary/[0.1] text-primary'
-                          : 'border-border/50 bg-white/[0.02] text-muted-foreground hover:border-border hover:text-foreground'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Bar: % of the selected window currently filled by stored data */}
-              <div className="mt-4 max-w-sm">
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1.5">
-                  <span data-testid="text-oldest-date">
-                    {oldestTs ? formatDate(oldestTs) : "No data"}
-                  </span>
-                  <span
-                    data-testid="text-retention-percent"
-                    className="font-semibold text-foreground tabular-nums"
+              control={
+                <div className="flex items-center gap-2">
+                  <select
+                    value={settings.retention}
+                    onChange={e => update("retention", e.target.value as RetentionMode)}
+                    data-testid="select-retention"
+                    className="bg-input/50 border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-ring/60 focus:ring-1 focus:ring-ring/20 transition-all duration-200 min-w-[120px]"
                   >
-                    {percent}%
-                  </span>
-                  <span data-testid="text-current-date">{formatDate(now)}</span>
+                    {RETENTION_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                  {settings.retention === "custom" && (
+                    <div className="inline-flex items-center gap-1.5 text-xs">
+                      <input
+                        type="number"
+                        min={1}
+                        max={3650}
+                        value={settings.retentionDays}
+                        onChange={e => {
+                          const n = parseInt(e.target.value, 10);
+                          update("retentionDays", isNaN(n) ? 1 : Math.max(1, Math.min(3650, n)));
+                        }}
+                        data-testid="input-retention-days"
+                        className="w-16 px-2 py-1.5 rounded-lg bg-input/50 border border-border/50 text-foreground text-xs focus:outline-none focus:border-ring/60"
+                      />
+                      <span className="text-muted-foreground">days</span>
+                    </div>
+                  )}
                 </div>
-                <div
-                  className="h-1.5 w-full rounded-full bg-white/[0.04] overflow-hidden"
-                  role="progressbar"
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-valuenow={percent}
-                >
-                  <div
-                    className="h-full bg-gradient-to-r from-primary/70 to-primary rounded-full transition-[width] duration-300"
-                    style={{ width: `${Math.max(2, percent)}%` }}
-                    aria-hidden
-                  />
-                </div>
-              </div>
-            </OptionRow>
+              }
+            />
 
             <OptionRow
               icon={<RotateCcw size={18} strokeWidth={1.75} />}
@@ -1286,24 +1240,28 @@ function DataSafetySection() {
             />
             <OptionRow
               icon={<ShieldAlert size={18} strokeWidth={1.75} />}
-              label={
-                <span className="inline-flex items-center gap-2">
-                  Confirm before delete
-                  <span
-                    title="Opens a confirmation dialog"
-                    aria-label="Opens a confirmation dialog"
-                    className="inline-flex items-center justify-center w-4 h-4 rounded-[3px] border border-border/70 text-muted-foreground/80"
-                  >
-                    <SquareDashed size={10} strokeWidth={2} />
-                  </span>
-                </span>
-              }
+              label="Confirm before delete"
               control={
                 <MiniSwitch checked={settings.confirmBeforeDelete} onChange={v => update("confirmBeforeDelete", v)} label="Confirm before delete" />
               }
-            />
+            >
+              {settings.confirmBeforeDelete && (
+                <div
+                  data-testid="preview-confirm-modal"
+                  className="-mt-2 inline-flex items-center gap-2 px-2 py-0.5 rounded-md bg-white/[0.025] border border-border/40"
+                >
+                  <span className="text-[10.5px] text-muted-foreground leading-none">Delete this item?</span>
+                  <span className="px-1.5 py-0.5 rounded-full text-[9.5px] font-medium text-muted-foreground bg-secondary/60 leading-none">
+                    Cancel
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded-full text-[9.5px] font-medium text-destructive bg-destructive/15 leading-none">
+                    Delete
+                  </span>
+                </div>
+              )}
+            </OptionRow>
             <OptionRow
-              icon={<ShieldCheck size={18} strokeWidth={1.75} />}
+              icon={<Layers size={18} strokeWidth={1.75} />}
               label="Bulk delete protection"
               control={
                 <MiniSwitch checked={settings.bulkDeleteProtection} onChange={v => update("bulkDeleteProtection", v)} label="Bulk delete protection" />
