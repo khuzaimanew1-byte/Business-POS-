@@ -839,62 +839,114 @@ function ShortcutsSection() {
         <Toggle checked={settings.shortcutsEnabled} onChange={v => update("shortcutsEnabled", v)} label="Enable keyboard shortcuts" desc="Master switch for all global hotkeys." />
       </Block>
       <Block>
-        <div className={`flex flex-col divide-y divide-border/30 ${settings.shortcutsEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
-          {actions.map(action => {
-            const binding = settings.shortcuts[action];
-            const isRecording = recordingFor === action;
-            const hasConflict = conflicts.has(action);
-            return (
-              <div key={action} className="flex items-center justify-between gap-3 py-3">
+        <div className={`${settings.shortcutsEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
+          {(() => {
+            const GROUPS: { title: string; actions: ShortcutAction[] }[] = [
+              {
+                title: "Navigation",
+                actions: [
+                  "openAnalytics",
+                  "openNotifications",
+                  "openCart",
+                  "openSettings",
+                  "back",
+                  "prevCategory",
+                  "nextCategory",
+                  "prevSettingsTab",
+                  "nextSettingsTab",
+                ],
+              },
+              {
+                title: "Products",
+                actions: [
+                  "addProduct",
+                  "createProduct",
+                  "createAndAnother",
+                  "toggleEditMode",
+                ],
+              },
+              {
+                title: "Actions",
+                actions: ["toggleSearch"],
+              },
+            ];
+            const known = new Set(GROUPS.flatMap(g => g.actions));
+            const orphans = actions.filter(a => !known.has(a));
+            if (orphans.length) GROUPS[GROUPS.length - 1].actions.push(...orphans);
+
+            const renderRow = (action: ShortcutAction) => {
+              const binding = settings.shortcuts[action];
+              const isRecording = recordingFor === action;
+              const hasConflict = conflicts.has(action);
+              return (
+                <div key={action} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/20 last:border-b-0">
+                  <div className="min-w-0 flex items-center gap-2">
+                    <span className="text-sm text-foreground/90 truncate">{SHORTCUT_LABELS[action]}</span>
+                    {hasConflict && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-amber-400/90 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                        <AlertTriangle size={10} /> Conflict
+                      </span>
+                    )}
+                  </div>
+                  <div className="shrink-0">
+                    <button
+                      onClick={() => startRecording(action)}
+                      onKeyDown={isRecording ? onRecordKey : undefined}
+                      onBlur={() => isRecording && setRecordingFor(null)}
+                      autoFocus={isRecording}
+                      className={`min-w-[120px] text-center px-3 py-1.5 rounded-full text-xs font-mono border transition-all duration-200 ${
+                        isRecording
+                          ? 'border-primary/60 bg-primary/[0.08] text-primary animate-pulse'
+                          : hasConflict
+                          ? 'border-amber-400/40 bg-amber-400/[0.05] text-foreground hover:border-amber-400/60'
+                          : !binding
+                          ? 'border-dashed border-border/60 text-muted-foreground hover:border-border'
+                          : 'border-border/60 bg-secondary/40 text-foreground hover:border-border'
+                      }`}
+                    >
+                      {isRecording ? "Press keys…" : shortcutToString(binding)}
+                    </button>
+                  </div>
+                </div>
+              );
+            };
+
+            const renderSystemRow = () => (
+              <div className="flex items-center justify-between gap-3 py-2.5 border-b border-border/20 last:border-b-0">
                 <div className="min-w-0 flex items-center gap-2">
-                  <span className="text-sm text-foreground/90">{SHORTCUT_LABELS[action]}</span>
-                  {hasConflict && (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-amber-400/90 bg-amber-400/10 px-1.5 py-0.5 rounded">
-                      <AlertTriangle size={10} /> Conflict
-                    </span>
-                  )}
+                  <span className="text-sm text-foreground/90 truncate">Adjust Cart Item Quantity</span>
+                  <span className="inline-flex items-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">
+                    System
+                  </span>
                 </div>
                 <div className="shrink-0">
-                  <button
-                    onClick={() => startRecording(action)}
-                    onKeyDown={isRecording ? onRecordKey : undefined}
-                    onBlur={() => isRecording && setRecordingFor(null)}
-                    autoFocus={isRecording}
-                    className={`min-w-[140px] text-center px-3 py-1.5 rounded-md text-xs font-mono border transition-all duration-200 ${
-                      isRecording
-                        ? 'border-primary/60 bg-primary/[0.08] text-primary animate-pulse'
-                        : hasConflict
-                        ? 'border-amber-400/40 bg-amber-400/[0.05] text-foreground hover:border-amber-400/60'
-                        : !binding
-                        ? 'border-dashed border-border/60 text-muted-foreground hover:border-border'
-                        : 'border-border/60 bg-secondary/40 text-foreground hover:border-border'
-                    }`}
+                  <div
+                    title="System shortcut — cannot be changed"
+                    aria-disabled="true"
+                    className="min-w-[120px] text-center px-3 py-1.5 rounded-full text-xs font-mono border border-border/40 bg-secondary/20 text-muted-foreground cursor-not-allowed select-none"
                   >
-                    {isRecording ? "Press keys…" : shortcutToString(binding)}
-                  </button>
+                    C + 1–9 + ↑/↓
+                  </div>
                 </div>
               </div>
             );
-          })}
 
-          {/* System / Locked shortcut — visible but not editable */}
-          <div className="flex items-center justify-between gap-3 py-3">
-            <div className="min-w-0 flex items-center gap-2">
-              <span className="text-sm text-foreground/90">Adjust Cart Item Quantity</span>
-              <span className="inline-flex items-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">
-                System
-              </span>
-            </div>
-            <div className="shrink-0">
-              <div
-                title="System shortcut — cannot be changed"
-                aria-disabled="true"
-                className="min-w-[140px] text-center px-3 py-1.5 rounded-md text-xs font-mono border border-border/40 bg-secondary/20 text-muted-foreground cursor-not-allowed select-none"
-              >
-                C + 1–9 + ↑/↓
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8">
+                {GROUPS.map((group, gi) => (
+                  <div key={group.title}>
+                    <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 mb-2">
+                      {group.title}
+                    </h3>
+                    <div className="flex flex-col">
+                      {group.actions.map(renderRow)}
+                      {gi === GROUPS.length - 1 && renderSystemRow()}
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-          </div>
+            );
+          })()}
         </div>
       </Block>
     </>
