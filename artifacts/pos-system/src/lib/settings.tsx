@@ -38,7 +38,7 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   openNotifications: "Open Notifications",
   toggleSearch:     "Toggle Search",
   openCart:         "Open Cart",
-  createProduct:    "Commit",
+  createProduct:    "Confirmation",
   createAndAnother: "Create & Add Another",
   toggleEditMode:   "Toggle Edit Mode",
   back:             "Back / Exit",

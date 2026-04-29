@@ -936,22 +936,29 @@ function ShortcutsSection() {
               },
             ];
 
+            // Layout intent (lg+):
+            //   col 1                col 2
+            //   ┌──────────────┐  ┌──────────────┐
+            //   │ Navigation   │  │ Actions      │
+            //   ├──────────────┤  ├──────────────┤
+            //   │ Products     │  │ System       │
+            //   └──────────────┘  └──────────────┘
+            // Achieved by emitting Nav, Actions, Products, System into the
+            // same grid in that exact order so auto-placement does the work.
             return (
-              <>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8">
-                  {GROUPS.map(group => (
-                    <div key={group.title}>
-                      <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 mb-2">
-                        {group.title}
-                      </h3>
-                      <div className="flex flex-col">
-                        {group.actions.map(renderRow)}
-                      </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8">
+                {GROUPS.map(group => (
+                  <div key={group.title}>
+                    <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 mb-2">
+                      {group.title}
+                    </h3>
+                    <div className="flex flex-col">
+                      {group.actions.map(renderRow)}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
 
-                <div className="mt-8">
+                <div>
                   <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 mb-2">
                     System
                   </h3>
@@ -978,7 +985,7 @@ function ShortcutsSection() {
                     ))}
                   </div>
                 </div>
-              </>
+              </div>
             );
           })()}
         </div>
