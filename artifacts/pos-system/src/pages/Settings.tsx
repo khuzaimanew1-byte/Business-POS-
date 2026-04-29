@@ -841,6 +841,10 @@ function ShortcutsSection() {
       <Block>
         <div className={`${settings.shortcutsEnabled ? '' : 'opacity-40 pointer-events-none'}`}>
           {(() => {
+            const SHORTCUT_DESCRIPTIONS: Partial<Record<ShortcutAction, string>> = {
+              createProduct: "Confirm, save, or create — works everywhere.",
+            };
+
             const GROUPS: { title: string; actions: ShortcutAction[] }[] = [
               {
                 title: "Navigation",
@@ -850,24 +854,26 @@ function ShortcutsSection() {
                   "openCart",
                   "openSettings",
                   "back",
-                  "prevCategory",
-                  "nextCategory",
-                  "prevSettingsTab",
-                  "nextSettingsTab",
                 ],
               },
               {
-                title: "Products",
+                title: "Modals",
                 actions: [
-                  "addProduct",
                   "createProduct",
+                  "addProduct",
                   "createAndAnother",
                   "toggleEditMode",
                 ],
               },
               {
                 title: "Actions",
-                actions: ["toggleSearch"],
+                actions: [
+                  "toggleSearch",
+                  "prevCategory",
+                  "nextCategory",
+                  "prevSettingsTab",
+                  "nextSettingsTab",
+                ],
               },
             ];
             const known = new Set(GROUPS.flatMap(g => g.actions));
@@ -878,14 +884,20 @@ function ShortcutsSection() {
               const binding = settings.shortcuts[action];
               const isRecording = recordingFor === action;
               const hasConflict = conflicts.has(action);
+              const desc = SHORTCUT_DESCRIPTIONS[action];
               return (
                 <div key={action} className="flex items-center justify-between gap-3 py-2.5 border-b border-border/20 last:border-b-0">
-                  <div className="min-w-0 flex items-center gap-2">
-                    <span className="text-sm text-foreground/90 truncate">{SHORTCUT_LABELS[action]}</span>
-                    {hasConflict && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-amber-400/90 bg-amber-400/10 px-1.5 py-0.5 rounded">
-                        <AlertTriangle size={10} /> Conflict
-                      </span>
+                  <div className="min-w-0 flex flex-col leading-tight">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-foreground/90 truncate">{SHORTCUT_LABELS[action]}</span>
+                      {hasConflict && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide text-amber-400/90 bg-amber-400/10 px-1.5 py-0.5 rounded">
+                          <AlertTriangle size={10} /> Conflict
+                        </span>
+                      )}
+                    </div>
+                    {desc && (
+                      <span className="text-xs text-muted-foreground mt-0.5">{desc}</span>
                     )}
                   </div>
                   <div className="shrink-0">
@@ -911,40 +923,56 @@ function ShortcutsSection() {
               );
             };
 
-            const renderSystemRow = () => (
-              <div className="flex items-center justify-between gap-3 py-2.5 border-b border-border/20 last:border-b-0">
-                <div className="min-w-0 flex items-center gap-2">
-                  <span className="text-sm text-foreground/90 truncate">Adjust Cart Item Quantity</span>
-                  <span className="inline-flex items-center text-[10px] font-medium uppercase tracking-wide text-muted-foreground bg-secondary/60 px-1.5 py-0.5 rounded">
-                    System
-                  </span>
-                </div>
-                <div className="shrink-0">
-                  <div
-                    title="System shortcut — cannot be changed"
-                    aria-disabled="true"
-                    className="min-w-[120px] text-center px-3 py-1.5 rounded-full text-xs font-mono border border-border/40 bg-secondary/20 text-muted-foreground cursor-not-allowed select-none"
-                  >
-                    C + 1–9 + ↑/↓
-                  </div>
-                </div>
-              </div>
-            );
+            const SYSTEM_ROWS: { label: string; binding: string; title: string }[] = [
+              {
+                label: "Adjust Cart Item Quantity",
+                binding: "C + 1–9 + ↑/↓",
+                title: "System shortcut — cannot be changed",
+              },
+            ];
 
             return (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8">
-                {GROUPS.map((group, gi) => (
-                  <div key={group.title}>
-                    <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 mb-2">
-                      {group.title}
-                    </h3>
-                    <div className="flex flex-col">
-                      {group.actions.map(renderRow)}
-                      {gi === GROUPS.length - 1 && renderSystemRow()}
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-8">
+                  {GROUPS.map(group => (
+                    <div key={group.title}>
+                      <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 mb-2">
+                        {group.title}
+                      </h3>
+                      <div className="flex flex-col">
+                        {group.actions.map(renderRow)}
+                      </div>
                     </div>
+                  ))}
+                </div>
+
+                <div className="mt-8">
+                  <h3 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 mb-2">
+                    System
+                  </h3>
+                  <div className="flex flex-col">
+                    {SYSTEM_ROWS.map(row => (
+                      <div
+                        key={row.label}
+                        className="flex items-center justify-between gap-3 py-2.5 border-b border-border/20 last:border-b-0"
+                      >
+                        <div className="min-w-0 flex items-center gap-2">
+                          <span className="text-sm text-foreground/90 truncate">{row.label}</span>
+                        </div>
+                        <div className="shrink-0">
+                          <div
+                            title={row.title}
+                            aria-disabled="true"
+                            className="min-w-[120px] text-center px-3 py-1.5 rounded-full text-xs font-mono border border-border/40 bg-secondary/20 text-muted-foreground cursor-not-allowed select-none"
+                          >
+                            {row.binding}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              </>
             );
           })()}
         </div>
