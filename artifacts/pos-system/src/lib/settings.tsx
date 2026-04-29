@@ -81,10 +81,35 @@ export const CURRENCY_SYMBOLS: Record<CurrencyCode, string> = {
   OMR: "", // OMR uses suffix format instead — see formatCurrency
 };
 
+// ── Region (timezone) ─────────────────────────────────────────────────────
+export type RegionKey = "US" | "PK" | "OM";
+
+export const REGIONS: Record<RegionKey, { label: string; timeZone: string }> = {
+  US: { label: "United States", timeZone: "America/New_York" },
+  PK: { label: "Pakistan",      timeZone: "Asia/Karachi" },
+  OM: { label: "Oman",          timeZone: "Asia/Muscat" },
+};
+
+/** Best-effort detection of the user's region using the browser timezone. */
+export function detectRegion(): RegionKey {
+  if (typeof Intl === "undefined") return "US";
+  let tz = "";
+  try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { tz = ""; }
+  if (tz === "Asia/Karachi") return "PK";
+  if (tz === "Asia/Muscat" || tz === "Asia/Dubai") return "OM";
+  if (tz.startsWith("America/")) return "US";
+  // Fallback to UTC offset (hours east of UTC)
+  const offset = -new Date().getTimezoneOffset() / 60;
+  if (offset === 5) return "PK";
+  if (offset === 4) return "OM";
+  return "US";
+}
+
 // ── State ─────────────────────────────────────────────────────────────────
 export type SettingsState = {
   performance: PerformanceMode;
   currency: CurrencyCode;
+  region: RegionKey;
   decimals: DecimalPrecision;
   rounding: RoundingMode;
   rates: ExchangeRates;
@@ -108,6 +133,7 @@ export type SettingsState = {
 const DEFAULTS: SettingsState = {
   performance: "smooth",
   currency: "USD",
+  region: "US",
   decimals: 2,
   rounding: "standard",
   rates: DEFAULT_RATES,

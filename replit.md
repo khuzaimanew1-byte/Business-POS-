@@ -44,3 +44,8 @@ Actionable-only notification system in `artifacts/pos-system`. Architected aroun
   - `Shift+E` — *true* toggle for Edit Mode: enters when closed, saves & exits when open.
   - `Shift+N` — opens the Notifications page; idempotent (`navTo` checks `window.location.pathname` first, so re-pressing on the same page is a silent no-op).
   - All shortcuts are skipped when typing in inputs unless `allowInInput` is set.
+- **Settings → Region tab (in `pages/Settings.tsx`).** Combines Currency and Time-zone management.
+  - **Currency block**: USD card → arrow → PKR + OMR cards. USD is locked at `$1`. PKR shown as "Rs" 1-decimal, OMR as "R.O" 3-decimal. "Edit rates" toggles inline editing on PKR/OMR; Save reformats to fixed precision and persists to `settings.rates`.
+  - **Time-zone block**: three cards (US / Pakistan / Oman) with live 12-hour clocks. Tick aligns to the next minute boundary, then ticks every 60 s. Zone abbreviation comes from `Intl.DateTimeFormat` with a curated `ZONE_ABBR_FALLBACK` for `Asia/Karachi` (PKT) and `Asia/Muscat` (GST); offset is rendered "UTC±N". Browser-detected region (`detectRegion()` in `lib/settings.tsx`) shows an "Auto-detected" badge; the user's manual selection is stored in `settings.region`.
+- **Global scrollbar.** A custom 8px scrollbar is defined in `index.css` `@layer base` so utility classes (e.g. `.scrollbar-none` in `@layer utilities`) still win the cascade. Page-level opt-out via `html:has(.add-product-page)` hides the scrollbar on the Add Products page.
+- **Analytics modes.** "Daily" mode has been removed; the available modes are weekly / monthly / yearly. Default is `monthly`.

@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import {
   Home, BarChart2, Plus, Settings as SettingsIcon, ArrowLeft,
-  Zap, DollarSign, Keyboard, Package, BarChart3, ShieldCheck, Sliders,
+  Zap, Keyboard, Package, BarChart3, ShieldCheck, Sliders, Globe, ArrowRight,
 } from "lucide-react";
 import {
   useSettings,
   type PerformanceMode, type CurrencyCode, type RoundingMode, type RetentionMode, type DecimalPrecision,
-  type ShortcutAction, type ShortcutBinding,
-  SHORTCUT_LABELS, DEFAULT_RATES,
+  type ShortcutAction, type ShortcutBinding, type RegionKey,
+  SHORTCUT_LABELS, DEFAULT_RATES, REGIONS, detectRegion,
   shortcutToString, detectConflicts, bindingFromKeyEvent,
 } from "@/lib/settings";
 import { AlertTriangle } from "lucide-react";
@@ -16,11 +16,11 @@ import { useStore } from "@/lib/store";
 import { useShortcut } from "@/lib/shortcuts";
 import { toast } from "sonner";
 
-type SectionId = "performance" | "currency" | "input" | "shortcuts" | "defaults" | "data" | "safety";
+type SectionId = "performance" | "region" | "input" | "shortcuts" | "defaults" | "data" | "safety";
 
 const SECTIONS: { id: SectionId; label: string; icon: React.ReactNode }[] = [
   { id: "performance", label: "Performance",     icon: <Zap size={15} /> },
-  { id: "currency",    label: "Currency",        icon: <DollarSign size={15} /> },
+  { id: "region",      label: "Region",          icon: <Globe size={15} /> },
   { id: "input",       label: "Input Behavior",  icon: <Sliders size={15} /> },
   { id: "shortcuts",   label: "Shortcuts",       icon: <Keyboard size={15} /> },
   { id: "defaults",    label: "Defaults",        icon: <Package size={15} /> },
@@ -100,7 +100,7 @@ export default function SettingsPage() {
             {/* Content */}
             <div key={section} className="flex-1 min-w-0 animate-in fade-in slide-in-from-right-2 duration-300">
               {section === "performance" && <PerformanceSection />}
-              {section === "currency"    && <CurrencySection />}
+              {section === "region"      && <RegionSection />}
               {section === "input"       && <InputBehaviorSection />}
               {section === "shortcuts"   && <ShortcutsSection />}
               {section === "defaults"    && <DefaultsSection />}
@@ -247,77 +247,67 @@ function PerformanceSection() {
   );
 }
 
-function CurrencySection() {
-  const { settings, update } = useSettings();
+function RegionSection() {
   return (
     <>
-      <SectionHeader title="Currency" desc="Affects every price, total, and analytics figure." />
-      <CurrencyCardSelector />
-      <Block>
-        <Row label="Decimal precision" desc="Maximum digits after the decimal. Trailing zeros are not shown.">
-          <Select
-            value={String(settings.decimals)}
-            onChange={v => update("decimals", Number(v) as DecimalPrecision)}
-            options={[
-              { value: "0", label: "0 (e.g. 12)" },
-              { value: "1", label: "1 (e.g. 12.3)" },
-              { value: "2", label: "2 (e.g. 12.34)" },
-              { value: "3", label: "3 (e.g. 12.345)" },
-            ]}
-          />
-        </Row>
-        <Row label="Rounding mode" desc="How fractional values are resolved.">
-          <Select
-            value={settings.rounding}
-            onChange={v => update("rounding", v)}
-            options={[
-              { value: "standard", label: "Standard" },
-              { value: "floor",    label: "Floor" },
-              { value: "ceiling",  label: "Ceiling" },
-            ]}
-          />
-        </Row>
-      </Block>
+      <SectionHeader title="Region" desc="Set your active currency, exchange rates, and time zone." />
+      <CurrencyRatesBlock />
+      <TimeZoneBlock />
     </>
   );
 }
 
-function CurrencyCardSelector() {
+/* ── Currency block ────────────────────────────────────────────────────────
+   Section title "Currency" on the left, "Edit rates" button on the right.
+   Below: three cards in a horizontal row — USD, then a right-pointing arrow,
+   then PKR and OMR. USD shows "$1" and is never editable. PKR and OMR show
+   their rate (1-decimal / 3-decimal). When editing, PKR and OMR cards expose
+   inline number inputs and the button toggles to "Save". On Save, values are
+   re-formatted to their fixed precision. */
+function CurrencyRatesBlock() {
   const { settings, update } = useSettings();
   const [editing, setEditing] = useState(false);
-  const [pkr, setPkr] = useState(String(settings.rates.PKR));
-  const [omr, setOmr] = useState(String(settings.rates.OMR));
+  const [pkr, setPkr] = useState(settings.rates.PKR.toFixed(1));
+  const [omr, setOmr] = useState(settings.rates.OMR.toFixed(3));
 
   const enterEdit = () => {
-    setPkr(String(settings.rates.PKR));
-    setOmr(String(settings.rates.OMR));
+    setPkr(settings.rates.PKR.toFixed(1));
+    setOmr(settings.rates.OMR.toFixed(3));
     setEditing(true);
   };
 
   const save = () => {
-    const nextPkr = Number(pkr) || 0;
-    const nextOmr = Number(omr) || 0;
-    if (nextPkr <= 0 || nextOmr <= 0) {
+    const nextPkr = Number(pkr);
+    const nextOmr = Number(omr);
+    if (!Number.isFinite(nextPkr) || !Number.isFinite(nextOmr) || nextPkr <= 0 || nextOmr <= 0) {
       toast.error("Rates must be greater than zero");
       return;
     }
-    update("rates", { PKR: nextPkr, OMR: nextOmr });
+    const fixedPkr = Number(nextPkr.toFixed(1));
+    const fixedOmr = Number(nextOmr.toFixed(3));
+    update("rates", { PKR: fixedPkr, OMR: fixedOmr });
     setEditing(false);
     toast.success("Exchange rates updated");
   };
 
-  const fmt = (n: number) =>
-    n >= 100 ? n.toFixed(0) : n >= 1 ? n.toFixed(2).replace(/\.?0+$/, '') : n.toFixed(3).replace(/\.?0+$/, '');
-
   const select = (c: CurrencyCode) => { if (!editing) update("currency", c); };
+
+  // Display formatters — fixed precision per currency, per spec.
+  const dispPkr = settings.rates.PKR.toFixed(1);
+  const dispOmr = settings.rates.OMR.toFixed(3);
+
+  const cardBase =
+    "group relative text-left px-3 sm:px-4 py-3 rounded-xl border transition-all duration-300";
+  const cardActive =
+    "border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(212,175,90,0.14)]";
+  const cardInactive =
+    "border-border/50 bg-white/[0.015] hover:border-border hover:bg-white/[0.03]";
 
   return (
     <Block>
-      {/* Header row with Change/Save button */}
+      {/* Section title left, action button right — same row */}
       <div className="flex items-center justify-between mb-3">
-        <div>
-          <div className="text-xs text-muted-foreground mt-0.5">Tap a card to set the active currency. USD is the base — all values derive from it.</div>
-        </div>
+        <h3 className="text-sm sm:text-base font-semibold tracking-tight">Currency</h3>
         {editing ? (
           <div className="flex items-center gap-2 shrink-0">
             <button
@@ -338,56 +328,47 @@ function CurrencyCardSelector() {
           <button
             onClick={enterEdit}
             className="h-9 px-4 rounded-lg border border-border/60 bg-secondary/40 text-xs font-medium text-foreground hover:border-border hover:bg-secondary/60 transition-all duration-200 shrink-0"
-            data-testid="btn-change-rates"
+            data-testid="btn-edit-rates"
           >
-            Change
+            Edit rates
           </button>
         )}
       </div>
 
-      {/* 3-card row */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-3">
-        {/* USD — locked base */}
+      {/* USD → PKR  OMR — arrow appears between USD and PKR only */}
+      <div className="flex items-stretch gap-2 sm:gap-3">
+        {/* USD card — locked base, never editable */}
         <button
           type="button"
           onClick={() => select("USD")}
           disabled={editing}
-          className={`group relative text-left px-3 sm:px-4 py-3 rounded-xl border transition-all duration-300 ${
-            settings.currency === "USD"
-              ? 'border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(212,175,90,0.14)]'
-              : 'border-border/50 bg-white/[0.015] hover:border-border hover:bg-white/[0.03]'
-          } ${editing ? 'cursor-default' : 'cursor-pointer'}`}
+          className={`flex-1 ${cardBase} ${settings.currency === "USD" ? cardActive : cardInactive} ${editing ? "cursor-default" : "cursor-pointer"}`}
           data-testid="card-usd"
         >
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold">USD</span>
-            {/* Source-direction arrow — only on USD */}
-            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/15 text-primary text-[10px] leading-none" aria-label="Source currency">→</span>
-          </div>
-          <div className="flex items-baseline gap-1.5">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold mb-1.5">USD</div>
+          <div className="flex items-baseline gap-1">
             <span className="text-base sm:text-lg font-bold text-primary leading-none">$</span>
             <span className="text-[15px] sm:text-base font-mono font-semibold text-foreground tabular-nums leading-none">1</span>
           </div>
         </button>
 
-        {/* PKR */}
+        {/* Arrow — between USD and PKR only */}
+        <div className="flex items-center justify-center shrink-0 px-0.5 text-muted-foreground/70" aria-hidden="true">
+          <ArrowRight size={16} />
+        </div>
+
+        {/* PKR card */}
         <button
           type="button"
           onClick={() => select("PKR")}
           disabled={editing}
-          className={`group relative text-left px-3 sm:px-4 py-3 rounded-xl border transition-all duration-300 ${
-            settings.currency === "PKR"
-              ? 'border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(212,175,90,0.14)]'
-              : 'border-border/50 bg-white/[0.015] hover:border-border hover:bg-white/[0.03]'
-          } ${editing ? 'cursor-default' : 'cursor-pointer'}`}
+          className={`flex-1 ${cardBase} ${settings.currency === "PKR" ? cardActive : cardInactive} ${editing ? "cursor-default" : "cursor-pointer"}`}
           data-testid="card-pkr"
         >
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold">PKR</span>
-          </div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold mb-1.5">PKR</div>
           {editing ? (
             <div className="relative h-7 -my-0.5">
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground pointer-events-none">₨</span>
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground pointer-events-none">Rs</span>
               <input
                 type="text"
                 inputMode="decimal"
@@ -395,56 +376,205 @@ function CurrencyCardSelector() {
                 onChange={e => setPkr(e.target.value.replace(/[^0-9.]/g, ''))}
                 onClick={e => e.stopPropagation()}
                 autoFocus
-                className="w-full h-full pl-5 pr-1 bg-transparent border-0 border-b border-primary/50 focus:border-primary text-[15px] sm:text-base font-mono font-semibold text-foreground outline-none transition-colors duration-200 tabular-nums"
+                className="w-full h-full pl-7 pr-1 bg-transparent border-0 border-b border-primary/50 focus:border-primary text-[15px] sm:text-base font-mono font-semibold text-foreground outline-none transition-colors duration-200 tabular-nums"
                 data-testid="input-rate-pkr"
               />
             </div>
           ) : (
             <div className="flex items-baseline gap-1.5">
-              <span className="text-base sm:text-lg font-bold text-muted-foreground leading-none">₨</span>
-              <span className="text-[15px] sm:text-base font-mono font-semibold text-foreground tabular-nums leading-none">{fmt(settings.rates.PKR)}</span>
+              <span className="text-xs sm:text-sm font-bold text-muted-foreground leading-none">Rs</span>
+              <span className="text-[15px] sm:text-base font-mono font-semibold text-foreground tabular-nums leading-none">{dispPkr}</span>
             </div>
           )}
         </button>
 
-        {/* OMR — label on right */}
+        {/* OMR card — no arrow before it */}
         <button
           type="button"
           onClick={() => select("OMR")}
           disabled={editing}
-          className={`group relative text-left px-3 sm:px-4 py-3 rounded-xl border transition-all duration-300 ${
-            settings.currency === "OMR"
-              ? 'border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(212,175,90,0.14)]'
-              : 'border-border/50 bg-white/[0.015] hover:border-border hover:bg-white/[0.03]'
-          } ${editing ? 'cursor-default' : 'cursor-pointer'}`}
+          className={`flex-1 ${cardBase} ${settings.currency === "OMR" ? cardActive : cardInactive} ${editing ? "cursor-default" : "cursor-pointer"}`}
           data-testid="card-omr"
         >
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold">OMR</span>
-          </div>
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold mb-1.5">OMR</div>
           {editing ? (
             <div className="relative h-7 -my-0.5">
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground pointer-events-none">R.O</span>
               <input
                 type="text"
                 inputMode="decimal"
                 value={omr}
                 onChange={e => setOmr(e.target.value.replace(/[^0-9.]/g, ''))}
                 onClick={e => e.stopPropagation()}
-                className="w-full h-full pl-0 pr-10 bg-transparent border-0 border-b border-primary/50 focus:border-primary text-[15px] sm:text-base font-mono font-semibold text-foreground outline-none transition-colors duration-200 tabular-nums"
+                className="w-full h-full pl-9 pr-1 bg-transparent border-0 border-b border-primary/50 focus:border-primary text-[15px] sm:text-base font-mono font-semibold text-foreground outline-none transition-colors duration-200 tabular-nums"
                 data-testid="input-rate-omr"
               />
-              <span className="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] font-bold text-muted-foreground pointer-events-none">OMR</span>
             </div>
           ) : (
-            <div className="flex items-baseline justify-between gap-1.5">
-              <span className="text-[15px] sm:text-base font-mono font-semibold text-foreground tabular-nums leading-none">{fmt(settings.rates.OMR)}</span>
-              <span className="text-[10px] font-bold text-muted-foreground leading-none">OMR</span>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xs sm:text-sm font-bold text-muted-foreground leading-none">R.O</span>
+              <span className="text-[15px] sm:text-base font-mono font-semibold text-foreground tabular-nums leading-none">{dispOmr}</span>
             </div>
           )}
         </button>
       </div>
     </Block>
   );
+}
+
+/* ── Time-zone block ───────────────────────────────────────────────────────
+   Three cards (United States / Pakistan / Oman). Each shows a live 12-hour
+   clock (HH:MM only) and the timezone abbreviation + UTC offset, computed
+   from the IANA zone via `Intl.DateTimeFormat`. The browser-detected region
+   is marked with a small "auto-detected" badge; the user's manual selection
+   is persisted in settings and shown via a dot in the top-right corner.
+   The clock ticks once a minute. */
+function TimeZoneBlock() {
+  const { settings, update } = useSettings();
+  const detected = useMemo<RegionKey>(() => detectRegion(), []);
+
+  // Live "now" that updates every minute, aligned to the next minute boundary
+  // so all three clocks tick together on the :00 second.
+  const [now, setNow] = useState<Date>(() => new Date());
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const msToNextMinute = 60000 - (Date.now() % 60000);
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+    const timeoutId = setTimeout(() => {
+      tick();
+      intervalId = setInterval(tick, 60000);
+    }, msToNextMinute);
+    return () => {
+      clearTimeout(timeoutId);
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, []);
+
+  const order: RegionKey[] = ["US", "PK", "OM"];
+
+  return (
+    <Block>
+      <h3 className="text-sm sm:text-base font-semibold tracking-tight mb-3">Time zone</h3>
+      <div className="grid grid-cols-3 gap-2 sm:gap-3">
+        {order.map(key => {
+          const meta = REGIONS[key];
+          const isActive = settings.region === key;
+          const isAuto = detected === key;
+          const time = formatTime12h(now, meta.timeZone);
+          const { abbr, offset } = formatZone(now, meta.timeZone);
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => update("region", key)}
+              className={`relative text-left px-3 sm:px-4 py-3 rounded-xl border transition-all duration-300 cursor-pointer ${
+                isActive
+                  ? "border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(212,175,90,0.14)]"
+                  : "border-border/50 bg-white/[0.015] hover:border-border hover:bg-white/[0.03]"
+              }`}
+              data-testid={`card-region-${key.toLowerCase()}`}
+              aria-pressed={isActive}
+            >
+              {/* Active dot — top-right */}
+              <span
+                className={`absolute top-2.5 right-2.5 inline-block w-2 h-2 rounded-full transition-all duration-200 ${
+                  isActive ? "bg-primary shadow-[0_0_6px_rgba(212,175,90,0.7)]" : "bg-muted-foreground/25"
+                }`}
+                aria-hidden="true"
+              />
+              <div className="text-[11px] sm:text-xs font-semibold text-foreground/95 leading-none mb-2 pr-4 truncate">
+                {meta.label}
+              </div>
+              <div className="text-base sm:text-lg font-mono font-semibold tabular-nums text-foreground leading-none mb-2">
+                {time}
+              </div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold leading-none">
+                {abbr === offset ? offset : <>{abbr} <span className="opacity-70">· {offset}</span></>}
+              </div>
+              {isAuto && (
+                <span className="mt-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-semibold leading-none">
+                  <span className="w-1 h-1 rounded-full bg-primary" />
+                  Auto-detected
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </Block>
+  );
+}
+
+/** Format a moment as "h:mm AM/PM" in the given IANA zone (no seconds). */
+function formatTime12h(d: Date, timeZone: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(d);
+  } catch {
+    return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", hour12: true });
+  }
+}
+
+/** Hand-curated fallback short names for zones where Intl returns "GMT±N"
+ *  rather than a real abbreviation. Keeps display tight. */
+const ZONE_ABBR_FALLBACK: Record<string, string> = {
+  "Asia/Karachi": "PKT",
+  "Asia/Muscat":  "GST",
+};
+
+/** Resolve the timezone short-name (e.g. "EST") and signed UTC offset
+ *  ("UTC-5" / "UTC+5:30") for a moment in the given IANA zone. */
+function formatZone(d: Date, timeZone: string): { abbr: string; offset: string } {
+  let abbr = "";
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "short",
+      hour: "numeric",
+    }).formatToParts(d);
+    abbr = parts.find(p => p.type === "timeZoneName")?.value ?? "";
+  } catch {}
+
+  // If the runtime returns a generic GMT±N string, normalise it; otherwise
+  // keep the locale's short name (e.g. "EST", "PKT").
+  let offset = "";
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      timeZoneName: "shortOffset",
+      hour: "numeric",
+    }).formatToParts(d);
+    const raw = parts.find(p => p.type === "timeZoneName")?.value ?? "";
+    // raw is like "GMT-5" or "GMT+5:30"; relabel with "UTC".
+    offset = raw.replace(/^GMT/, "UTC") || raw;
+  } catch {}
+
+  if (!offset) {
+    // Fallback: compute from the difference between zone-local and UTC strings.
+    try {
+      const local = new Date(d.toLocaleString("en-US", { timeZone }));
+      const utc = new Date(d.toLocaleString("en-US", { timeZone: "UTC" }));
+      const diffMin = Math.round((local.getTime() - utc.getTime()) / 60000);
+      const sign = diffMin >= 0 ? "+" : "-";
+      const h = Math.floor(Math.abs(diffMin) / 60);
+      const m = Math.abs(diffMin) % 60;
+      offset = `UTC${sign}${h}${m ? `:${String(m).padStart(2, "0")}` : ""}`;
+    } catch {
+      offset = "UTC";
+    }
+  }
+
+  if (!abbr || /^GMT[+\-0-9:]/.test(abbr)) {
+    // No locale-friendly abbreviation available — prefer a curated fallback,
+    // otherwise show the offset itself (caller will dedupe).
+    abbr = ZONE_ABBR_FALLBACK[timeZone] ?? offset;
+  }
+
+  return { abbr, offset };
 }
 
 function InputBehaviorSection() {
