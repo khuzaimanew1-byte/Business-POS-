@@ -1,0 +1,98 @@
+Add a new tab named “Data & Safety” inside the Settings page. Follow a clean, card-based layout. Do not change existing logic — only implement UI structure and behavior.
+
+🔹 1. Tab Setup
+Settings page mein:
+new tab add karo → “Data & Safety”
+Tab open hone par:
+dedicated page/view render ho
+🔹 2. Top Section (Status Summary)
+Header same style rakho (title + subtitle)
+Neeche ek compact summary bar add karo
+Behavior:
+Current state ek line mein show ho:
+Demo mode status
+Data retention
+Protection status
+Ye bar:
+top pe visible rahe (sticky feel)
+🔹 3. Page Structure
+
+Page ko 2 cards mein divide karo:
+
+Card 1: Analytics
+Demo Data
+Data Retention
+Reset Analytics
+Card 2: Deletion Protection
+Undo Delete
+Confirm Before Delete
+Bulk Delete Protection
+Strict Confirmation
+🔹 4. Option Row Structure (Same for All)
+
+Har option row:
+
+Left:
+icon + label
+Middle:
+state chip (current status)
+Right:
+toggle ya action button
+
+👉 Same structure har option ke liye use karo
+
+🔹 5. Analytics Card Behavior
+Demo Data
+Toggle + state chip
+ON/OFF clearly visible ho
+ON state mein:
+subtle visual hint show ho (demo overlay concept)
+Data Retention
+Preset options show karo (quick selection)
+Neeche:
+timeline-style visual bar ho
+Custom select hone par:
+extra input appear ho
+Reset Analytics
+Isko destructive action dikhana hai
+Button clear wording ke saath ho
+Row visually slightly distinct ho
+🔹 6. Deletion Protection Card
+Order (important):
+Undo Delete
+Confirm Before Delete
+Bulk Delete Protection
+Strict Confirmation
+Behavior Rules:
+Har option:
+clear state chip show kare
+Dependency:
+Agar “Confirm Before Delete” OFF ho:
+“Strict Confirmation”:
+disabled/dim ho jaye
+hint show kare (enable confirmation first)
+🔹 7. State System
+Har option ka:
+clear visible state ho
+
+Examples:
+
+enabled / disabled
+active / inactive
+protected / unprotected
+
+👉 Short, readable text use karo
+
+🔹 8. Layout & Spacing
+Cards:
+stacked vertically
+Rows:
+spacious ho
+Options ke beech:
+subtle divider
+🔹 9. Mobile Behavior
+Same layout maintain karo
+Cards full width ho
+Rows touch-friendly ho
+Data retention options wrap ho sakte hain
+✅ Expected Result

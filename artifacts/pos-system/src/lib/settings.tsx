@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 export type PerformanceMode = "smooth" | "fast" | "ultra";
 export type CurrencyCode = "PKR" | "USD" | "OMR";
 export type RoundingMode = "standard" | "floor" | "ceiling";
-export type RetentionMode = "7d" | "30d" | "all";
+export type RetentionMode = "7d" | "30d" | "all" | "custom";
 export type DecimalPrecision = 0 | 1 | 2 | 3;
 
 // ── Shortcuts ─────────────────────────────────────────────────────────────
@@ -157,6 +157,8 @@ export type SettingsState = {
   defaultCategory: string;
   demoData: boolean;
   retention: RetentionMode;
+  /** Days to keep when `retention === "custom"`. Ignored otherwise. */
+  retentionDays: number;
   confirmBeforeDelete: boolean;
   enableUndoDelete: boolean;
   bulkDeleteProtection: boolean;
@@ -181,6 +183,7 @@ const DEFAULTS: SettingsState = {
   defaultCategory: "",
   demoData: true,
   retention: "all",
+  retentionDays: 60,
   confirmBeforeDelete: true,
   enableUndoDelete: false,
   bulkDeleteProtection: true,
