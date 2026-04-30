@@ -1256,7 +1256,6 @@ function DataSafetySection() {
               icon={<Lock size={18} strokeWidth={1.75} />}
               label="Strict confirmation"
               disabled={strictDisabled}
-              hint={strictDisabled ? "Enable “Confirm before delete” first." : undefined}
               control={
                 <MiniSwitch
                   checked={settings.strictConfirm}
