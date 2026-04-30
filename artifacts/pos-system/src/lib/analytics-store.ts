@@ -97,6 +97,24 @@ export function clearRealEvents() {
 }
 
 /**
+ * Read the current real-event stream synchronously. Used by the Reset
+ * Analytics flow in Settings to capture an in-memory snapshot just before
+ * `clearRealEvents()` so the user can recover within a short window.
+ * The returned array is a fresh parse and safe to retain.
+ */
+export function getRealEvents(): SaleEvent[] {
+  return loadReal();
+}
+
+/**
+ * Replace the real-event stream with the given snapshot and notify
+ * subscribers. Used to undo a recent `clearRealEvents()` call.
+ */
+export function restoreRealEvents(events: SaleEvent[]) {
+  saveReal(events);
+}
+
+/**
  * Returns the events that should drive analytics for the current settings:
  *   • Demo Mode ON  → in-memory 2025-anchored demo dataset (real events hidden).
  *   • Demo Mode OFF → only events recorded by `recordSale` (the real stream).

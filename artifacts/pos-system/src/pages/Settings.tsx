@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
   Home, BarChart2, Plus, Settings as SettingsIcon, ArrowLeft,
@@ -15,9 +15,28 @@ import {
 } from "@/lib/settings";
 import { AlertTriangle } from "lucide-react";
 import { useStore } from "@/lib/store";
-import { clearRealEvents } from "@/lib/analytics-store";
+import {
+  clearRealEvents,
+  getRealEvents,
+  restoreRealEvents,
+  type SaleEvent,
+} from "@/lib/analytics-store";
 import { useShortcut } from "@/lib/shortcuts";
 import { toast } from "sonner";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+// Aliased to avoid colliding with the local segmented `Select` component
+// defined further down in this file.
+import {
+  Select as UISelect,
+  SelectContent as UISelectContent,
+  SelectItem as UISelectItem,
+  SelectTrigger as UISelectTrigger,
+  SelectValue as UISelectValue,
+} from "@/components/ui/select";
 
 type SectionId = "experience" | "region" | "shortcuts" | "defaults" | "dataSafety";
 
@@ -1122,6 +1141,15 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Phrase the user must type to confirm an analytics reset. Case-sensitive,
+// uppercase, with a single space — designed to be deliberate to type so
+// accidental confirmations are very unlikely.
+const RESET_PHRASE = "RESET ANALYTICS";
+
+// How long the inline Recover affordance remains available after a reset.
+// Long enough to be discoverable, short enough that it doesn't linger.
+const RECOVER_WINDOW_MS = 10_000;
+
 function DataSafetySection() {
   const { settings, update } = useSettings();
 
@@ -1145,6 +1173,66 @@ function DataSafetySection() {
 
   const strictDisabled = !settings.confirmBeforeDelete;
 
+  // ── Reset Analytics — typed-confirmation flow + temporary recover ───────
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetText, setResetText] = useState("");
+  // Snapshot taken just before clearing; while non-null a Recover affordance
+  // is rendered next to the Reset button. Cleared automatically after the
+  // recover window elapses or after a successful recover.
+  const [recoverSnapshot, setRecoverSnapshot] = useState<SaleEvent[] | null>(null);
+  const recoverTimerRef = useRef<number | null>(null);
+
+  // Always clean up any pending recover timer on unmount so we don't leak
+  // a setTimeout callback that runs after the component is gone.
+  useEffect(() => () => {
+    if (recoverTimerRef.current !== null) {
+      window.clearTimeout(recoverTimerRef.current);
+      recoverTimerRef.current = null;
+    }
+  }, []);
+
+  const canConfirmReset = resetText === RESET_PHRASE;
+
+  const openResetConfirm = () => {
+    setResetText("");
+    setResetOpen(true);
+  };
+
+  const cancelResetConfirm = () => {
+    setResetOpen(false);
+    setResetText("");
+  };
+
+  const performReset = () => {
+    if (!canConfirmReset) return;
+    // Snapshot first so the user can recover; then clear and surface the
+    // Recover affordance for a short window.
+    const snapshot = getRealEvents();
+    clearRealEvents();
+    setResetOpen(false);
+    setResetText("");
+    setRecoverSnapshot(snapshot);
+    if (recoverTimerRef.current !== null) {
+      window.clearTimeout(recoverTimerRef.current);
+    }
+    recoverTimerRef.current = window.setTimeout(() => {
+      setRecoverSnapshot(null);
+      recoverTimerRef.current = null;
+    }, RECOVER_WINDOW_MS);
+    toast.success("Analytics data cleared");
+  };
+
+  const performRecover = () => {
+    if (!recoverSnapshot) return;
+    restoreRealEvents(recoverSnapshot);
+    setRecoverSnapshot(null);
+    if (recoverTimerRef.current !== null) {
+      window.clearTimeout(recoverTimerRef.current);
+      recoverTimerRef.current = null;
+    }
+    toast.success("Analytics data restored");
+  };
+
   return (
     <>
       <SectionHeader title="Data & Safety" />
@@ -1167,16 +1255,31 @@ function DataSafetySection() {
               label="Data retention"
               control={
                 <div className="flex items-center gap-2">
-                  <select
+                  <UISelect
                     value={settings.retention}
-                    onChange={e => update("retention", e.target.value as RetentionMode)}
-                    data-testid="select-retention"
-                    className="bg-input/50 border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-ring/60 focus:ring-1 focus:ring-ring/20 transition-all duration-200 min-w-[120px]"
+                    onValueChange={v => update("retention", v as RetentionMode)}
                   >
-                    {RETENTION_OPTIONS.map(o => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
+                    <UISelectTrigger
+                      data-testid="select-retention"
+                      className="h-8 min-w-[128px] gap-2 rounded-lg border-border/50 bg-input/50 px-2.5 text-xs font-medium text-foreground hover:bg-input/70 focus:ring-1 focus:ring-ring/30 focus:border-ring/60 transition-colors"
+                    >
+                      <UISelectValue />
+                    </UISelectTrigger>
+                    <UISelectContent
+                      align="end"
+                      className="min-w-[160px] rounded-lg border-border/60 bg-popover/95 backdrop-blur-md p-1 shadow-xl"
+                    >
+                      {RETENTION_OPTIONS.map(o => (
+                        <UISelectItem
+                          key={o.value}
+                          value={o.value}
+                          className="text-xs rounded-md py-1.5 pl-2 pr-8 cursor-pointer focus:bg-accent/60 data-[state=checked]:text-foreground"
+                        >
+                          {o.label}
+                        </UISelectItem>
+                      ))}
+                    </UISelectContent>
+                  </UISelect>
                   {settings.retention === "custom" && (
                     <div className="inline-flex items-center gap-1.5 text-xs">
                       <input
@@ -1203,16 +1306,26 @@ function DataSafetySection() {
               label="Reset analytics"
               destructive
               control={
-                <button
-                  onClick={() => {
-                    clearRealEvents();
-                    toast.success("Analytics data cleared");
-                  }}
-                  data-testid="button-reset-analytics"
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-destructive border border-destructive/30 hover:bg-destructive/10 active:scale-[0.97] transition-all duration-200"
-                >
-                  Reset
-                </button>
+                <div className="flex items-center gap-2">
+                  {recoverSnapshot && (
+                    <button
+                      onClick={performRecover}
+                      data-testid="button-recover-analytics"
+                      title="Recover the analytics data you just cleared"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-foreground/85 border border-border/50 bg-input/40 hover:bg-input/70 active:scale-[0.97] transition-all duration-200 animate-in fade-in slide-in-from-right-2 duration-200"
+                    >
+                      <Undo2 size={13} strokeWidth={2} />
+                      Recover
+                    </button>
+                  )}
+                  <button
+                    onClick={openResetConfirm}
+                    data-testid="button-reset-analytics"
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium text-destructive border border-destructive/30 hover:bg-destructive/10 active:scale-[0.97] transition-all duration-200"
+                  >
+                    Reset
+                  </button>
+                </div>
               }
             />
           </div>
@@ -1269,6 +1382,71 @@ function DataSafetySection() {
           </div>
         </section>
       </div>
+
+      {/* ── Reset Analytics — typed-confirmation modal ─────────────────── */}
+      <Dialog
+        open={resetOpen}
+        onOpenChange={open => (open ? setResetOpen(true) : cancelResetConfirm())}
+      >
+        <DialogContent className="max-w-md sm:rounded-xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold">
+              Reset Analytics Data?
+            </DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground leading-relaxed">
+              This will permanently remove all recorded sales and analytics
+              from this device. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <label
+              htmlFor="reset-analytics-confirm"
+              className="block text-xs text-muted-foreground"
+            >
+              Type{" "}
+              <span className="font-mono font-semibold text-foreground/90">
+                {RESET_PHRASE}
+              </span>{" "}
+              to confirm
+            </label>
+            <Input
+              id="reset-analytics-confirm"
+              autoFocus
+              autoComplete="off"
+              spellCheck={false}
+              value={resetText}
+              onChange={e => setResetText(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && canConfirmReset) performReset();
+              }}
+              placeholder={RESET_PHRASE}
+              data-testid="input-reset-confirm"
+              className="font-mono tracking-wide text-sm h-9"
+            />
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={cancelResetConfirm}
+              data-testid="button-reset-cancel"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={!canConfirmReset}
+              onClick={performReset}
+              data-testid="button-reset-confirm"
+            >
+              Reset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
