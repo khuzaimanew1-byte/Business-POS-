@@ -14,6 +14,7 @@ import { SettingsProvider } from "@/lib/settings";
 import { ShortcutsProvider } from "@/lib/shortcuts";
 import { NotificationsProvider } from "@/lib/notifications-store";
 import { NotificationToaster } from "@/components/NotificationToaster";
+import { DemoModeIndicator } from "@/components/DemoModeIndicator";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ function App() {
                   <Router />
                 </ShortcutsProvider>
                 <NotificationToaster />
+                <DemoModeIndicator />
               </NotificationsProvider>
             </WouterRouter>
             <Toaster />

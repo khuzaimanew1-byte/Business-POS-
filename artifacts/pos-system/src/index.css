@@ -412,6 +412,12 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Mobile bottom-nav height — kept global so any fixed-position element
+ * (e.g. the Demo Mode floating indicator) can offset itself consistently
+ * across pages, not just the POS page that owns the nav. */
+:root { --mobile-nav-height: 0px; }
+@media (max-width: 639px) { :root { --mobile-nav-height: 60px; } }
+
 @layer utilities {
   input[type="search"]::-webkit-search-cancel-button { @apply hidden; }
   [contenteditable][data-placeholder]:empty::before {

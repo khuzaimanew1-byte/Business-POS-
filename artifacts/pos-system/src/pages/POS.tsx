@@ -1524,9 +1524,8 @@ export default function POS() {
       />
 
       <style>{`
-        /* ── CSS custom property for bottom offset ── */
-        :root { --mobile-nav-height: 0px; }
-        @media (max-width: 639px) { :root { --mobile-nav-height: 60px; } }
+        /* --mobile-nav-height is defined globally in index.css so other
+         * fixed-position UI (e.g. DemoModeIndicator) can share it. */
 
         /* ── Cart panel slide transforms ── */
         .cart-panel {
