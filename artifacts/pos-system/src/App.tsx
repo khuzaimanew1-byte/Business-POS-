@@ -10,7 +10,6 @@ import SettingsPage from "@/pages/Settings";
 import NotificationsPage from "@/pages/Notifications";
 import CartHistory from "@/pages/CartHistory";
 import { StoreProvider } from "@/lib/store";
-import { CartProvider } from "@/lib/cart";
 import { SettingsProvider } from "@/lib/settings";
 import { ShortcutsProvider } from "@/lib/shortcuts";
 import { NotificationsProvider } from "@/lib/notifications-store";
@@ -38,17 +37,15 @@ function App() {
       <TooltipProvider delayDuration={300} skipDelayDuration={0}>
         <SettingsProvider>
           <StoreProvider>
-            <CartProvider>
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-                <NotificationsProvider>
-                  <ShortcutsProvider>
-                    <Router />
-                  </ShortcutsProvider>
-                  <NotificationToaster />
-                </NotificationsProvider>
-              </WouterRouter>
-              <Toaster />
-            </CartProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <NotificationsProvider>
+                <ShortcutsProvider>
+                  <Router />
+                </ShortcutsProvider>
+                <NotificationToaster />
+              </NotificationsProvider>
+            </WouterRouter>
+            <Toaster />
           </StoreProvider>
         </SettingsProvider>
       </TooltipProvider>
