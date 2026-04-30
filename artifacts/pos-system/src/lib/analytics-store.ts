@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSettings } from "@/lib/settings";
 
 export type SaleItem = {
@@ -114,6 +114,110 @@ export function restoreRealEvents(events: SaleEvent[]) {
   saveReal(events);
 }
 
+// ── Demo view "session cleared" flag ─────────────────────────────────────
+// Demo Mode is intentionally stateless — its dataset is generated, never
+// persisted. Reset Analytics in Demo Mode therefore must NOT touch storage;
+// it just hides the dataset for the current session. Toggling Demo Mode in
+// either direction restores the demo view automatically.
+let _demoViewCleared = false;
+
+export function isDemoViewCleared(): boolean {
+  return _demoViewCleared;
+}
+
+export function clearDemoView() {
+  if (_demoViewCleared) return;
+  _demoViewCleared = true;
+  try {
+    window.dispatchEvent(new CustomEvent("pos:analytics-changed"));
+  } catch {
+    /* noop */
+  }
+}
+
+export function restoreDemoView() {
+  if (!_demoViewCleared) return;
+  _demoViewCleared = false;
+  try {
+    window.dispatchEvent(new CustomEvent("pos:analytics-changed"));
+  } catch {
+    /* noop */
+  }
+}
+
+// ── Recover snapshot (cross-session, 1-week window) ──────────────────────
+// Captured the moment Reset Analytics is confirmed so the user can undo
+// the action even after a page reload. Stored in localStorage so the
+// Recover affordance survives refreshes; expires automatically after
+// `RECOVER_WINDOW_MS`.
+const RECOVER_KEY = "pos.analytics.recover.snapshot.v1";
+export const RECOVER_WINDOW_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+export const RECOVER_EVENT = "pos:analytics-recover-changed";
+
+export type RecoverSnapshot = {
+  /** Which stream the reset acted on. */
+  mode: "real" | "demo";
+  /** Real-event payload to restore. Empty for demo (regenerated on restore). */
+  events: SaleEvent[];
+  /** Wall-clock time the reset was confirmed; basis for the 1-week window. */
+  snapshotAt: number;
+};
+
+function emitRecoverChange() {
+  try {
+    window.dispatchEvent(new CustomEvent(RECOVER_EVENT));
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * Load the persisted recover snapshot, transparently expiring (and removing)
+ * any snapshot older than the 1-week window. Returns null when no usable
+ * snapshot is available.
+ */
+export function loadRecoverSnapshot(): RecoverSnapshot | null {
+  try {
+    const raw = localStorage.getItem(RECOVER_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as RecoverSnapshot | null;
+    if (
+      !parsed ||
+      typeof parsed.snapshotAt !== "number" ||
+      (parsed.mode !== "real" && parsed.mode !== "demo") ||
+      !Array.isArray(parsed.events)
+    ) {
+      localStorage.removeItem(RECOVER_KEY);
+      return null;
+    }
+    if (Date.now() - parsed.snapshotAt >= RECOVER_WINDOW_MS) {
+      localStorage.removeItem(RECOVER_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function saveRecoverSnapshot(snap: RecoverSnapshot) {
+  try {
+    localStorage.setItem(RECOVER_KEY, JSON.stringify(snap));
+    emitRecoverChange();
+  } catch {
+    /* noop */
+  }
+}
+
+export function clearRecoverSnapshot() {
+  try {
+    localStorage.removeItem(RECOVER_KEY);
+    emitRecoverChange();
+  } catch {
+    /* noop */
+  }
+}
+
 /**
  * Returns the events that should drive analytics for the current settings:
  *   • Demo Mode ON  → in-memory 2025-anchored demo dataset (real events hidden).
@@ -123,9 +227,13 @@ export function restoreRealEvents(events: SaleEvent[]) {
 export function useSaleEvents(): SaleEvent[] {
   const { settings } = useSettings();
   const [realEvents, setRealEvents] = useState<SaleEvent[]>(loadReal);
+  const [demoCleared, setDemoCleared] = useState<boolean>(isDemoViewCleared);
 
   useEffect(() => {
-    const refresh = () => setRealEvents(loadReal());
+    const refresh = () => {
+      setRealEvents(loadReal());
+      setDemoCleared(isDemoViewCleared());
+    };
     window.addEventListener("pos:analytics-changed", refresh);
     window.addEventListener("storage", refresh);
     return () => {
@@ -134,7 +242,22 @@ export function useSaleEvents(): SaleEvent[] {
     };
   }, []);
 
-  return settings.demoMode ? getDemoEvents2025() : realEvents;
+  // Toggling Demo Mode in either direction restores the demo dataset: the
+  // cleared state is intentionally session-scoped to the current Demo Mode
+  // session. We diff against a ref so unrelated re-mounts of consumers
+  // (e.g. navigating between pages) don't accidentally reset the flag.
+  const prevDemoModeRef = useRef<boolean>(settings.demoMode);
+  useEffect(() => {
+    if (prevDemoModeRef.current !== settings.demoMode) {
+      prevDemoModeRef.current = settings.demoMode;
+      restoreDemoView();
+    }
+  }, [settings.demoMode]);
+
+  if (settings.demoMode) {
+    return demoCleared ? [] : getDemoEvents2025();
+  }
+  return realEvents;
 }
 
 // ── Demo seed (anchored to calendar year 2025) ────────────────────────────

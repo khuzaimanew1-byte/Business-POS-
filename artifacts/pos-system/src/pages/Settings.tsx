@@ -19,7 +19,14 @@ import {
   clearRealEvents,
   getRealEvents,
   restoreRealEvents,
-  type SaleEvent,
+  clearDemoView,
+  restoreDemoView,
+  loadRecoverSnapshot,
+  saveRecoverSnapshot,
+  clearRecoverSnapshot,
+  RECOVER_WINDOW_MS,
+  RECOVER_EVENT,
+  type RecoverSnapshot,
 } from "@/lib/analytics-store";
 import { useShortcut } from "@/lib/shortcuts";
 import { toast } from "sonner";
@@ -1143,12 +1150,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 // Phrase the user must type to confirm an analytics reset. Case-sensitive,
 // uppercase, with a single space — designed to be deliberate to type so
-// accidental confirmations are very unlikely.
+// accidental confirmations are very unlikely. Intentionally NOT shown in
+// the placeholder so the field offers guidance without revealing the answer.
 const RESET_PHRASE = "RESET ANALYTICS";
-
-// How long the inline Recover affordance remains available after a reset.
-// Long enough to be discoverable, short enough that it doesn't linger.
-const RECOVER_WINDOW_MS = 10_000;
 
 function DataSafetySection() {
   const { settings, update } = useSettings();
@@ -1173,22 +1177,57 @@ function DataSafetySection() {
 
   const strictDisabled = !settings.confirmBeforeDelete;
 
-  // ── Reset Analytics — typed-confirmation flow + temporary recover ───────
+  // ── Reset Analytics — typed-confirmation flow + persisted recover ───────
   const [resetOpen, setResetOpen] = useState(false);
   const [resetText, setResetText] = useState("");
-  // Snapshot taken just before clearing; while non-null a Recover affordance
-  // is rendered next to the Reset button. Cleared automatically after the
-  // recover window elapses or after a successful recover.
-  const [recoverSnapshot, setRecoverSnapshot] = useState<SaleEvent[] | null>(null);
+  // Snapshot survives reloads (stored in localStorage) so the Recover
+  // affordance is available for up to 1 week regardless of session.
+  const [recoverSnapshot, setRecoverSnapshot] = useState<RecoverSnapshot | null>(
+    () => loadRecoverSnapshot(),
+  );
   const recoverTimerRef = useRef<number | null>(null);
 
-  // Always clean up any pending recover timer on unmount so we don't leak
-  // a setTimeout callback that runs after the component is gone.
-  useEffect(() => () => {
+  // Schedule auto-expiry based on the snapshot's original timestamp so the
+  // Recover button disappears precisely at `snapshotAt + RECOVER_WINDOW_MS`,
+  // even after a page reload mid-window.
+  const scheduleRecoverExpiry = (snap: RecoverSnapshot) => {
     if (recoverTimerRef.current !== null) {
       window.clearTimeout(recoverTimerRef.current);
       recoverTimerRef.current = null;
     }
+    const remaining = Math.max(0, snap.snapshotAt + RECOVER_WINDOW_MS - Date.now());
+    recoverTimerRef.current = window.setTimeout(() => {
+      clearRecoverSnapshot();
+      setRecoverSnapshot(null);
+      recoverTimerRef.current = null;
+    }, remaining);
+  };
+
+  // Mount: schedule expiry for any pre-existing snapshot, and subscribe to
+  // cross-tab snapshot changes so Recover stays in sync across windows.
+  useEffect(() => {
+    if (recoverSnapshot) scheduleRecoverExpiry(recoverSnapshot);
+    const refresh = () => {
+      const snap = loadRecoverSnapshot();
+      setRecoverSnapshot(snap);
+      if (snap) scheduleRecoverExpiry(snap);
+      else if (recoverTimerRef.current !== null) {
+        window.clearTimeout(recoverTimerRef.current);
+        recoverTimerRef.current = null;
+      }
+    };
+    window.addEventListener(RECOVER_EVENT, refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener(RECOVER_EVENT, refresh);
+      window.removeEventListener("storage", refresh);
+      if (recoverTimerRef.current !== null) {
+        window.clearTimeout(recoverTimerRef.current);
+        recoverTimerRef.current = null;
+      }
+    };
+    // Intentionally only run on mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const canConfirmReset = resetText === RESET_PHRASE;
@@ -1205,26 +1244,35 @@ function DataSafetySection() {
 
   const performReset = () => {
     if (!canConfirmReset) return;
-    // Snapshot first so the user can recover; then clear and surface the
-    // Recover affordance for a short window.
-    const snapshot = getRealEvents();
-    clearRealEvents();
+    const isDemo = settings.demoMode;
+    // Build the snapshot before clearing. In Demo Mode the dataset is
+    // generated, so we only need to remember that the demo view should be
+    // re-shown on Recover — events list stays empty.
+    const snap: RecoverSnapshot = isDemo
+      ? { mode: "demo", events: [], snapshotAt: Date.now() }
+      : { mode: "real", events: getRealEvents(), snapshotAt: Date.now() };
+
+    if (isDemo) {
+      clearDemoView();
+    } else {
+      clearRealEvents();
+    }
+    saveRecoverSnapshot(snap);
+    setRecoverSnapshot(snap);
+    scheduleRecoverExpiry(snap);
     setResetOpen(false);
     setResetText("");
-    setRecoverSnapshot(snapshot);
-    if (recoverTimerRef.current !== null) {
-      window.clearTimeout(recoverTimerRef.current);
-    }
-    recoverTimerRef.current = window.setTimeout(() => {
-      setRecoverSnapshot(null);
-      recoverTimerRef.current = null;
-    }, RECOVER_WINDOW_MS);
     toast.success("Analytics data cleared");
   };
 
   const performRecover = () => {
     if (!recoverSnapshot) return;
-    restoreRealEvents(recoverSnapshot);
+    if (recoverSnapshot.mode === "demo") {
+      restoreDemoView();
+    } else {
+      restoreRealEvents(recoverSnapshot.events);
+    }
+    clearRecoverSnapshot();
     setRecoverSnapshot(null);
     if (recoverTimerRef.current !== null) {
       window.clearTimeout(recoverTimerRef.current);
@@ -1420,7 +1468,7 @@ function DataSafetySection() {
               onKeyDown={e => {
                 if (e.key === "Enter" && canConfirmReset) performReset();
               }}
-              placeholder={RESET_PHRASE}
+              placeholder="Type the required phrase to confirm"
               data-testid="input-reset-confirm"
               className="font-mono tracking-wide text-sm h-9"
             />
