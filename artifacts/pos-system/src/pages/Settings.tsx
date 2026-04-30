@@ -1244,22 +1244,7 @@ function DataSafetySection() {
               control={
                 <MiniSwitch checked={settings.confirmBeforeDelete} onChange={v => update("confirmBeforeDelete", v)} label="Confirm before delete" />
               }
-            >
-              {settings.confirmBeforeDelete && (
-                <div
-                  data-testid="preview-confirm-modal"
-                  className="-mt-2 inline-flex items-center gap-2 px-2 py-0.5 rounded-md bg-white/[0.025] border border-border/40"
-                >
-                  <span className="text-[10.5px] text-muted-foreground leading-none">Delete this item?</span>
-                  <span className="px-1.5 py-0.5 rounded-full text-[9.5px] font-medium text-muted-foreground bg-secondary/60 leading-none">
-                    Cancel
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded-full text-[9.5px] font-medium text-destructive bg-destructive/15 leading-none">
-                    Delete
-                  </span>
-                </div>
-              )}
-            </OptionRow>
+            />
             <OptionRow
               icon={<Layers size={18} strokeWidth={1.75} />}
               label="Bulk delete protection"
