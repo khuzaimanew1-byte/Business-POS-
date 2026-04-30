@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useSettings } from "@/lib/settings";
 
 export type Category = string;
@@ -22,10 +22,9 @@ export type Product = {
 export const INITIAL_CATEGORIES: Category[] = ["All", "Drinks", "Snacks", "Electronics", "Clothing", "Food"];
 
 // Demo products are an additive overlay shown only when Settings → Data &
-// Safety → Demo Data is ON. They share the global `products` list with any
-// user-added products so existing call sites (POS, AddProduct) keep working,
-// but they are stored in their own bucket so toggling Demo Data off cleanly
-// reveals just the user's real catalogue.
+// Safety → Demo Data is ON. They live in their own bucket so the user's real
+// catalogue is completely untouched while Demo Mode is on, and they snap
+// back to this pristine list each time Demo Mode is toggled on again.
 export const DEMO_PRODUCTS: Product[] = [
   { id: "demo-1",  name: "Espresso",        price: 3.50,  category: "Drinks",      stock: 50,  image: "/images/espresso.png" },
   { id: "demo-2",  name: "Latte",            price: 4.50,  category: "Drinks",      stock: 45,  image: "/images/latte.png" },
@@ -60,40 +59,67 @@ const StoreContext = createContext<StoreValue | null>(null);
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const { settings } = useSettings();
 
-  // Two independent buckets so toggling Demo Data on/off never corrupts the
-  // user's real catalogue. Demo state lives in memory only — a reload
-  // restores the pristine demo list.
-  const [userProducts, setUserProducts] = useState<Product[]>([]);
+  // Three independent buckets so Demo Mode is a true sandbox:
+  //   • realUserProducts        — the user's actual catalogue. Frozen while
+  //                               Demo Mode is on so nothing the user does in
+  //                               the demo session can leak into real data.
+  //   • demoSessionUserProducts — products the user adds during a demo
+  //                               session. Wiped the moment Demo Mode exits.
+  //   • demoProducts            — the seed demo catalogue, restored to the
+  //                               pristine list at the start of each session.
+  const [realUserProducts, setRealUserProducts] = useState<Product[]>([]);
+  const [demoSessionUserProducts, setDemoSessionUserProducts] = useState<Product[]>([]);
   const [demoProducts, setDemoProducts] = useState<Product[]>(DEMO_PRODUCTS);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [customCategories, setCustomCategories] = useState<Set<string>>(() => new Set());
 
+  // Reset the demo session whenever Demo Mode toggles, so each entry starts
+  // from a pristine demo catalogue and an empty session bucket.
+  const demoSessionStarted = useRef<boolean>(settings.demoData);
+  useEffect(() => {
+    if (settings.demoData) {
+      if (!demoSessionStarted.current) {
+        setDemoProducts(DEMO_PRODUCTS);
+        setDemoSessionUserProducts([]);
+        demoSessionStarted.current = true;
+      }
+    } else {
+      setDemoProducts(DEMO_PRODUCTS);
+      setDemoSessionUserProducts([]);
+      demoSessionStarted.current = false;
+    }
+  }, [settings.demoData]);
+
   const products = useMemo<Product[]>(
-    () => (settings.demoData ? [...demoProducts, ...userProducts] : userProducts),
-    [settings.demoData, demoProducts, userProducts],
+    () => (settings.demoData
+      ? [...demoProducts, ...demoSessionUserProducts]
+      : realUserProducts),
+    [settings.demoData, demoProducts, demoSessionUserProducts, realUserProducts],
   );
 
-  // Mirror the current visible list in a ref so functional setProducts updates
-  // (which expect the latest state) always see what the consumer was
-  // looking at, even though state is split across two buckets internally.
+  // Mirror the visible list in a ref so functional setProducts updates always
+  // operate on the latest snapshot, even though state is split across multiple
+  // buckets internally.
   const productsRef = useRef<Product[]>(products);
   productsRef.current = products;
 
-  const setProducts: React.Dispatch<React.SetStateAction<Product[]>> = (action) => {
-    const cur = productsRef.current;
-    const next = typeof action === "function"
-      ? (action as (prev: Product[]) => Product[])(cur)
-      : action;
-    if (settings.demoData) {
-      // Split the new list back into demo / user buckets by ID prefix so each
-      // side keeps any in-place edits (stock decrements, edits, deletions).
-      setDemoProducts(next.filter((p) => isDemoId(p.id)));
-      setUserProducts(next.filter((p) => !isDemoId(p.id)));
-    } else {
-      // Demo overlay is hidden — every change applies only to user products.
-      setUserProducts(next);
-    }
-  };
+  const setProducts = useCallback<React.Dispatch<React.SetStateAction<Product[]>>>(
+    (action) => {
+      const cur = productsRef.current;
+      const next = typeof action === "function"
+        ? (action as (prev: Product[]) => Product[])(cur)
+        : action;
+      if (settings.demoData) {
+        // Split the new list back into demo / session-user buckets by ID
+        // prefix. The real user catalogue stays frozen.
+        setDemoProducts(next.filter((p) => isDemoId(p.id)));
+        setDemoSessionUserProducts(next.filter((p) => !isDemoId(p.id)));
+      } else {
+        setRealUserProducts(next);
+      }
+    },
+    [settings.demoData],
+  );
 
   // ── "Sold Out" tab visibility ────────────────────────────────────────────
   // "Sold Out" is a virtual filter (stock = 0), NOT a stored category value

@@ -26,11 +26,7 @@ import { useSettings, formatCurrency, Money } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
 import { useNotifications } from "@/lib/notifications-store";
 import { recordSale } from "@/lib/analytics-store";
-
-type CartItem = {
-  product: Product;
-  quantity: number;
-};
+import { useCart, type CartItem } from "@/lib/cart";
 
 export default function POS() {
   const [, setLocation] = useLocation();
@@ -45,37 +41,10 @@ export default function POS() {
   const [selectedCategory, setSelectedCategory] = useState<Category>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  // ── Cart persistence ────────────────────────────────────────────────────
-  // The cart is treated as a long-lived working state — items and the open/
-  // closed state both survive navigation, page reloads, and checkout. Items
-  // are only ever removed by an explicit user action (per-item trash, or
-  // the cart trash control). Checkout records the sale but leaves the cart
-  // intact so the operator stays in control of when it's cleared.
-  const CART_ITEMS_KEY = "pos.cart.items.v1";
-  const CART_OPEN_KEY = "pos.cart.open.v1";
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
-    try {
-      const raw = localStorage.getItem(CART_ITEMS_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? (parsed as CartItem[]) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [isCartOpen, setIsCartOpen] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(CART_OPEN_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
-  useEffect(() => {
-    try { localStorage.setItem(CART_ITEMS_KEY, JSON.stringify(cartItems)); } catch { /* quota / disabled */ }
-  }, [cartItems]);
-  useEffect(() => {
-    try { localStorage.setItem(CART_OPEN_KEY, isCartOpen ? "1" : "0"); } catch { /* quota / disabled */ }
-  }, [isCartOpen]);
+  // Cart state lives in CartProvider so it can survive route changes AND
+  // automatically swap between the real cart (LS-persisted) and an
+  // ephemeral demo cart whenever Demo Mode toggles.
+  const { cartItems, setCartItems, isCartOpen, setIsCartOpen } = useCart();
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [cartFlash, setCartFlash] = useState(false);
 

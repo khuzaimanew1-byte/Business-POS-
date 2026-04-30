@@ -118,7 +118,13 @@ export default function CartHistory() {
 
   // Recompute the 7 AM boundary on every render — cheap and keeps the view
   // honest if the user happens to be sitting on the page across the boundary.
-  const resetTs = getTodayResetTimestamp();
+  // In Demo Mode the "today" boundary is anchored to Sun Dec 28, 2025 so the
+  // demo dataset (which lives in 2025) actually has events visible here
+  // instead of being filtered out as "from before today".
+  const nowRef = settings.demoData
+    ? new Date(2025, 11, 28, 12, 0, 0, 0)
+    : new Date();
+  const resetTs = getTodayResetTimestamp(nowRef);
 
   const orders = useMemo(
     () =>

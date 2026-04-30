@@ -49,10 +49,36 @@ function loadReal(): SaleEvent[] {
 function saveReal(events: SaleEvent[]) {
   try {
     localStorage.setItem(REAL_KEY, JSON.stringify(events));
+  } catch {
+    /* noop */
+  }
+  notifyChange();
+}
+
+function notifyChange() {
+  try {
     window.dispatchEvent(new CustomEvent("pos:analytics-changed"));
   } catch {
     /* noop */
   }
+}
+
+// ── Demo session bridge ────────────────────────────────────────────────────
+// `recordSale` is a plain module function, so it can't `useSettings()`. The
+// hook below mirrors `settings.demoData` into a module-level flag that
+// `recordSale` can consult synchronously. Mounted once via DemoSessionSync.
+let _demoActive = false;
+const _demoSessionEvents: SaleEvent[] = [];
+
+export function _setDemoActive(active: boolean) {
+  if (_demoActive === active) return;
+  _demoActive = active;
+  // Exiting demo mode discards every sale recorded during the session so no
+  // demo activity ever leaks into the real analytics stream.
+  if (!active) {
+    _demoSessionEvents.length = 0;
+  }
+  notifyChange();
 }
 
 // Daily-reset boundary used by Cart History.
@@ -61,9 +87,10 @@ function saveReal(events: SaleEvent[]) {
 //   • At/after 7 AM today → boundary is today's 7 AM.
 // Cart History filters orders to those with ts >= this value, which gives
 // the user a fresh "today's orders" list every morning without ever
-// mutating the underlying analytics data.
-export function getTodayResetTimestamp(): number {
-  const now = new Date();
+// mutating the underlying analytics data. Callers can pass a custom "now"
+// (e.g. the demo anchor) so the boundary aligns with the data being shown.
+export function getTodayResetTimestamp(nowOverride?: Date): number {
+  const now = nowOverride ?? new Date();
   const reset = new Date(now);
   reset.setHours(7, 0, 0, 0);
   if (reset.getTime() > now.getTime()) {
@@ -82,32 +109,39 @@ export function recordSale(items: SaleItem[]) {
     totalSales: items.reduce((s, i) => s + i.price * i.qty, 0),
     totalProfit: items.reduce((s, i) => s + i.profit * i.qty, 0),
   };
-  const events = loadReal();
-  events.push(evt);
-  saveReal(events);
+  if (_demoActive) {
+    // Sales recorded during a demo session are ephemeral: they show up live
+    // in charts and history while Demo Mode is on, then vanish on exit.
+    _demoSessionEvents.push(evt);
+    notifyChange();
+  } else {
+    const events = loadReal();
+    events.push(evt);
+    saveReal(events);
+  }
 }
 
 export function clearRealEvents() {
   try {
     localStorage.removeItem(REAL_KEY);
-    window.dispatchEvent(new CustomEvent("pos:analytics-changed"));
   } catch {
     /* noop */
   }
+  notifyChange();
 }
 
 /**
  * Returns the events that should drive analytics for the current settings:
- *   • Demo Data ON  → in-memory 2025-anchored demo dataset (real events hidden).
+ *   • Demo Data ON  → 2025-anchored seed dataset + live demo session sales.
  *   • Demo Data OFF → only events recorded by `recordSale` (the real stream).
  * Toggling the setting flips the source instantly with no mixed state.
  */
 export function useSaleEvents(): SaleEvent[] {
   const { settings } = useSettings();
-  const [realEvents, setRealEvents] = useState<SaleEvent[]>(loadReal);
+  const [, forceTick] = useState(0);
 
   useEffect(() => {
-    const refresh = () => setRealEvents(loadReal());
+    const refresh = () => forceTick((n) => n + 1);
     window.addEventListener("pos:analytics-changed", refresh);
     window.addEventListener("storage", refresh);
     return () => {
@@ -116,7 +150,15 @@ export function useSaleEvents(): SaleEvent[] {
     };
   }, []);
 
-  return settings.demoData ? getDemoEvents2025() : realEvents;
+  if (settings.demoData) {
+    if (_demoSessionEvents.length === 0) return getDemoEvents2025();
+    // Merge seed + session, keeping the array sorted by timestamp so the
+    // chart-builders (which assume ascending order) stay correct.
+    const merged = [...getDemoEvents2025(), ..._demoSessionEvents];
+    merged.sort((a, b) => a.ts - b.ts);
+    return merged;
+  }
+  return loadReal();
 }
 
 // ── Demo seed (anchored to calendar year 2025) ────────────────────────────
