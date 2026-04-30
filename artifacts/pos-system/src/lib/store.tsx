@@ -22,9 +22,9 @@ export type Product = {
 export const INITIAL_CATEGORIES: Category[] = ["All", "Drinks", "Snacks", "Electronics", "Clothing", "Food"];
 
 // Demo products are an additive overlay shown only when Settings → Data &
-// Safety → Demo Data is ON. They share the global `products` list with any
+// Safety → Demo Mode is ON. They share the global `products` list with any
 // user-added products so existing call sites (POS, AddProduct) keep working,
-// but they are stored in their own bucket so toggling Demo Data off cleanly
+// but they are stored in their own bucket so toggling Demo Mode off cleanly
 // reveals just the user's real catalogue.
 export const DEMO_PRODUCTS: Product[] = [
   { id: "demo-1",  name: "Espresso",        price: 3.50,  category: "Drinks",      stock: 50,  image: "/images/espresso.png" },
@@ -45,6 +45,18 @@ export const DEMO_PRODUCTS: Product[] = [
 const DEMO_ID_PREFIX = "demo-";
 const isDemoId = (id: string) => id.startsWith(DEMO_ID_PREFIX);
 
+/**
+ * Pre-filled cart seed used the moment Demo Mode activates — gives the user
+ * something tangible to look at and test against without manually adding
+ * items first. The shape is `{ productId, quantity }` only; the consumer
+ * (POS) materializes full `CartItem`s by looking up `DEMO_PRODUCTS`.
+ */
+export const DEMO_CART_SEED: Array<{ productId: string; quantity: number }> = [
+  { productId: "demo-1", quantity: 2 },  // Espresso ×2
+  { productId: "demo-2", quantity: 1 },  // Latte ×1
+  { productId: "demo-4", quantity: 3 },  // Trail Mix ×3
+];
+
 type StoreValue = {
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
@@ -60,7 +72,7 @@ const StoreContext = createContext<StoreValue | null>(null);
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const { settings } = useSettings();
 
-  // Two independent buckets so toggling Demo Data on/off never corrupts the
+  // Two independent buckets so toggling Demo Mode on/off never corrupts the
   // user's real catalogue. Demo state lives in memory only — a reload
   // restores the pristine demo list.
   const [userProducts, setUserProducts] = useState<Product[]>([]);
@@ -69,9 +81,60 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [customCategories, setCustomCategories] = useState<Set<string>>(() => new Set());
 
   const products = useMemo<Product[]>(
-    () => (settings.demoData ? [...demoProducts, ...userProducts] : userProducts),
-    [settings.demoData, demoProducts, userProducts],
+    () => (settings.demoMode ? [...demoProducts, ...userProducts] : userProducts),
+    [settings.demoMode, demoProducts, userProducts],
   );
+
+  // ── Demo Mode snapshot / restore ─────────────────────────────────────────
+  // Demo Mode is a sandbox: anything the user does to products / categories
+  // while it is ON must be discarded the moment they switch it back OFF, so
+  // their real catalogue is exactly as it was before they entered demo.
+  // Cart state is owned by POS.tsx and handled there separately.
+  const userProductsRef = useRef(userProducts);
+  const categoriesRef = useRef(categories);
+  const customCategoriesRef = useRef(customCategories);
+  userProductsRef.current = userProducts;
+  categoriesRef.current = categories;
+  customCategoriesRef.current = customCategories;
+
+  const demoSnapshotRef = useRef<{
+    userProducts: Product[];
+    categories: Category[];
+    customCategories: Set<string>;
+  } | null>(null);
+
+  const prevDemoModeRef = useRef<boolean>(settings.demoMode);
+  useEffect(() => {
+    const wasDemo = prevDemoModeRef.current;
+    const isDemo = settings.demoMode;
+    if (wasDemo === isDemo) return;
+    prevDemoModeRef.current = isDemo;
+
+    if (isDemo) {
+      // Entering demo — capture a deep copy of the real state so any edits
+      // the user makes during the demo session can be cleanly rolled back.
+      demoSnapshotRef.current = {
+        userProducts: userProductsRef.current.map(p => ({ ...p })),
+        categories: [...categoriesRef.current],
+        customCategories: new Set(customCategoriesRef.current),
+      };
+      // Reset the demo overlay so each demo session starts from a pristine
+      // catalogue (stock counts, etc. back to the original DEMO_PRODUCTS).
+      setDemoProducts(DEMO_PRODUCTS.map(p => ({ ...p })));
+    } else {
+      // Exiting demo — discard everything that happened in the sandbox and
+      // restore the real catalogue exactly as it was when demo started.
+      const snap = demoSnapshotRef.current;
+      if (snap) {
+        setUserProducts(snap.userProducts);
+        setCategories(snap.categories);
+        setCustomCategories(snap.customCategories);
+      }
+      // Reset demo overlay too so the next demo session is fresh again.
+      setDemoProducts(DEMO_PRODUCTS.map(p => ({ ...p })));
+      demoSnapshotRef.current = null;
+    }
+  }, [settings.demoMode]);
 
   // Mirror the current visible list in a ref so functional setProducts updates
   // (which expect the latest state) always see what the consumer was
@@ -84,7 +147,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const next = typeof action === "function"
       ? (action as (prev: Product[]) => Product[])(cur)
       : action;
-    if (settings.demoData) {
+    if (settings.demoMode) {
       // Split the new list back into demo / user buckets by ID prefix so each
       // side keeps any in-place edits (stock decrements, edits, deletions).
       setDemoProducts(next.filter((p) => isDemoId(p.id)));

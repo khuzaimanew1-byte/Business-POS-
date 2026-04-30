@@ -21,7 +21,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
 
-import { useStore, type Product, type Category, OUT_OF_STOCK_CATEGORY } from "@/lib/store";
+import { useStore, DEMO_PRODUCTS, DEMO_CART_SEED, type Product, type Category, OUT_OF_STOCK_CATEGORY } from "@/lib/store";
 import { useSettings, formatCurrency, Money } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
 import { useNotifications } from "@/lib/notifications-store";
@@ -53,7 +53,20 @@ export default function POS() {
   // intact so the operator stays in control of when it's cleared.
   const CART_ITEMS_KEY = "pos.cart.items.v1";
   const CART_OPEN_KEY = "pos.cart.open.v1";
-  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+
+  /** Materialize the demo cart seed by joining product IDs to demo products. */
+  const buildDemoCart = useCallback((): CartItem[] => {
+    const byId = new Map(DEMO_PRODUCTS.map(p => [p.id, p]));
+    const items: CartItem[] = [];
+    for (const seed of DEMO_CART_SEED) {
+      const p = byId.get(seed.productId);
+      if (p) items.push({ product: { ...p }, quantity: seed.quantity });
+    }
+    return items;
+  }, []);
+
+  /** Read the persisted (real) cart from localStorage — used at init and on demo exit. */
+  const loadRealCart = useCallback((): CartItem[] => {
     try {
       const raw = localStorage.getItem(CART_ITEMS_KEY);
       if (!raw) return [];
@@ -62,20 +75,51 @@ export default function POS() {
     } catch {
       return [];
     }
-  });
-  const [isCartOpen, setIsCartOpen] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem(CART_OPEN_KEY) === "1";
-    } catch {
-      return false;
-    }
-  });
+  }, []);
+  const loadRealCartOpen = useCallback((): boolean => {
+    try { return localStorage.getItem(CART_OPEN_KEY) === "1"; } catch { return false; }
+  }, []);
+
+  // When Demo Mode is ON at mount, hydrate the cart from the demo seed instead
+  // of localStorage. The persisted real cart is left untouched in storage so
+  // it can be restored verbatim when the user exits demo.
+  const [cartItems, setCartItems] = useState<CartItem[]>(() =>
+    settings.demoMode ? buildDemoCart() : loadRealCart()
+  );
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(() =>
+    settings.demoMode ? true : loadRealCartOpen()
+  );
+
+  // Persistence — short-circuited while Demo Mode is active so demo-session
+  // changes never clobber the real cart sitting in localStorage.
   useEffect(() => {
+    if (settings.demoMode) return;
     try { localStorage.setItem(CART_ITEMS_KEY, JSON.stringify(cartItems)); } catch { /* quota / disabled */ }
-  }, [cartItems]);
+  }, [cartItems, settings.demoMode]);
   useEffect(() => {
+    if (settings.demoMode) return;
     try { localStorage.setItem(CART_OPEN_KEY, isCartOpen ? "1" : "0"); } catch { /* quota / disabled */ }
-  }, [isCartOpen]);
+  }, [isCartOpen, settings.demoMode]);
+
+  // Demo Mode transitions — re-seed on enter, restore real cart on exit.
+  // Skip the very first run (handled by the useState initializers above).
+  const prevDemoModeRef = useRef<boolean>(settings.demoMode);
+  useEffect(() => {
+    const was = prevDemoModeRef.current;
+    const now = settings.demoMode;
+    if (was === now) return;
+    prevDemoModeRef.current = now;
+    if (now) {
+      // Entering demo — replace the live cart with the pre-filled demo seed.
+      setCartItems(buildDemoCart());
+      setIsCartOpen(true);
+    } else {
+      // Exiting demo — discard demo-session edits and restore the real cart
+      // exactly as it was persisted before the demo session started.
+      setCartItems(loadRealCart());
+      setIsCartOpen(loadRealCartOpen());
+    }
+  }, [settings.demoMode, buildDemoCart, loadRealCart, loadRealCartOpen]);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [cartFlash, setCartFlash] = useState(false);
 
@@ -411,13 +455,19 @@ export default function POS() {
     // here — the cart behaves as persistent working state. Items remain
     // until the user explicitly removes them (per-item or via the cart's
     // own controls), and the open/closed state is a user decision.
-    recordSale(cartItems.map((ci) => ({
-      productId: ci.product.id,
-      name: ci.product.name,
-      qty: ci.quantity,
-      price: ci.product.price,
-      profit: ci.product.profit ?? 0,
-    })));
+    //
+    // Demo Mode: the UI flow runs end-to-end (success toast, etc.) but the
+    // sale is NOT recorded — analytics / history keep showing the stable
+    // demo dataset and no real event gets written to localStorage.
+    if (!settings.demoMode) {
+      recordSale(cartItems.map((ci) => ({
+        productId: ci.product.id,
+        name: ci.product.name,
+        qty: ci.quantity,
+        price: ci.product.price,
+        profit: ci.product.profit ?? 0,
+      })));
+    }
     toast.success("Checkout successful!", { icon: <Check className="text-green-500" /> });
   };
 

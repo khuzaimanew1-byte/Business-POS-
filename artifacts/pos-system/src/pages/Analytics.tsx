@@ -82,7 +82,7 @@ function buildChartData(
   events: SaleEvent[],
   metric: Metric,
   custom: { from: number; to: number } | null,
-  // Allow callers (e.g. Demo Data mode) to override the reference "now" so
+  // Allow callers (e.g. Demo Mode) to override the reference "now" so
   // the weekly/monthly/yearly windows resolve against a fixed date instead
   // of the wall clock.
   nowOverride?: Date,
@@ -1033,13 +1033,13 @@ export default function Analytics() {
 
   const events = useSaleEvents();
 
-  // When Demo Data is on, anchor "now" to a Sunday in late December 2025.
+  // When Demo Mode is on, anchor "now" to a Sunday in late December 2025.
   // That makes the weekly/monthly/yearly views all land inside 2025 so the
   // charts always render against the demo dataset (otherwise weekly would
   // show today's empty real-data window).
   const nowRef = useMemo(
-    () => (settings.demoData ? new Date(2025, 11, 28, 12, 0, 0, 0) : new Date()),
-    [settings.demoData],
+    () => (settings.demoMode ? new Date(2025, 11, 28, 12, 0, 0, 0) : new Date()),
+    [settings.demoMode],
   );
 
   useEffect(() => {

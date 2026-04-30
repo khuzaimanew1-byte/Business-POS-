@@ -1156,9 +1156,9 @@ function DataSafetySection() {
           <div className="divide-y divide-white/[0.05]">
             <OptionRow
               icon={<FlaskConical size={18} strokeWidth={1.75} />}
-              label="Demo data"
+              label="Demo Mode"
               control={
-                <MiniSwitch checked={settings.demoData} onChange={v => update("demoData", v)} label="Demo data" />
+                <MiniSwitch checked={settings.demoMode} onChange={v => update("demoMode", v)} label="Demo Mode" />
               }
             />
 

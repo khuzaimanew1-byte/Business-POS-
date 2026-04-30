@@ -20,7 +20,7 @@ export type SaleEvent = {
 
 // Real (user-recorded) events live under their own key. Demo events are
 // generated in-memory and never written to localStorage so the two streams
-// stay strictly separate — toggling Demo Data off must reveal pristine real
+// stay strictly separate — toggling Demo Mode off must reveal pristine real
 // data and never leak demo entries.
 const REAL_KEY = "pos.analytics.events.real.v1";
 
@@ -98,8 +98,8 @@ export function clearRealEvents() {
 
 /**
  * Returns the events that should drive analytics for the current settings:
- *   • Demo Data ON  → in-memory 2025-anchored demo dataset (real events hidden).
- *   • Demo Data OFF → only events recorded by `recordSale` (the real stream).
+ *   • Demo Mode ON  → in-memory 2025-anchored demo dataset (real events hidden).
+ *   • Demo Mode OFF → only events recorded by `recordSale` (the real stream).
  * Toggling the setting flips the source instantly with no mixed state.
  */
 export function useSaleEvents(): SaleEvent[] {
@@ -116,7 +116,7 @@ export function useSaleEvents(): SaleEvent[] {
     };
   }, []);
 
-  return settings.demoData ? getDemoEvents2025() : realEvents;
+  return settings.demoMode ? getDemoEvents2025() : realEvents;
 }
 
 // ── Demo seed (anchored to calendar year 2025) ────────────────────────────
@@ -133,7 +133,7 @@ const DEMO_PRODUCTS: { id: string; name: string; price: number; profit: number }
 ];
 
 // Tiny seedable PRNG so the demo dataset is deterministic across reloads —
-// users see the same charts every time Demo Data is enabled, which makes the
+// users see the same charts every time Demo Mode is enabled, which makes the
 // Settings preview behaviour predictable.
 function mulberry32(seed: number) {
   let s = seed >>> 0;

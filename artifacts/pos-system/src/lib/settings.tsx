@@ -155,7 +155,17 @@ export type SettingsState = {
   defaultProfit: string;
   defaultStock: string;
   defaultCategory: string;
-  demoData: boolean;
+  /**
+   * Demo Mode — when true the app runs as a sandboxed playground:
+   *   • Cart bar starts pre-filled with sample items.
+   *   • Cart History + Analytics show the stable demo dataset.
+   *   • Any user action (add/remove cart items, edit products, checkout)
+   *     works through the UI but is NOT persisted.
+   *   • Toggling demo OFF discards every change made during the demo
+   *     session and restores the real (pre-demo) state.
+   * The legacy field name was `demoData`; `load()` migrates that on read.
+   */
+  demoMode: boolean;
   retention: RetentionMode;
   /** Days kept when `retention === "custom"`. Ignored otherwise. */
   retentionDays: number;
@@ -181,7 +191,7 @@ const DEFAULTS: SettingsState = {
   defaultProfit: "",
   defaultStock: "",
   defaultCategory: "",
-  demoData: true,
+  demoMode: true,
   retention: "all",
   retentionDays: 60,
   confirmBeforeDelete: true,
@@ -205,15 +215,23 @@ function load(): SettingsState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULTS;
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(raw) as Partial<SettingsState> & { demoData?: boolean };
     // Migrate legacy retention values ("7d", "30d", "custom") to "all".
     const validRetention: RetentionMode[] = ["1y", "2y", "5y", "all", "custom"];
-    const retention: RetentionMode = validRetention.includes(parsed?.retention)
-      ? parsed.retention
+    const retention: RetentionMode = validRetention.includes(parsed?.retention as RetentionMode)
+      ? (parsed.retention as RetentionMode)
       : "all";
+    // Migrate legacy `demoData` field → `demoMode` (renamed for clarity since
+    // the toggle now controls a sandboxed demo *mode*, not just demo data).
+    const demoMode: boolean = typeof parsed.demoMode === "boolean"
+      ? parsed.demoMode
+      : typeof parsed.demoData === "boolean"
+        ? parsed.demoData
+        : DEFAULTS.demoMode;
     return {
       ...DEFAULTS,
       ...parsed,
+      demoMode,
       retention,
       rates:     { ...DEFAULTS.rates,     ...(parsed.rates     ?? {}) },
       shortcuts: { ...DEFAULTS.shortcuts, ...(parsed.shortcuts ?? {}) },
