@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Check, X, ChevronDown, FolderPlus, Loader2, Trash2, Up
 import { useStore, normalizeCode, type Product } from "@/lib/store";
 import { useSettings, getCurrencySymbol, formatAmountForCurrency } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
+import { useDemoIndicatorPlacement } from "@/components/DemoModeIndicator";
 import { toast } from "sonner";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -119,6 +120,9 @@ export default function AddProduct() {
   const [, setLocation] = useLocation();
   const { products, setProducts, categories, customCategories, addCustomCategory, removeCategory } = useStore();
   const { settings } = useSettings();
+  // Add Product has no fixed bottom chrome — keep the pill close to the
+  // bottom-left corner so it stays clear of inputs and the action row.
+  useDemoIndicatorPlacement("1rem");
 
   // Form state (defaults pre-filled from Settings → Defaults)
   const [name, setName] = useState("");

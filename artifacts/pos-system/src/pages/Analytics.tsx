@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useSaleEvents, type SaleEvent, type SaleItem } from "@/lib/analytics-store";
 import { PRODUCTS_META, getProductMeta, colorForProduct, type ProductMeta } from "@/lib/products-meta";
 import { useSettings, CURRENCY_SYMBOLS } from "@/lib/settings";
+import { useDemoIndicatorPlacement } from "@/components/DemoModeIndicator";
 
 type Mode = "weekly" | "monthly" | "yearly" | "custom";
 type Metric = "sales" | "profit";
@@ -1022,6 +1023,9 @@ function TopProductsList({
 export default function Analytics() {
   const [, setLocation] = useLocation();
   const { settings } = useSettings();
+  // Analytics has no fixed bottom chrome on the left; sit a comfortable
+  // distance from the bottom edge, accounting for any iOS safe area.
+  useDemoIndicatorPlacement("1rem");
   const sym = CURRENCY_SYMBOLS[settings.currency];
   const [mode, setMode] = useState<Mode>("monthly");
   const [metric, setMetric] = useState<Metric>("sales");

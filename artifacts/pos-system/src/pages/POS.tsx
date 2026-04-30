@@ -26,6 +26,7 @@ import { useSettings, formatCurrency, Money } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
 import { useNotifications } from "@/lib/notifications-store";
 import { recordSale } from "@/lib/analytics-store";
+import { useDemoIndicatorPlacement } from "@/components/DemoModeIndicator";
 
 type CartItem = {
   product: Product;
@@ -36,6 +37,11 @@ export default function POS() {
   const [, setLocation] = useLocation();
   const { products, setProducts, categories, setCategories } = useStore();
   const { settings } = useSettings();
+  // Demo Mode pill sits above the cart strip and (on mobile) the bottom nav,
+  // derived from the same CSS vars those elements use — no fixed pixels.
+  useDemoIndicatorPlacement(
+    "calc(var(--mobile-nav-height, 0px) + var(--bottom-strip-height, 0px) + 12px)",
+  );
   const fmtCur = (v: number) => formatCurrency(v, settings);
   const { unreadCount, pendingFocusId, consumeProductFocus } = useNotifications();
   // Product currently highlighted via a notification deep-link. The CSS
@@ -1524,8 +1530,20 @@ export default function POS() {
       />
 
       <style>{`
-        /* --mobile-nav-height is defined globally in index.css so other
-         * fixed-position UI (e.g. DemoModeIndicator) can share it. */
+        /* ── CSS custom properties for bottom-of-page chrome ──
+         * Owned by the POS page (only POS has the mobile bottom-nav and
+         * the cart strip). Other pages — Analytics, Add Product — derive
+         * their own offsets from layout primitives, not from these. */
+        :root {
+          --mobile-nav-height: 0px;
+          --bottom-strip-height: 4rem; /* matches sm:h-16 cart strip */
+        }
+        @media (max-width: 639px) {
+          :root {
+            --mobile-nav-height: 60px;
+            --bottom-strip-height: 3.5rem; /* matches h-14 cart strip on mobile */
+          }
+        }
 
         /* ── Cart panel slide transforms ── */
         .cart-panel {
