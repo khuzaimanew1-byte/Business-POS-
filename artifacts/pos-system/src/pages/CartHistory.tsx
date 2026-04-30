@@ -7,6 +7,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   useSaleEvents,
+  useRealSaleEvents,
   getTodayResetTimestamp,
   type SaleItem,
 } from "@/lib/analytics-store";
@@ -112,13 +113,26 @@ function EmptyState() {
 
 export default function CartHistory() {
   const [, setLocation] = useLocation();
-  const allEvents = useSaleEvents();
+  const baseEvents = useSaleEvents();
+  const realEvents = useRealSaleEvents();
   const { settings } = useSettings();
   const fmtCur = (v: number) => formatCurrency(v, settings);
 
   // Recompute the 7 AM boundary on every render — cheap and keeps the view
   // honest if the user happens to be sitting on the page across the boundary.
   const resetTs = getTodayResetTimestamp();
+
+  // In Demo Mode the operator can still complete checkouts (the button is
+  // fully wired) — and those real sale events should appear in Cart History
+  // alongside the curated demo dataset, so the user can confirm checkout
+  // worked end-to-end. Outside Demo Mode the two streams are identical, so
+  // we just use whatever `useSaleEvents` returned.
+  const allEvents = useMemo(() => {
+    if (!settings.demoMode) return baseEvents;
+    const seen = new Set(baseEvents.map((e) => e.id));
+    const extras = realEvents.filter((e) => !seen.has(e.id));
+    return extras.length === 0 ? baseEvents : [...baseEvents, ...extras];
+  }, [baseEvents, realEvents, settings.demoMode]);
 
   const orders = useMemo(
     () =>

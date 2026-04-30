@@ -260,6 +260,28 @@ export function useSaleEvents(): SaleEvent[] {
   return realEvents;
 }
 
+/**
+ * Always returns the real (user-recorded) event stream regardless of Demo
+ * Mode. Used by Cart History so demo-mode checkouts (which still call
+ * `recordSale`) remain visible alongside the demo dataset, giving the
+ * operator end-to-end confirmation that checkout actually worked.
+ */
+export function useRealSaleEvents(): SaleEvent[] {
+  const [realEvents, setRealEvents] = useState<SaleEvent[]>(loadReal);
+
+  useEffect(() => {
+    const refresh = () => setRealEvents(loadReal());
+    window.addEventListener("pos:analytics-changed", refresh);
+    window.addEventListener("storage", refresh);
+    return () => {
+      window.removeEventListener("pos:analytics-changed", refresh);
+      window.removeEventListener("storage", refresh);
+    };
+  }, []);
+
+  return realEvents;
+}
+
 // ── Demo seed (anchored to calendar year 2025) ────────────────────────────
 const DEMO_PRODUCTS: { id: string; name: string; price: number; profit: number }[] = [
   { id: "1", name: "Espresso", price: 3.5, profit: 1.4 },

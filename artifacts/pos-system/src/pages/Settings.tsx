@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
   Home, BarChart2, Plus, Settings as SettingsIcon, ArrowLeft,
-  Zap, Keyboard, Package, BarChart3, ShieldCheck, Sliders, Globe, ArrowRight,
+  Zap, Keyboard, BarChart3, ShieldCheck, Sliders, Globe, ArrowRight,
   CornerDownLeft, ArrowUpRight, Info,
   Database, FlaskConical, Clock, RotateCcw, Undo2, ShieldAlert, Lock, Layers,
 } from "lucide-react";
@@ -14,7 +14,6 @@ import {
   shortcutToString, detectConflicts, bindingFromKeyEvent,
 } from "@/lib/settings";
 import { AlertTriangle } from "lucide-react";
-import { useStore } from "@/lib/store";
 import {
   clearRealEvents,
   getRealEvents,
@@ -45,13 +44,12 @@ import {
   SelectValue as UISelectValue,
 } from "@/components/ui/select";
 
-type SectionId = "experience" | "region" | "shortcuts" | "defaults" | "dataSafety";
+type SectionId = "experience" | "region" | "shortcuts" | "dataSafety";
 
 const SECTIONS: { id: SectionId; label: string; icon: React.ReactNode }[] = [
   { id: "experience",  label: "Experience",     icon: <Sliders size={15} /> },
   { id: "region",      label: "Region",         icon: <Globe size={15} /> },
   { id: "shortcuts",   label: "Shortcuts",      icon: <Keyboard size={15} /> },
-  { id: "defaults",    label: "Defaults",       icon: <Package size={15} /> },
   { id: "dataSafety",  label: "Data & Safety",  icon: <Database size={15} /> },
 ];
 
@@ -129,7 +127,6 @@ export default function SettingsPage() {
               {section === "experience"  && <ExperienceSection />}
               {section === "region"      && <RegionSection />}
               {section === "shortcuts"   && <ShortcutsSection />}
-              {section === "defaults"    && <DefaultsSection />}
               {section === "dataSafety"  && <DataSafetySection />}
             </div>
           </div>
@@ -1015,32 +1012,6 @@ function ShortcutsSection() {
             );
           })()}
         </div>
-      </Block>
-    </>
-  );
-}
-
-function DefaultsSection() {
-  const { settings, update } = useSettings();
-  const { categories } = useStore();
-  const catOptions = useMemo(() => [{ value: "", label: "— None —" }, ...categories.filter(c => c !== "All").map(c => ({ value: c, label: c }))], [categories]);
-  return (
-    <>
-      <SectionHeader title="Defaults" desc="Auto-fill these values when adding a new product." />
-      <Block>
-        <Row label="Default profit" desc="Pre-filled in the Profit field on Add Product.">
-          <NumberInput value={settings.defaultProfit} onChange={v => update("defaultProfit", v)} placeholder="0.00" />
-        </Row>
-        <Row label="Default stock" desc="Pre-filled in the Stock field on Add Product.">
-          <NumberInput value={settings.defaultStock} onChange={v => update("defaultStock", v)} placeholder="0" />
-        </Row>
-        <Row label="Default category" desc="Pre-selected in the category dropdown.">
-          <Select
-            value={settings.defaultCategory}
-            onChange={v => update("defaultCategory", v)}
-            options={catOptions}
-          />
-        </Row>
       </Block>
     </>
   );

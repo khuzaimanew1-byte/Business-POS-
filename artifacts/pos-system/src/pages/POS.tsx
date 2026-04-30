@@ -128,6 +128,18 @@ export default function POS() {
   }, [settings.demoMode, buildDemoCart, loadRealCart, loadRealCartOpen]);
   const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
   const [cartFlash, setCartFlash] = useState(false);
+  // Drives the brief success animation on the Checkout button: when true,
+  // the button paints a green "completed" pulse with a check icon for the
+  // duration of `checkoutSuccessTimerRef` (~1.1s) and ignores re-clicks
+  // so a double-tap can't double-record a sale.
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false);
+  const checkoutSuccessTimerRef = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (checkoutSuccessTimerRef.current !== null) {
+      window.clearTimeout(checkoutSuccessTimerRef.current);
+      checkoutSuccessTimerRef.current = null;
+    }
+  }, []);
 
   type EditDraft = { name: string; price: string; stock: string; quickCode: string; profit: string; image?: string };
   const [isEditMode, setIsEditMode] = useState(false);
@@ -452,28 +464,38 @@ export default function POS() {
   };
 
   const checkout = () => {
-    if (cartItems.length === 0) return;
+    if (cartItems.length === 0 || checkoutSuccess) return;
     // Persist the completed order so Cart History (and Analytics) can
     // surface it. Profit is optional on Product — fall back to 0 so legacy
     // products that never set a profit don't break the math.
     //
-    // NOTE: We intentionally do NOT clear the cart or close the cart bar
-    // here — the cart behaves as persistent working state. Items remain
-    // until the user explicitly removes them (per-item or via the cart's
-    // own controls), and the open/closed state is a user decision.
-    //
-    // Demo Mode: the UI flow runs end-to-end (success toast, etc.) but the
-    // sale is NOT recorded — analytics / history keep showing the stable
-    // demo dataset and no real event gets written to localStorage.
-    if (!settings.demoMode) {
-      recordSale(cartItems.map((ci) => ({
-        productId: ci.product.id,
-        name: ci.product.name,
-        qty: ci.quantity,
-        price: ci.product.price,
-        profit: ci.product.profit ?? 0,
-      })));
+    // Sales are always recorded — including from Demo Mode — so the user
+    // gets end-to-end confirmation in Cart History that the checkout
+    // actually worked. The persisted demo cart still stays out of real
+    // localStorage (see the cart-persistence effect above), so only the
+    // recorded sale event leaks across modes.
+    recordSale(cartItems.map((ci) => ({
+      productId: ci.product.id,
+      name: ci.product.name,
+      qty: ci.quantity,
+      price: ci.product.price,
+      profit: ci.product.profit ?? 0,
+    })));
+    // Empty the cart immediately so the operator sees a clean slate. In
+    // Demo Mode this is a session-only change because the cart-persistence
+    // effect is short-circuited while Demo Mode is on.
+    setCartItems([]);
+    // Brief success state on the Checkout button — replaces the label with
+    // a check mark for ~1.1s before the empty-cart disabled style takes
+    // over. Provides the "click clear feedback" + completion animation.
+    setCheckoutSuccess(true);
+    if (checkoutSuccessTimerRef.current !== null) {
+      window.clearTimeout(checkoutSuccessTimerRef.current);
     }
+    checkoutSuccessTimerRef.current = window.setTimeout(() => {
+      setCheckoutSuccess(false);
+      checkoutSuccessTimerRef.current = null;
+    }, 1100);
     toast.success("Checkout successful!", { icon: <Check className="text-green-500" /> });
   };
 
@@ -1477,8 +1499,24 @@ export default function POS() {
             <span>Total</span>
             <Money value={cartTotal} className="currency-hero text-primary" />
           </div>
-          <Button className="w-full h-12 sm:h-14 text-base sm:text-lg font-bold rounded-xl transition-all duration-200" disabled={cartItems.length === 0} onClick={checkout} data-testid="btn-checkout">
-            Checkout
+          <Button
+            className={`w-full h-12 sm:h-14 text-base sm:text-lg font-bold rounded-xl transition-all duration-200 active:scale-[0.98] ${
+              checkoutSuccess
+                ? 'bg-emerald-600 hover:bg-emerald-600 text-white shadow-[0_0_0_3px_rgba(16,185,129,0.18)] disabled:opacity-100'
+                : ''
+            }`}
+            disabled={cartItems.length === 0 && !checkoutSuccess}
+            onClick={checkout}
+            data-testid="btn-checkout"
+          >
+            {checkoutSuccess ? (
+              <span className="inline-flex items-center gap-2 animate-in fade-in zoom-in-95 duration-200">
+                <Check className="w-5 h-5" strokeWidth={2.5} />
+                Checkout complete
+              </span>
+            ) : (
+              "Checkout"
+            )}
           </Button>
         </div>
       </aside>
