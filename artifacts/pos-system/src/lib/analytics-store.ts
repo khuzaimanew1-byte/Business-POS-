@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSettings } from "@/lib/settings";
 
 export type SaleItem = {
   productId: string;
@@ -17,19 +18,25 @@ export type SaleEvent = {
   totalProfit: number;
 };
 
-const LS_KEY = "pos.analytics.events.v3";
+// Real (user-recorded) events live under their own key. Demo events are
+// generated in-memory and never written to localStorage so the two streams
+// stay strictly separate — toggling Demo Data off must reveal pristine real
+// data and never leak demo entries.
+const REAL_KEY = "pos.analytics.events.real.v1";
 
-// Clean up legacy seed buckets so users see the upgraded dataset
+// Wipe legacy seed buckets — they were always demo data, written under the
+// "real" key by older versions of this store.
 try {
+  localStorage.removeItem("pos.analytics.events.v3");
   localStorage.removeItem("pos.analytics.events.v2");
   localStorage.removeItem("pos.analytics.events");
 } catch {
   /* noop */
 }
 
-function load(): SaleEvent[] {
+function loadReal(): SaleEvent[] {
   try {
-    const raw = localStorage.getItem(LS_KEY);
+    const raw = localStorage.getItem(REAL_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
@@ -39,9 +46,9 @@ function load(): SaleEvent[] {
   }
 }
 
-function save(events: SaleEvent[]) {
+function saveReal(events: SaleEvent[]) {
   try {
-    localStorage.setItem(LS_KEY, JSON.stringify(events));
+    localStorage.setItem(REAL_KEY, JSON.stringify(events));
     window.dispatchEvent(new CustomEvent("pos:analytics-changed"));
   } catch {
     /* noop */
@@ -75,18 +82,32 @@ export function recordSale(items: SaleItem[]) {
     totalSales: items.reduce((s, i) => s + i.price * i.qty, 0),
     totalProfit: items.reduce((s, i) => s + i.profit * i.qty, 0),
   };
-  const events = load();
+  const events = loadReal();
   events.push(evt);
-  save(events);
+  saveReal(events);
 }
 
-export function useSaleEvents(opts?: { seedIfEmpty?: boolean }): SaleEvent[] {
-  const [events, setEvents] = useState<SaleEvent[]>(() => {
-    if (opts?.seedIfEmpty) seedDemoIfEmpty();
-    return load();
-  });
+export function clearRealEvents() {
+  try {
+    localStorage.removeItem(REAL_KEY);
+    window.dispatchEvent(new CustomEvent("pos:analytics-changed"));
+  } catch {
+    /* noop */
+  }
+}
+
+/**
+ * Returns the events that should drive analytics for the current settings:
+ *   • Demo Data ON  → in-memory 2025-anchored demo dataset (real events hidden).
+ *   • Demo Data OFF → only events recorded by `recordSale` (the real stream).
+ * Toggling the setting flips the source instantly with no mixed state.
+ */
+export function useSaleEvents(): SaleEvent[] {
+  const { settings } = useSettings();
+  const [realEvents, setRealEvents] = useState<SaleEvent[]>(loadReal);
+
   useEffect(() => {
-    const refresh = () => setEvents(load());
+    const refresh = () => setRealEvents(loadReal());
     window.addEventListener("pos:analytics-changed", refresh);
     window.addEventListener("storage", refresh);
     return () => {
@@ -94,10 +115,11 @@ export function useSaleEvents(opts?: { seedIfEmpty?: boolean }): SaleEvent[] {
       window.removeEventListener("storage", refresh);
     };
   }, []);
-  return events;
+
+  return settings.demoData ? getDemoEvents2025() : realEvents;
 }
 
-// ── Demo seed ──────────────────────────────────────────────────────────────
+// ── Demo seed (anchored to calendar year 2025) ────────────────────────────
 const DEMO_PRODUCTS: { id: string; name: string; price: number; profit: number }[] = [
   { id: "1", name: "Espresso", price: 3.5, profit: 1.4 },
   { id: "2", name: "Latte", price: 4.5, profit: 1.8 },
@@ -110,61 +132,84 @@ const DEMO_PRODUCTS: { id: string; name: string; price: number; profit: number }
   { id: "13", name: "Salad Bowl", price: 8.99, profit: 3.2 },
 ];
 
-function rand(min: number, max: number) {
-  return min + Math.random() * (max - min);
+// Tiny seedable PRNG so the demo dataset is deterministic across reloads —
+// users see the same charts every time Demo Data is enabled, which makes the
+// Settings preview behaviour predictable.
+function mulberry32(seed: number) {
+  let s = seed >>> 0;
+  return function () {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 }
 
-export function seedDemoIfEmpty() {
-  if (load().length > 0) return;
-  const now = Date.now();
+let _demoCache: SaleEvent[] | null = null;
+
+/**
+ * Generates a fixed, deterministic dataset spanning the entire calendar year
+ * 2025 (Jan 1 → Dec 31). Cached after first generation; consumers should
+ * treat the returned array as immutable.
+ */
+export function getDemoEvents2025(): SaleEvent[] {
+  if (_demoCache) return _demoCache;
+  const rand = mulberry32(20250101);
   const events: SaleEvent[] = [];
 
   // Day-of-week multipliers (0=Sun … 6=Sat) — captures realistic weekly rhythm
   const dowMul = [0.7, 1.05, 1.0, 1.05, 1.15, 1.4, 1.25];
-
-  // Hourly density curve for a typical retail/cafe day (24 entries, sums roughly to 1)
+  // Hourly density curve for a typical retail/cafe day
   const hourCurve = [
-    0.005, 0.003, 0.002, 0.002, 0.003, 0.008, // 0-5 night
-    0.02, 0.04, 0.07, 0.085, 0.075, 0.065,    // 6-11 morning rush
-    0.085, 0.09, 0.07, 0.055, 0.05, 0.06,     // 12-17 lunch + afternoon
-    0.075, 0.065, 0.04, 0.025, 0.015, 0.008,  // 18-23 evening
+    0.005, 0.003, 0.002, 0.002, 0.003, 0.008,
+    0.02, 0.04, 0.07, 0.085, 0.075, 0.065,
+    0.085, 0.09, 0.07, 0.055, 0.05, 0.06,
+    0.075, 0.065, 0.04, 0.025, 0.015, 0.008,
   ];
 
-  // ~14 months of history with denser recent activity
-  for (let daysAgo = 420; daysAgo >= 0; daysAgo--) {
-    const dt0 = new Date(now - daysAgo * 86400000);
-    const recencyBoost = Math.max(0.35, 1 - daysAgo / 420);
+  const start = new Date(2025, 0, 1).getTime();   // Jan 1 2025 local time
+  const end = new Date(2026, 0, 1).getTime();     // exclusive upper bound
+  const totalDays = Math.round((end - start) / 86_400_000);
 
-    // Random "closed" / no-activity days — ~7% chance, slightly higher on Sundays
+  const between = (lo: number, hi: number) => lo + rand() * (hi - lo);
+
+  for (let d = 0; d < totalDays; d++) {
+    const dt0 = new Date(start + d * 86_400_000);
     const dow = dt0.getDay();
+
+    // Light seasonality: a gentle bump toward late November / December and
+    // again in summer so the yearly chart isn't a flat line.
+    const month = dt0.getMonth();
+    const seasonal =
+      month === 11 ? 1.3 :
+      month === 10 ? 1.15 :
+      (month === 6 || month === 7) ? 1.1 :
+      1.0;
+
     const closedChance = dow === 0 ? 0.18 : 0.07;
-    if (Math.random() < closedChance && daysAgo > 1) continue;
+    if (rand() < closedChance) continue;
 
-    // Average events for the day (skew higher recent + by weekday)
-    const baseEvents = rand(8, 22) * recencyBoost * dowMul[dow];
-    const eventsToday = Math.max(0, Math.round(baseEvents * (0.7 + Math.random() * 0.6)));
+    const baseEvents = between(8, 22) * dowMul[dow] * seasonal;
+    const eventsToday = Math.max(0, Math.round(baseEvents * (0.7 + rand() * 0.6)));
 
-    // Pre-pick which hours fire today, weighted by hourCurve
     for (let k = 0; k < eventsToday; k++) {
-      // Weighted hour pick
-      let r = Math.random();
+      let r = rand();
       let hour = 12;
       for (let h = 0; h < 24; h++) {
         if (r < hourCurve[h]) { hour = h; break; }
         r -= hourCurve[h];
       }
-      const minute = Math.floor(Math.random() * 60);
-      const second = Math.floor(Math.random() * 60);
+      const minute = Math.floor(rand() * 60);
+      const second = Math.floor(rand() * 60);
       const dt = new Date(dt0);
       dt.setHours(hour, minute, second, 0);
-      // Don't generate future events on the current day
-      if (daysAgo === 0 && dt.getTime() > now) continue;
 
-      const itemCount = Math.max(1, Math.round(rand(1, 4)));
+      const itemCount = Math.max(1, Math.round(between(1, 4)));
       const items: SaleItem[] = [];
       for (let i = 0; i < itemCount; i++) {
-        const p = DEMO_PRODUCTS[Math.floor(Math.random() * DEMO_PRODUCTS.length)];
-        const qty = Math.max(1, Math.round(rand(1, 3)));
+        const p = DEMO_PRODUCTS[Math.floor(rand() * DEMO_PRODUCTS.length)];
+        const qty = Math.max(1, Math.round(between(1, 3)));
         items.push({
           productId: p.id,
           name: p.name,
@@ -174,7 +219,7 @@ export function seedDemoIfEmpty() {
         });
       }
       events.push({
-        id: `seed-${dt.getTime()}-${k}`,
+        id: `demo-${dt.getTime()}-${k}`,
         ts: dt.getTime(),
         items,
         totalQty: items.reduce((s, i) => s + i.qty, 0),
@@ -183,6 +228,8 @@ export function seedDemoIfEmpty() {
       });
     }
   }
+
   events.sort((a, b) => a.ts - b.ts);
-  save(events);
+  _demoCache = events;
+  return events;
 }

@@ -15,6 +15,7 @@ import {
 } from "@/lib/settings";
 import { AlertTriangle } from "lucide-react";
 import { useStore } from "@/lib/store";
+import { clearRealEvents } from "@/lib/analytics-store";
 import { useShortcut } from "@/lib/shortcuts";
 import { toast } from "sonner";
 
@@ -1204,7 +1205,7 @@ function DataSafetySection() {
               control={
                 <button
                   onClick={() => {
-                    try { localStorage.removeItem("pos.analytics.events.v3"); } catch {}
+                    clearRealEvents();
                     toast.success("Analytics data cleared");
                   }}
                   data-testid="button-reset-analytics"

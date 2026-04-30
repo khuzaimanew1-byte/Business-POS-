@@ -39,6 +39,9 @@ type ChartData = {
   rangeEnd: number;
   rangeLabel: string;
   xTicks: XTick[];
+  // Reference timestamp for the chart's data zone end (the "live" cap).
+  // Carried on ChartData so demo mode can pin it to 2025 instead of wall clock.
+  nowTs: number;
 };
 
 function withZeroAnchors(
@@ -79,8 +82,12 @@ function buildChartData(
   events: SaleEvent[],
   metric: Metric,
   custom: { from: number; to: number } | null,
+  // Allow callers (e.g. Demo Data mode) to override the reference "now" so
+  // the weekly/monthly/yearly windows resolve against a fixed date instead
+  // of the wall clock.
+  nowOverride?: Date,
 ): ChartData {
-  const now = new Date();
+  const now = nowOverride ?? new Date();
   const valueOf = (e: SaleEvent) => (metric === "sales" ? e.totalQty : e.totalProfit);
 
   // Unified tick builder: always anchors the first tick at exactly `start`
@@ -188,7 +195,7 @@ function buildChartData(
     .map(([dayStart, value]) => ({ ts: dayStart + 43200000, value, visible: true }));
 
   const bins = withZeroAnchors(real, rangeStart, rangeEnd, 12 * 3600000);
-  return { bins, rangeStart, rangeEnd, rangeLabel, xTicks };
+  return { bins, rangeStart, rangeEnd, rangeLabel, xTicks, nowTs: now.getTime() };
 }
 
 // ── Y axis helpers ─────────────────────────────────────────────────────────
@@ -485,7 +492,7 @@ function Chart({
   //     so the line is continuous and behaves like a "hold last value" series.
   //   • Future zone = (dataZoneEnd, rangeEnd], present only when the range
   //     extends past "now". No line is drawn here, no tooltip / crosshair.
-  const nowTs = Date.now();
+  const nowTs = data.nowTs;
   const dataZoneEnd = Math.min(rangeEnd, nowTs);
   const plotEndX = margin.left + plotW;
   const dataZoneEndX = Math.min(plotEndX, Math.max(margin.left, xAt(dataZoneEnd)));
@@ -1024,7 +1031,16 @@ export default function Analytics() {
   const [toStr, setToStr] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
-  const events = useSaleEvents({ seedIfEmpty: true });
+  const events = useSaleEvents();
+
+  // When Demo Data is on, anchor "now" to a Sunday in late December 2025.
+  // That makes the weekly/monthly/yearly views all land inside 2025 so the
+  // charts always render against the demo dataset (otherwise weekly would
+  // show today's empty real-data window).
+  const nowRef = useMemo(
+    () => (settings.demoData ? new Date(2025, 11, 28, 12, 0, 0, 0) : new Date()),
+    [settings.demoData],
+  );
 
   useEffect(() => {
     setIsLoading(true);
@@ -1036,8 +1052,8 @@ export default function Analytics() {
   // global shortcut engine — no per-page listener needed here.
 
   const data = useMemo(
-    () => buildChartData(mode, events, metric, custom),
-    [mode, events, metric, custom],
+    () => buildChartData(mode, events, metric, custom, nowRef),
+    [mode, events, metric, custom, nowRef],
   );
   const { bins, rangeLabel } = data;
 
