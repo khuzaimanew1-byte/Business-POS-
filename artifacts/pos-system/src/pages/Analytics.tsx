@@ -990,7 +990,7 @@ function TopProductsBar({
                       </div>
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent align="center" side="top" className="w-auto p-2.5 bg-card border border-border/70 shadow-2xl rounded-xl">
+                  <PopoverContent align="center" side="top" avoidCollisions={false} className="w-auto p-2.5 bg-card border border-border/70 shadow-2xl rounded-xl">
                     <ProductPicker
                       currentId={p.id}
                       excludeIds={excludeIds}
@@ -1307,7 +1307,7 @@ export default function Analytics() {
               </div>
 
               {/* Product analytics card */}
-              <section className="rounded-2xl bg-card/35 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
+              <section className="rounded-2xl bg-card/35 border border-card-border shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
                 <TopProductsBar
                   slots={barSlots}
                   metric={metric}
