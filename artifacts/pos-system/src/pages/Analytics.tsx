@@ -874,8 +874,8 @@ function TopProductsBar({
 
   const max = Math.max(1, ...slots.map((s) => s.value));
 
-  // 6 equal intervals; ceiling is always strictly above max so bars never clip.
-  const { ticks: yTicks, topVal } = barYAxis(max, 6);
+  // 5 equal intervals; ceiling is always strictly above max so bars never clip.
+  const { ticks: yTicks, topVal } = barYAxis(max, 5);
 
   // Width of the Y-axis column — sized to fit the widest tick label.
   const maxTickStr = fmtYTick(topVal, metric, sym);
