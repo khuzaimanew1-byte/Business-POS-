@@ -457,10 +457,11 @@ function computeLineChartHeight(w: number): number {
   return Math.min(420, Math.max(380, Math.round(w * 0.42)));
 }
 
-// Bar chart plotting area: height scales with container width.
+// Bar chart plotting area: taller on mobile so bars have room to breathe,
+// slightly larger than the original 180 on desktop to match the line chart scaling.
 function computeBarChartH(w: number): number {
-  if (w < 480) return 180;
-  if (w < 768) return 240;
+  if (w < 480) return 280;
+  if (w < 768) return 340;
   return 420;
 }
 
