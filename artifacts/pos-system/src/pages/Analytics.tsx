@@ -193,7 +193,7 @@ function buildChartData(
   }
   const real: Bin[] = Array.from(byDay.entries())
     .sort((a, b) => a[0] - b[0])
-    .map(([dayStart, value]) => ({ ts: dayStart, value, visible: true }));
+    .map(([dayStart, value]) => ({ ts: dayStart + 43200000, value, visible: true }));
 
   const bins = withZeroAnchors(real, rangeStart, rangeEnd, 12 * 3600000);
   return { bins, rangeStart, rangeEnd, rangeLabel, xTicks, nowTs: now.getTime() };
