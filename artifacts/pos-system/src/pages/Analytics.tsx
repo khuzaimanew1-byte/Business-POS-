@@ -857,7 +857,7 @@ function TopProductsBar({
   const yAxisW = Math.max(28, 8 + maxTickStr.length * 7);
 
   return (
-    <div ref={containerRef} className="px-5 sm:px-6 pl-[15px] pr-[15px] pt-[10px] pb-[10px]">
+    <div ref={containerRef} className="px-5 sm:px-6 pl-[7px] pr-[15px] pt-[10px] pb-[10px]">
       {/* Y-axis column + bar area side by side */}
       <div className="flex items-stretch gap-0">
 
