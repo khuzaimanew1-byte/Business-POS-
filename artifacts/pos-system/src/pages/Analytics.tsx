@@ -207,6 +207,23 @@ function buildChartData(
 }
 
 // ── Y axis helpers ─────────────────────────────────────────────────────────
+
+// Builds exactly `intervals` equal divisions from 0 to a "nice" ceiling that
+// is strictly above maxVal. Always returns (intervals + 1) tick values.
+function barYAxis(maxVal: number, intervals = 6): { ticks: number[]; topVal: number; step: number } {
+  if (maxVal <= 0) {
+    const step = 1;
+    return { ticks: Array.from({ length: intervals + 1 }, (_, i) => i * step), topVal: intervals * step, step };
+  }
+  const rawStep = maxVal / intervals;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  // Pick smallest "nice" multiple of mag whose product with `intervals` exceeds maxVal
+  const candidates = [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10].map((n) => n * mag);
+  const step = candidates.find((s) => s * intervals > maxVal) ?? 10 * mag;
+  const topVal = step * intervals;
+  return { ticks: Array.from({ length: intervals + 1 }, (_, i) => i * step), topVal, step };
+}
+
 function computeYTicks(minVal: number, maxVal: number, maxTicks = 5): number[] {
   const span = Math.max(1, maxVal - minVal);
   const rough = span / Math.max(1, maxTicks - 1);
@@ -777,7 +794,10 @@ function Chart({
 // ──────────────────────────────────────────────────────────────────────────
 //  TOP 5 PRODUCTS BAR CHART
 // ──────────────────────────────────────────────────────────────────────────
+// Height of the bar plotting area in px (does not include the value label above)
 const BAR_CHART_H = 180;
+// Approximate height of the value label + its bottom margin (mb-1.5 ≈ 6px)
+const BAR_LABEL_H = 22;
 
 function TopProductsBar({
   slots,
@@ -794,11 +814,19 @@ function TopProductsBar({
 }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
   const max = Math.max(1, ...slots.map((s) => s.value));
+
+  // 6 equal intervals; ceiling is always strictly above max so bars never clip.
+  const { ticks: yTicks, topVal } = barYAxis(max, 6);
+
+  // Width of the Y-axis column — sized to fit the widest tick label.
+  const maxTickStr = fmtYTick(topVal, metric, sym);
+  const yAxisW = Math.max(28, 8 + maxTickStr.length * 7);
 
   return (
     <div className="px-5 sm:px-6 pt-5 pb-4">
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold tracking-tight">Top 5 Products</h3>
           <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -807,119 +835,149 @@ function TopProductsBar({
         </div>
       </div>
 
-      {/* Wrapper gives us a coordinate system for the full-width grid lines */}
-      <div className="relative">
-        {/* Full-width horizontal grid lines — rendered above bars so they're
-            always visible regardless of bar height.
-            Value label is ~22px tall (text + mb-1.5), so bar area starts at top:22. */}
+      {/* Y-axis column + bar area side by side */}
+      <div className="flex items-stretch gap-0">
+
+        {/* ── Y-axis: tick labels + vertical rule ───────────────────────── */}
         <div
-          className="absolute inset-x-0 pointer-events-none z-20"
-          style={{ top: 22, height: BAR_CHART_H }}
+          className="relative flex-shrink-0"
+          style={{ width: yAxisW, paddingTop: BAR_LABEL_H }}
         >
-          {[0, 25, 50, 75, 100].map((pct) => (
+          <div className="relative" style={{ height: BAR_CHART_H }}>
+            {/* Tick labels — top (topVal) to bottom (0) */}
+            {[...yTicks].reverse().map((tick, i) => (
+              <div
+                key={tick}
+                className="absolute right-[7px] text-[9px] tabular-nums leading-none text-muted-foreground/70"
+                style={{
+                  top: `${(i / (yTicks.length - 1)) * 100}%`,
+                  transform: "translateY(-50%)",
+                }}
+              >
+                {fmtYTick(tick, metric, sym)}
+              </div>
+            ))}
+            {/* Vertical axis rule */}
             <div
-              key={pct}
-              className="absolute inset-x-0"
-              style={{
-                top: `${100 - pct}%`,
-                borderTop:
-                  pct === 0
-                    ? "1px solid hsla(240,6%,35%,0.85)"
-                    : "1px dashed hsla(240,6%,50%,0.22)",
-              }}
+              className="absolute right-0 top-0 bottom-0"
+              style={{ width: 1, background: "hsla(240,6%,35%,0.6)" }}
             />
-          ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-5 gap-2 sm:gap-4 items-end relative z-10">
-          {slots.map((p, i) => {
-            const isZero = p.value === 0;
-            const pct = isZero ? 0 : (p.value / max) * 100;
-            const barH = isZero ? 4 : Math.max(8, (pct / 100) * BAR_CHART_H);
-            const isHover = hoverIdx === i;
-            const color = p.color;
+        {/* ── Chart area: grid lines + bars ─────────────────────────────── */}
+        <div className="flex-1 min-w-0 relative">
 
-            return (
-              <Popover
-                key={`${i}-${p.id}`}
-                open={openIdx === i}
-                onOpenChange={(o) => setOpenIdx(o ? i : null)}
-              >
-                <PopoverTrigger asChild>
-                  <button
-                    onMouseEnter={() => setHoverIdx(i)}
-                    onMouseLeave={() => setHoverIdx((c) => (c === i ? null : c))}
-                    className="flex flex-col items-center gap-0 focus:outline-none group"
-                    style={{ minWidth: 0 }}
-                  >
-                    {/* Value label */}
-                    <span
-                      className={`text-[10px] sm:text-[11px] font-semibold tabular-nums mb-1.5 transition-colors duration-150 ${
-                        isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
-                      }`}
-                    >
-                      {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
-                    </span>
+          {/* Horizontal grid lines — one per tick, z-index above bars so they
+              always read regardless of bar height. The overlay is offset by
+              BAR_LABEL_H so lines align with the bar plotting area only. */}
+          <div
+            className="absolute inset-x-0 pointer-events-none z-20"
+            style={{ top: BAR_LABEL_H, height: BAR_CHART_H }}
+          >
+            {yTicks.map((tick) => (
+              <div
+                key={tick}
+                className="absolute inset-x-0"
+                style={{
+                  bottom: `${(tick / topVal) * 100}%`,
+                  borderTop:
+                    tick === 0
+                      ? "1px solid hsla(240,6%,35%,0.85)"
+                      : "1px dashed hsla(240,6%,50%,0.22)",
+                }}
+              />
+            ))}
+          </div>
 
-                    {/* Bar container */}
-                    <div
-                      className="relative w-full flex items-end"
-                      style={{ height: BAR_CHART_H }}
+          {/* Bars */}
+          <div className="grid grid-cols-5 gap-2 sm:gap-4 items-end relative z-10">
+            {slots.map((p, i) => {
+              const isZero = p.value === 0;
+              const barH = isZero ? 4 : Math.max(8, (p.value / topVal) * BAR_CHART_H);
+              const isHover = hoverIdx === i;
+              const color = p.color;
+
+              return (
+                <Popover
+                  key={`${i}-${p.id}`}
+                  open={openIdx === i}
+                  onOpenChange={(o) => setOpenIdx(o ? i : null)}
+                >
+                  <PopoverTrigger asChild>
+                    <button
+                      onMouseEnter={() => setHoverIdx(i)}
+                      onMouseLeave={() => setHoverIdx((c) => (c === i ? null : c))}
+                      className="flex flex-col items-center gap-0 focus:outline-none group"
+                      style={{ minWidth: 0 }}
                     >
-                      {/* The bar itself.
-                          Entry animation: `bar-rise-in` reveals the bar from
-                          the baseline up via clip-path so the top glow stripe
-                          unmasks naturally. Per-bar stagger comes from the
-                          inline animationDelay — bars rise left → right. */}
-                      <div
-                        className="bar-rise-in relative w-full transition-all duration-500 ease-out rounded-t-sm"
-                        style={{
-                          height: barH,
-                          animationDelay: `${i * 70}ms`,
-                          background: isZero
-                            ? "hsl(240 6% 20%)"
-                            : `linear-gradient(180deg, ${color} 0%, color-mix(in oklab, ${color} 50%, hsl(240 10% 8%)) 100%)`,
-                          boxShadow:
-                            isHover && !isZero
-                              ? `0 0 20px -4px ${color}88, inset 0 1px 0 rgba(255,255,255,0.2)`
-                              : !isZero
-                              ? `inset 0 1px 0 rgba(255,255,255,0.12)`
-                              : undefined,
-                        }}
+                      {/* Value label */}
+                      <span
+                        className={`text-[10px] sm:text-[11px] font-semibold tabular-nums mb-1.5 transition-colors duration-150 ${
+                          isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
+                        }`}
                       >
-                        {/* Top glow stripe */}
-                        {!isZero && (
-                          <div
-                            className="absolute top-0 left-0 right-0 h-[3px] rounded-t-sm transition-opacity duration-300"
-                            style={{
-                              background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-                              opacity: isHover ? 1 : 0.7,
-                              boxShadow: `0 0 8px 1px ${color}`,
-                            }}
-                          />
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Label: image + name */}
-                    <div className="mt-2.5 flex flex-col items-center gap-1 w-full">
-                      <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
-                      <span className="text-[10px] truncate text-muted-foreground/80 group-hover:text-foreground transition-colors leading-tight text-center w-full px-0.5">
-                        {p.name}
+                        {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
                       </span>
-                    </div>
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="center" side="top" className="p-2 border-border">
-                  <ProductPicker
-                    currentId={p.id}
-                    excludeIds={excludeIds}
-                    onPick={(id) => { onSwap(i, id); setOpenIdx(null); }}
-                  />
-                </PopoverContent>
-              </Popover>
-            );
-          })}
+
+                      {/* Bar container */}
+                      <div
+                        className="relative w-full flex items-end"
+                        style={{ height: BAR_CHART_H }}
+                      >
+                        {/* Bar — rises from baseline via clip-path animation.
+                            Height is proportional to topVal (the tick ceiling),
+                            so bars accurately reflect Y-axis scale. */}
+                        <div
+                          className="bar-rise-in relative w-full transition-all duration-500 ease-out rounded-t-sm"
+                          style={{
+                            height: barH,
+                            animationDelay: `${i * 70}ms`,
+                            background: isZero
+                              ? "hsl(240 6% 20%)"
+                              : `linear-gradient(180deg, ${color} 0%, color-mix(in oklab, ${color} 50%, hsl(240 10% 8%)) 100%)`,
+                            boxShadow:
+                              isHover && !isZero
+                                ? `0 0 20px -4px ${color}88, inset 0 1px 0 rgba(255,255,255,0.2)`
+                                : !isZero
+                                ? `inset 0 1px 0 rgba(255,255,255,0.12)`
+                                : undefined,
+                          }}
+                        >
+                          {/* Top glow stripe */}
+                          {!isZero && (
+                            <div
+                              className="absolute top-0 left-0 right-0 h-[3px] rounded-t-sm transition-opacity duration-300"
+                              style={{
+                                background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
+                                opacity: isHover ? 1 : 0.7,
+                                boxShadow: `0 0 8px 1px ${color}`,
+                              }}
+                            />
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Label: product thumbnail + name */}
+                      <div className="mt-2.5 flex flex-col items-center gap-1 w-full">
+                        <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
+                        <span className="text-[10px] truncate text-muted-foreground/80 group-hover:text-foreground transition-colors leading-tight text-center w-full px-0.5">
+                          {p.name}
+                        </span>
+                      </div>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent align="center" side="top" className="p-2 border-border">
+                    <ProductPicker
+                      currentId={p.id}
+                      excludeIds={excludeIds}
+                      onPick={(id) => { onSwap(i, id); setOpenIdx(null); }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
