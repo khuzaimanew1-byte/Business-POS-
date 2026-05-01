@@ -914,7 +914,7 @@ function TopProductsBar({
         </div>
 
         {/* ── Chart area: grid lines + bars ─────────────────────────────── */}
-        <div className="flex-1 min-w-0 relative pl-1 sm:pl-2">
+        <div className="flex-1 min-w-0 relative pl-3 sm:pl-2">
 
           {/* Horizontal grid lines — one per tick, z-index above bars so they
               always read regardless of bar height. The overlay is offset by
@@ -939,7 +939,7 @@ function TopProductsBar({
           </div>
 
           {/* Bars */}
-          <div className="grid grid-cols-5 gap-1 sm:gap-2 items-end relative z-10">
+          <div className="grid grid-cols-5 gap-3 sm:gap-2 items-end relative z-10">
             {slots.map((p, i) => {
               const isZero = p.value === 0;
               const barH = isZero ? 4 : Math.max(8, (p.value / topVal) * barChartH);
