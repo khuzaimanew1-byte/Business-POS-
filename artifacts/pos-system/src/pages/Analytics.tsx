@@ -858,15 +858,6 @@ function TopProductsBar({
 
   return (
     <div ref={containerRef} className="px-5 sm:px-6 pt-5 pb-4">
-      <div className="flex items-center justify-between mb-4">
-        <div>
-          <h3 className="text-sm font-semibold tracking-tight">Top 5 Products</h3>
-          <p className="text-[11px] text-muted-foreground mt-0.5">
-            Highest performers · click a bar to swap
-          </p>
-        </div>
-      </div>
-
       {/* Y-axis column + bar area side by side */}
       <div className="flex items-stretch gap-0">
 
