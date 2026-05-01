@@ -459,9 +459,9 @@ function computeLineChartHeight(w: number): number {
 // Bar chart plotting area: taller on mobile so bars have room to breathe,
 // slightly larger than the original 180 on desktop to match the line chart scaling.
 function computeBarChartH(w: number): number {
-  if (w < 480) return 220;
-  if (w < 768) return 210;
-  return 200;
+  if (w < 480) return 240;
+  if (w < 768) return 280;
+  return 320;
 }
 
 // ──────────────────────────────────────────────────────────────────────────
@@ -914,7 +914,7 @@ function TopProductsBar({
           </div>
 
           {/* Bars */}
-          <div className="grid grid-cols-5 gap-2 sm:gap-4 items-end relative z-10">
+          <div className="grid grid-cols-5 gap-2 sm:gap-8 items-end relative z-10">
             {slots.map((p, i) => {
               const isZero = p.value === 0;
               const barH = isZero ? 4 : Math.max(8, (p.value / topVal) * barChartH);
@@ -945,7 +945,7 @@ function TopProductsBar({
 
                       {/* Bar container */}
                       <div
-                        className="relative w-full flex items-end"
+                        className="relative w-full flex items-end sm:px-[18%]"
                         style={{ height: barChartH }}
                       >
                         {/* Bar — rises from baseline via clip-path animation.
