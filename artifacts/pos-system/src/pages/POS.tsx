@@ -28,8 +28,15 @@ import { useNotifications } from "@/lib/notifications-store";
 import { recordSale } from "@/lib/analytics-store";
 import { useDemoIndicatorPlacement } from "@/components/DemoModeIndicator";
 
+/**
+ * Cart line item — stores only a product reference (ID) and the quantity.
+ * All display data (name, price, image) is looked up live from the products
+ * store so the cart always reflects the current catalogue without duplicating
+ * product objects. At checkout time, current values are snapshotted into the
+ * SaleEvent so history is an accurate record of what was sold at what price.
+ */
 type CartItem = {
-  product: Product;
+  productId: string;
   quantity: number;
 };
 
@@ -60,24 +67,43 @@ export default function POS() {
   const CART_ITEMS_KEY = "pos.cart.items.v1";
   const CART_OPEN_KEY = "pos.cart.open.v1";
 
-  /** Materialize the demo cart seed by joining product IDs to demo products. */
-  const buildDemoCart = useCallback((): CartItem[] => {
-    const byId = new Map(DEMO_PRODUCTS.map(p => [p.id, p]));
-    const items: CartItem[] = [];
-    for (const seed of DEMO_CART_SEED) {
-      const p = byId.get(seed.productId);
-      if (p) items.push({ product: { ...p }, quantity: seed.quantity });
-    }
-    return items;
-  }, []);
+  /**
+   * Build the demo cart from DEMO_CART_SEED. CartItem now uses productId
+   * references only so this is a direct copy of the seed structure — no
+   * product-object embedding needed.
+   */
+  const buildDemoCart = useCallback((): CartItem[] =>
+    DEMO_CART_SEED.filter(s => DEMO_PRODUCTS.some(p => p.id === s.productId))
+      .map(s => ({ productId: s.productId, quantity: s.quantity })),
+  []);
 
-  /** Read the persisted (real) cart from localStorage — used at init and on demo exit. */
+  /**
+   * Read the persisted cart from localStorage.
+   * Handles migration from the legacy format `{ product: {...}, quantity }`
+   * to the current reference format `{ productId: string, quantity: number }`.
+   */
   const loadRealCart = useCallback((): CartItem[] => {
     try {
       const raw = localStorage.getItem(CART_ITEMS_KEY);
       if (!raw) return [];
       const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? (parsed as CartItem[]) : [];
+      if (!Array.isArray(parsed)) return [];
+      return parsed.flatMap((item: unknown): CartItem[] => {
+        if (typeof item !== "object" || item === null) return [];
+        const i = item as Record<string, unknown>;
+        // New format: { productId: string, quantity: number }
+        if (typeof i.productId === "string" && typeof i.quantity === "number") {
+          return [{ productId: i.productId, quantity: i.quantity }];
+        }
+        // Legacy format: { product: { id, ... }, quantity }
+        if (typeof i.product === "object" && i.product !== null) {
+          const p = i.product as Record<string, unknown>;
+          if (typeof p.id === "string" && typeof i.quantity === "number") {
+            return [{ productId: p.id, quantity: i.quantity }];
+          }
+        }
+        return [];
+      });
     } catch {
       return [];
     }
@@ -242,7 +268,13 @@ export default function POS() {
 
   const topMatchId = debouncedSearch ? filteredProducts[0]?.id : null;
 
-  const cartTotal = useMemo(() => cartItems.reduce((s, i) => s + i.product.price * i.quantity, 0), [cartItems]);
+  /** Look up a live product by ID — the single source of truth for all cart rendering. */
+  const getProduct = useCallback((id: string): Product | undefined =>
+    products.find(p => p.id === id), [products]);
+
+  const cartTotal = useMemo(() =>
+    cartItems.reduce((s, i) => s + (getProduct(i.productId)?.price ?? 0) * i.quantity, 0),
+  [cartItems, getProduct]);
   const cartCount = useMemo(() => cartItems.reduce((s, i) => s + i.quantity, 0), [cartItems]);
 
   // ── Notification deep-link: scroll + highlight ───────────────────────────
@@ -354,9 +386,9 @@ export default function POS() {
     if (product.stock <= 0) { toast.error("Out of stock!"); return; }
     setProducts(prev => prev.map(p => p.id === product.id ? { ...p, stock: p.stock - 1 } : p));
     setCartItems(prev => {
-      const ex = prev.find(i => i.product.id === product.id);
-      if (ex) return prev.map(i => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
-      return [...prev, { product, quantity: 1 }];
+      const ex = prev.find(i => i.productId === product.id);
+      if (ex) return prev.map(i => i.productId === product.id ? { ...i, quantity: i.quantity + 1 } : i);
+      return [...prev, { productId: product.id, quantity: 1 }];
     });
     setCartFlash(false);
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -433,7 +465,7 @@ export default function POS() {
 
   const deleteProduct = (id: string) => {
     setProducts(prev => prev.filter(p => p.id !== id));
-    setCartItems(prev => prev.filter(i => i.product.id !== id));
+    setCartItems(prev => prev.filter(i => i.productId !== id));
     toast.success('Product deleted');
   };
 
@@ -446,21 +478,21 @@ export default function POS() {
   };
 
   const updateCartQty = (productId: string, newQty: number) => {
-    const item = cartItems.find(i => i.product.id === productId);
+    const item = cartItems.find(i => i.productId === productId);
     if (!item) return;
     const diff = newQty - item.quantity;
     const product = products.find(p => p.id === productId);
     if (product && product.stock < diff) { toast.error("Not enough stock!"); return; }
     if (newQty <= 0) { removeFromCart(productId); return; }
     setProducts(prev => prev.map(p => p.id === productId ? { ...p, stock: p.stock - diff } : p));
-    setCartItems(prev => prev.map(i => i.product.id === productId ? { ...i, quantity: newQty } : i));
+    setCartItems(prev => prev.map(i => i.productId === productId ? { ...i, quantity: newQty } : i));
   };
 
   const removeFromCart = (productId: string) => {
-    const item = cartItems.find(i => i.product.id === productId);
+    const item = cartItems.find(i => i.productId === productId);
     if (!item) return;
     setProducts(prev => prev.map(p => p.id === productId ? { ...p, stock: p.stock + item.quantity } : p));
-    setCartItems(prev => prev.filter(i => i.product.id !== productId));
+    setCartItems(prev => prev.filter(i => i.productId !== productId));
   };
 
   const checkout = () => {
@@ -474,13 +506,24 @@ export default function POS() {
     // actually worked. The persisted demo cart still stays out of real
     // localStorage (see the cart-persistence effect above), so only the
     // recorded sale event leaks across modes.
-    recordSale(cartItems.map((ci) => ({
-      productId: ci.product.id,
-      name: ci.product.name,
-      qty: ci.quantity,
-      price: ci.product.price,
-      profit: ci.product.profit ?? 0,
-    })));
+    // Snapshot current product data at checkout time — name, price, and
+    // profit are captured from the live product record so the history entry
+    // always reflects what was charged, while the cart itself only ever
+    // stored the product reference (ID + quantity). Products that can't be
+    // resolved (deleted mid-session) are silently skipped.
+    recordSale(
+      cartItems.flatMap((ci) => {
+        const prod = getProduct(ci.productId);
+        if (!prod) return [];
+        return [{
+          productId: ci.productId,
+          name: prod.name,
+          qty: ci.quantity,
+          price: prod.price,
+          profit: prod.profit ?? 0,
+        }];
+      })
+    );
     // Empty the cart immediately so the operator sees a clean slate. In
     // Demo Mode this is a session-only change because the cart-persistence
     // effect is short-circuited while Demo Mode is on.
@@ -577,7 +620,7 @@ export default function POS() {
     if (ids.length === 0) return;
     const set = new Set(ids);
     setProducts(prev => prev.filter(p => !set.has(p.id)));
-    setCartItems(prev => prev.filter(i => !set.has(i.product.id)));
+    setCartItems(prev => prev.filter(i => !set.has(i.productId)));
     toast.success(`${ids.length} item${ids.length > 1 ? 's' : ''} deleted`);
     exitSelectMode();
   };
@@ -706,7 +749,7 @@ export default function POS() {
         const item = cartItems[idx];
         if (item) {
           const delta = e.key === 'ArrowUp' ? 1 : -1;
-          updateCartQty(item.product.id, item.quantity + delta);
+          updateCartQty(item.productId, item.quantity + delta);
         }
       }
     };
@@ -1451,44 +1494,52 @@ export default function POS() {
                 <p>No items in cart</p>
               </div>
             ) : (
-              cartItems.map(item => (
-                <div key={item.product.id} className="flex bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.product.id}`}>
+              cartItems.map(item => {
+                // Resolve the live product so the cart always reflects the
+                // current catalogue data without storing its own copy.
+                const prod = getProduct(item.productId);
+                // Product has been deleted mid-session — skip it. This is a
+                // guard only; deletion also removes it from cartItems.
+                if (!prod) return null;
+                return (
+                <div key={item.productId} className="flex bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
                   {/* IMAGE — edge-to-edge square */}
                   <div className="w-[72px] h-[72px] shrink-0 bg-secondary">
-                    {item.product.image
-                      ? <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover block" />
+                    {prod.image
+                      ? <img src={prod.image} alt={prod.name} className="w-full h-full object-cover block" />
                       : <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-xs font-bold text-muted-foreground">{renderInitials(item.product.name)}</span>
+                          <span className="text-xs font-bold text-muted-foreground">{renderInitials(prod.name)}</span>
                         </div>}
                   </div>
                   {/* CONTENT */}
                   <div className="flex-1 min-w-0 flex flex-col justify-center px-3 py-2.5">
                     <div className="flex justify-between items-start mb-1">
-                      <h4 className="font-medium text-sm truncate pr-2">{item.product.name}</h4>
-                      <Money value={item.product.price * item.quantity} className="font-semibold text-sm" />
+                      <h4 className="font-medium text-sm truncate pr-2">{prod.name}</h4>
+                      <Money value={prod.price * item.quantity} className="font-semibold text-sm" />
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground inline-flex items-baseline gap-1">
-                        <Money value={item.product.price} />
+                        <Money value={prod.price} />
                         <span>/ ea</span>
                       </span>
                       <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
-                        <button onClick={() => updateCartQty(item.product.id, item.quantity - 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-minus-${item.product.id}`}>
+                        <button onClick={() => updateCartQty(item.productId, item.quantity - 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-minus-${item.productId}`}>
                           <Minus className="w-3 h-3" />
                         </button>
-                        <input type="number" value={item.quantity} onChange={e => updateCartQty(item.product.id, parseInt(e.target.value) || 0)} className="w-8 h-full bg-transparent text-center text-xs font-medium outline-none no-spinners" />
-                        <button onClick={() => updateCartQty(item.product.id, item.quantity + 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-plus-${item.product.id}`}>
+                        <input type="number" value={item.quantity} onChange={e => updateCartQty(item.productId, parseInt(e.target.value) || 0)} className="w-8 h-full bg-transparent text-center text-xs font-medium outline-none no-spinners" />
+                        <button onClick={() => updateCartQty(item.productId, item.quantity + 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-plus-${item.productId}`}>
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
                   </div>
                   {/* DELETE */}
-                  <button onClick={() => removeFromCart(item.product.id)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive self-center pr-3 pl-1 py-2 shrink-0">
+                  <button onClick={() => removeFromCart(item.productId)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive self-center pr-3 pl-1 py-2 shrink-0">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </ScrollArea>

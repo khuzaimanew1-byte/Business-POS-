@@ -67,6 +67,23 @@ type StoreValue = {
   removeCategory: (name: string) => void;
 };
 
+// ── User products persistence ──────────────────────────────────────────────
+// User-created products are stored in localStorage so they survive page
+// refreshes. Demo products are memory-only (they always reset from
+// DEMO_PRODUCTS) so only the real catalogue is written here.
+const PRODUCTS_KEY = "pos.products.v1";
+
+function loadUserProducts(): Product[] {
+  try {
+    const raw = localStorage.getItem(PRODUCTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as Product[]) : [];
+  } catch {
+    return [];
+  }
+}
+
 const StoreContext = createContext<StoreValue | null>(null);
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
@@ -74,8 +91,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Two independent buckets so toggling Demo Mode on/off never corrupts the
   // user's real catalogue. Demo state lives in memory only — a reload
-  // restores the pristine demo list.
-  const [userProducts, setUserProducts] = useState<Product[]>([]);
+  // restores the pristine demo list. User products are seeded from localStorage.
+  const [userProducts, setUserProducts] = useState<Product[]>(loadUserProducts);
   const [demoProducts, setDemoProducts] = useState<Product[]>(DEMO_PRODUCTS);
   const [categories, setCategories] = useState<Category[]>(INITIAL_CATEGORIES);
   const [customCategories, setCustomCategories] = useState<Set<string>>(() => new Set());
@@ -157,6 +174,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setUserProducts(next);
     }
   };
+
+  // Persist user products to localStorage on every change so they survive
+  // page reloads. Written unconditionally — even during Demo Mode the user
+  // might add a real product (non-demo-id) and we want that saved. The demo
+  // snapshot/restore keeps the data consistent across demo toggles.
+  useEffect(() => {
+    try { localStorage.setItem(PRODUCTS_KEY, JSON.stringify(userProducts)); } catch { /* quota exceeded — silently skip */ }
+  }, [userProducts]);
 
   // ── "Sold Out" tab visibility ────────────────────────────────────────────
   // "Sold Out" is a virtual filter (stock = 0), NOT a stored category value
