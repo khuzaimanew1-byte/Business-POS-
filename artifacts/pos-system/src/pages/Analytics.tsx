@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
 import { Home, BarChart2, Plus, Settings, Calendar as CalendarIcon, Check, Search, ArrowLeft, ShoppingBag, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -832,8 +833,10 @@ function TopProductsBar({
   onSwap: (slotIdx: number, newId: string) => void;
 }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
+  const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [barChartH, setBarChartH] = useState(200);
 
   useEffect(() => {
@@ -846,6 +849,28 @@ function TopProductsBar({
     ro.observe(containerRef.current);
     return () => ro.disconnect();
   }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (openIdx === null) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current?.contains(e.target as Node)) return;
+      setOpenIdx(null);
+      setCursorPos(null);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [openIdx]);
+
+  // Close dropdown on Escape
+  useEffect(() => {
+    if (openIdx === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setOpenIdx(null); setCursorPos(null); }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [openIdx]);
 
   const max = Math.max(1, ...slots.map((s) => s.value));
 
@@ -922,84 +947,108 @@ function TopProductsBar({
               const color = p.color;
 
               return (
-                <Popover
+                <button
                   key={`${i}-${p.id}`}
-                  open={openIdx === i}
-                  onOpenChange={(o) => setOpenIdx(o ? i : null)}
+                  onMouseEnter={() => setHoverIdx(i)}
+                  onMouseLeave={() => setHoverIdx((c) => (c === i ? null : c))}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (openIdx === i) {
+                      setOpenIdx(null);
+                      setCursorPos(null);
+                    } else {
+                      setCursorPos({ x: e.clientX, y: e.clientY });
+                      setOpenIdx(i);
+                    }
+                  }}
+                  className="flex flex-col items-center gap-0 focus:outline-none group"
+                  style={{ minWidth: 0 }}
                 >
-                  <PopoverTrigger asChild>
-                    <button
-                      onMouseEnter={() => setHoverIdx(i)}
-                      onMouseLeave={() => setHoverIdx((c) => (c === i ? null : c))}
-                      className="flex flex-col items-center gap-0 focus:outline-none group"
-                      style={{ minWidth: 0 }}
+                  {/* Bar container — label + bar stack from bottom */}
+                  <div
+                    className="relative w-full flex flex-col justify-end items-center sm:px-[8%]"
+                    style={{ height: barChartH }}
+                  >
+                    {/* Value label in normal flow directly above bar */}
+                    <span
+                      className={`text-center text-[10px] sm:text-[11px] font-semibold tabular-nums mb-1.5 transition-colors duration-150 ${
+                        isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
+                      }`}
                     >
-                      {/* Value label */}
-                      <span
-                        className={`text-[10px] sm:text-[11px] font-semibold tabular-nums mb-1.5 transition-colors duration-150 ${
-                          isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
-                        }`}
-                      >
-                        {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
-                      </span>
+                      {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
+                    </span>
 
-                      {/* Bar container */}
-                      <div
-                        className="relative w-full flex items-end sm:px-[8%]"
-                        style={{ height: barChartH }}
-                      >
-                        {/* Bar — rises from baseline via clip-path animation.
-                            Height is proportional to topVal (the tick ceiling),
-                            so bars accurately reflect Y-axis scale. */}
+                    {/* Bar — rises from baseline via clip-path animation */}
+                    <div
+                      className="bar-rise-in relative w-full transition-all duration-500 ease-out rounded-t-sm"
+                      style={{
+                        height: barH,
+                        animationDelay: `${i * 70}ms`,
+                        background: isZero
+                          ? "hsl(240 6% 20%)"
+                          : `linear-gradient(180deg, ${color} 0%, color-mix(in oklab, ${color} 50%, hsl(240 10% 8%)) 100%)`,
+                        boxShadow:
+                          isHover && !isZero
+                            ? `0 0 20px -4px ${color}88, inset 0 1px 0 rgba(255,255,255,0.2)`
+                            : !isZero
+                            ? `inset 0 1px 0 rgba(255,255,255,0.12)`
+                            : undefined,
+                      }}
+                    >
+                      {/* Top glow stripe */}
+                      {!isZero && (
                         <div
-                          className="bar-rise-in relative w-full transition-all duration-500 ease-out rounded-t-sm"
+                          className="absolute top-0 left-0 right-0 h-[3px] rounded-t-sm transition-opacity duration-300"
                           style={{
-                            height: barH,
-                            animationDelay: `${i * 70}ms`,
-                            background: isZero
-                              ? "hsl(240 6% 20%)"
-                              : `linear-gradient(180deg, ${color} 0%, color-mix(in oklab, ${color} 50%, hsl(240 10% 8%)) 100%)`,
-                            boxShadow:
-                              isHover && !isZero
-                                ? `0 0 20px -4px ${color}88, inset 0 1px 0 rgba(255,255,255,0.2)`
-                                : !isZero
-                                ? `inset 0 1px 0 rgba(255,255,255,0.12)`
-                                : undefined,
+                            background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
+                            opacity: isHover ? 1 : 0.7,
+                            boxShadow: `0 0 8px 1px ${color}`,
                           }}
-                        >
-                          {/* Top glow stripe */}
-                          {!isZero && (
-                            <div
-                              className="absolute top-0 left-0 right-0 h-[3px] rounded-t-sm transition-opacity duration-300"
-                              style={{
-                                background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-                                opacity: isHover ? 1 : 0.7,
-                                boxShadow: `0 0 8px 1px ${color}`,
-                              }}
-                            />
-                          )}
-                        </div>
-                      </div>
+                        />
+                      )}
+                    </div>
+                  </div>
 
-                      {/* Label: product thumbnail + name */}
-                      <div className="mt-2.5 flex flex-col items-center gap-1 w-full">
-                        <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
-                        <span className="text-[10px] truncate text-muted-foreground/80 group-hover:text-foreground transition-colors leading-tight text-center w-full px-0.5">
-                          {p.name}
-                        </span>
-                      </div>
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent align="center" side="top" className="w-auto p-2.5 bg-card border border-border/70 shadow-2xl rounded-xl">
-                    <ProductPicker
-                      currentId={p.id}
-                      excludeIds={excludeIds}
-                      onPick={(id) => { onSwap(i, id); setOpenIdx(null); }}
-                    />
-                  </PopoverContent>
-                </Popover>
+                  {/* Label: product thumbnail + name */}
+                  <div className="mt-2.5 flex flex-col items-center gap-1 w-full">
+                    <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
+                    <span className="text-[10px] truncate text-muted-foreground/80 group-hover:text-foreground transition-colors leading-tight text-center w-full px-0.5">
+                      {p.name}
+                    </span>
+                  </div>
+                </button>
               );
             })}
+
+            {/* Cursor-positioned dropdown portal */}
+            {openIdx !== null && cursorPos !== null && slots[openIdx] && createPortal(
+              <div
+                ref={dropdownRef}
+                className="p-2.5 bg-card border border-border/70 shadow-2xl rounded-xl"
+                style={{
+                  position: "fixed",
+                  zIndex: 9999,
+                  ...(() => {
+                    const W = 232, H = 310, GAP = 10;
+                    let left = cursorPos.x + GAP;
+                    let top = cursorPos.y + GAP;
+                    if (left + W > window.innerWidth - 8) left = cursorPos.x - W - GAP;
+                    if (top + H > window.innerHeight - 8) top = cursorPos.y - H - GAP;
+                    if (left < 8) left = 8;
+                    if (top < 8) top = 8;
+                    return { left, top };
+                  })(),
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <ProductPicker
+                  currentId={slots[openIdx].id}
+                  excludeIds={excludeIds}
+                  onPick={(id) => { onSwap(openIdx, id); setOpenIdx(null); setCursorPos(null); }}
+                />
+              </div>,
+              document.body
+            )}
           </div>
         </div>
       </div>
