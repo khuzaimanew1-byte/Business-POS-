@@ -117,14 +117,9 @@ function buildChartData(
     rangeStart = startOfDay(now) - daysSinceMonday * 86400000;
     rangeEnd = rangeStart + 7 * 86400000;
     rangeLabel = "This week";
-    // Each tick is pinned to midnight of that day so the label aligns
-    // exactly with its day's data. Using evenly-spaced fractions would
-    // produce 7/6-day intervals (~28 h) instead of 1-day intervals (24 h),
-    // causing every label after Monday to drift rightward off its day.
-    xTicks = Array.from({ length: 7 }, (_, i) => {
-      const ts = rangeStart + i * 86400000;
-      return { ts, label: new Date(ts).toLocaleDateString(undefined, { weekday: "short" }) };
-    });
+    xTicks = makeTicks(rangeStart, rangeEnd - 1, 7, (ts) =>
+      new Date(ts).toLocaleDateString(undefined, { weekday: "short" })
+    );
   } else if (mode === "monthly") {
     rangeStart = startOfMonth(now);
     rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
