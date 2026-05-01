@@ -934,20 +934,20 @@ function TopProductsBar({
                       className="flex flex-col items-center gap-0 focus:outline-none group"
                       style={{ minWidth: 0 }}
                     >
-                      {/* Bar container — flex column, pushes label+bar to bottom */}
+                      {/* Value label */}
+                      <span
+                        className={`text-[10px] sm:text-[11px] font-semibold tabular-nums mb-1.5 transition-colors duration-150 ${
+                          isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
+                        }`}
+                      >
+                        {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
+                      </span>
+
+                      {/* Bar container */}
                       <div
-                        className="relative w-full flex flex-col justify-end items-center sm:px-[8%]"
+                        className="relative w-full flex items-end sm:px-[8%]"
                         style={{ height: barChartH }}
                       >
-                        {/* Value label — sits in normal flow directly above the bar */}
-                        <span
-                          className={`text-center text-[10px] sm:text-[11px] font-semibold tabular-nums mb-1.5 transition-colors duration-150 ${
-                            isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
-                          }`}
-                        >
-                          {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
-                        </span>
-
                         {/* Bar — rises from baseline via clip-path animation.
                             Height is proportional to topVal (the tick ceiling),
                             so bars accurately reflect Y-axis scale. */}
