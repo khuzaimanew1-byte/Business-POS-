@@ -914,7 +914,7 @@ function TopProductsBar({
         </div>
 
         {/* ── Chart area: grid lines + bars ─────────────────────────────── */}
-        <div className="flex-1 min-w-0 relative pl-2 sm:pl-5">
+        <div className="flex-1 min-w-0 relative pl-1 sm:pl-2">
 
           {/* Horizontal grid lines — one per tick, z-index above bars so they
               always read regardless of bar height. The overlay is offset by
@@ -984,7 +984,7 @@ function TopProductsBar({
                     {/* Value label — inside bar near the top, only if bar tall enough */}
                     {barH > 26 && (
                       <span
-                        className="absolute top-[7px] inset-x-0 text-center sm:text-[18px] tabular-nums transition-colors duration-150 text-foreground font-semibold text-[13px]"
+                        className="absolute top-[7px] inset-x-0 text-center sm:text-[13px] tabular-nums transition-colors duration-150 text-foreground font-bold text-[13px]"
                       >
                         {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
                       </span>
