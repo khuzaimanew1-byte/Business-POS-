@@ -1354,22 +1354,32 @@ export default function Analytics() {
                 />
               </div>
 
-              {/* Product analytics card */}
-              <section className="rounded-2xl bg-card/35 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
-                <TopProductsBar
-                  slots={barSlots}
-                  metric={metric}
-                  sym={sym}
-                  excludeIds={new Set()}
-                  onSwap={swapSlot}
-                />
+              {/* Product analytics — mobile: stacked, desktop: side-by-side with sticky graph */}
+              <div className="sm:flex sm:items-start sm:gap-5">
+
+                {/* Graph column — sticky on desktop so it stays visible while list scrolls */}
+                <div className="sm:flex-[3] sm:sticky sm:top-5 sm:self-start">
+                  <div className="rounded-2xl bg-card/35 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
+                    <TopProductsBar
+                      slots={barSlots}
+                      metric={metric}
+                      sym={sym}
+                      excludeIds={new Set()}
+                      onSwap={swapSlot}
+                    />
+                  </div>
+                </div>
+
+                {/* List column — scrolls naturally with the page on desktop */}
                 {listItems.length > 0 && (
-                  <>
-                    <div className="h-px bg-gradient-to-r from-transparent via-border/50 to-transparent mx-5 sm:mx-6" />
-                    <TopProductsList items={listItems} metric={metric} sym={sym} />
-                  </>
+                  <div className="mt-4 sm:mt-0 sm:flex-[2]">
+                    <div className="rounded-2xl bg-card/35 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
+                      <TopProductsList items={listItems} metric={metric} sym={sym} />
+                    </div>
+                  </div>
                 )}
-              </section>
+
+              </div>
 
             </div>
           </main>
