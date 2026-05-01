@@ -889,7 +889,7 @@ function TopProductsBar({
         </div>
 
         {/* ── Chart area: grid lines + bars ─────────────────────────────── */}
-        <div className="flex-1 min-w-0 relative pl-3">
+        <div className="flex-1 min-w-0 relative pl-5">
 
           {/* Horizontal grid lines — one per tick, z-index above bars so they
               always read regardless of bar height. The overlay is offset by
@@ -990,7 +990,7 @@ function TopProductsBar({
                       </div>
                     </button>
                   </PopoverTrigger>
-                  <PopoverContent align="center" side="top" className="p-2 border-border">
+                  <PopoverContent align="center" side="top" className="w-auto p-2.5 bg-card border border-border/70 shadow-2xl rounded-xl">
                     <ProductPicker
                       currentId={p.id}
                       excludeIds={excludeIds}
