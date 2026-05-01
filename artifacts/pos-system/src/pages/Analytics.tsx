@@ -1012,7 +1012,7 @@ export default function Analytics() {
   // charts always render against the demo dataset (otherwise weekly would
   // show today's empty real-data window).
   const nowRef = useMemo(
-    () => (settings.demoMode ? new Date(2025, 11, 28, 12, 0, 0, 0) : new Date()),
+    () => (settings.demoMode ? new Date(2025, 11, 31, 23, 59, 59, 0) : new Date()),
     [settings.demoMode],
   );
 
