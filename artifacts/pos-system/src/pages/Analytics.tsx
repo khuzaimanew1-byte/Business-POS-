@@ -117,9 +117,13 @@ function buildChartData(
     rangeStart = startOfDay(now) - daysSinceMonday * 86400000;
     rangeEnd = rangeStart + 7 * 86400000;
     rangeLabel = "This week";
-    xTicks = makeTicks(rangeStart, rangeEnd - 1, 7, (ts) =>
-      new Date(ts).toLocaleDateString(undefined, { weekday: "short" })
-    );
+    // Pin each tick to exact midnight of its day (i * 86400000 from Monday).
+    // This gives xSpan = 6 days so Mon maps to the left edge and Sun to the
+    // right edge, with perfectly even 1-day spacing between all 7 labels.
+    xTicks = Array.from({ length: 7 }, (_, i) => ({
+      ts: rangeStart + i * 86400000,
+      label: new Date(rangeStart + i * 86400000).toLocaleDateString(undefined, { weekday: "short" }),
+    }));
   } else if (mode === "monthly") {
     rangeStart = startOfMonth(now);
     rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
@@ -193,7 +197,7 @@ function buildChartData(
   }
   const real: Bin[] = Array.from(byDay.entries())
     .sort((a, b) => a[0] - b[0])
-    .map(([dayStart, value]) => ({ ts: dayStart + 43200000, value, visible: true }));
+    .map(([dayStart, value]) => ({ ts: dayStart, value, visible: true }));
 
   const bins = withZeroAnchors(real, rangeStart, rangeEnd, 12 * 3600000);
   return { bins, rangeStart, rangeEnd, rangeLabel, xTicks, nowTs: now.getTime() };
@@ -520,84 +524,45 @@ function Chart({
     ts: p.ts, value: p.value, isAnchor: false,
   }));
 
-  // The data line is STRETCHED to fill the entire data zone:
-  //   • The first real point sits exactly at the plot's left edge.
-  //   • The last real point sits exactly at the data zone's right edge,
-  //     which is `dataZoneEndX` — equal to the plot's right edge when no
-  //     future zone is shown, otherwise the future zone's boundary.
-  // This produces zero pixels of dead space at either end of the line.
-  // Grid lines and X-axis tick labels keep the original time-based
-  // mapping so the calendar context is preserved.
-  const dataPlotLeft = margin.left;
-  const dataPlotRight = Math.max(margin.left, dataZoneEndX);
-  const dataPlotWidth = Math.max(0, dataPlotRight - dataPlotLeft);
-  const dataFirstTs = realData.length > 0 ? realData[0].ts : rangeStart;
-  const dataLastTs =
-    realData.length > 0 ? realData[realData.length - 1].ts : rangeStart;
-  const dataTsSpan = Math.max(1, dataLastTs - dataFirstTs);
-  const xAtData = (ts: number) =>
-    realData.length <= 1
-      ? dataPlotLeft
-      : dataPlotLeft + (dataPlotWidth * (ts - dataFirstTs)) / dataTsSpan;
+  // ── Single coordinate system for line, dots, and labels ─────────────
+  // All x positions use xAt() so data points sit directly above their labels.
+  const realPts = realData.map(d => ({ x: xAt(d.ts), y: yAt(d.value), ts: d.ts, value: d.value }));
 
   let lineD = "";
   let areaD = "";
-  let firstPt: { x: number; y: number } | null = null;
-  let lastPt: { x: number; y: number } | null = null;
-  if (realData.length > 0) {
-    const realPts = realData.map(d => ({ x: xAtData(d.ts), y: yAt(d.value) }));
-    firstPt = realPts[0];
-    lastPt = realPts[realPts.length - 1];
-
-    lineD = `M ${firstPt.x} ${firstPt.y}`;
-    if (realPts.length >= 2) {
-      lineD += smoothCurveTo(realPts);
-    }
-    // Area fill mirrors the line, closed against the baseline between the
-    // first and last real points (which now span the full data zone).
-    areaD = `${lineD} L ${lastPt.x} ${baseY} L ${firstPt.x} ${baseY} Z`;
+  const firstPt = realPts.length > 0 ? realPts[0] : null;
+  const lastPt  = realPts.length > 0 ? realPts[realPts.length - 1] : null;
+  if (realPts.length > 0) {
+    lineD = `M ${firstPt!.x} ${firstPt!.y}`;
+    if (realPts.length >= 2) lineD += smoothCurveTo(realPts);
+    areaD = `${lineD} L ${lastPt!.x} ${baseY} L ${firstPt!.x} ${baseY} Z`;
   }
-  // Hover capture spans the entire data zone — i.e. the same horizontal
-  // band the stretched line occupies. The future zone gets no capture.
+
   const interactiveWidth = Math.max(0, dataZoneEndX - margin.left);
+  const dataZoneSpan = Math.max(1, Math.min(rangeEnd, data.nowTs) - rangeStart);
 
   const handleMove = (e: React.MouseEvent<SVGRectElement>) => {
     if (interactivePoints.length === 0) return;
-    if (interactivePoints.length === 1) {
-      setHoverIdx(0);
-      return;
-    }
+    if (interactivePoints.length === 1) { setHoverIdx(0); return; }
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const rel = Math.min(1, Math.max(0, x / Math.max(1, rect.width)));
-    // Map mouse position back through the same stretched mapping used to
-    // draw the line, so the crosshair lands exactly on the visible point.
-    const ts = dataFirstTs + rel * (dataLastTs - dataFirstTs);
-    let bestIdx = -1;
-    let bestDist = Infinity;
+    const ts = rangeStart + rel * dataZoneSpan;
+    let bestIdx = -1, bestDist = Infinity;
     for (let i = 0; i < interactivePoints.length; i++) {
       const d = Math.abs(interactivePoints[i].ts - ts);
       if (d < bestDist) { bestDist = d; bestIdx = i; }
     }
     setHoverIdx(bestIdx >= 0 ? bestIdx : null);
   };
-  // When the cursor leaves the chart we deliberately do NOT clear the
-  // hover state — the movable point should freeze at its last position
-  // instead of disappearing. The default (when the user has never
-  // interacted) is the latest real data point.
   const handleLeave = () => {};
   const TT_W_EST = metric === "profit" ? 180 : 200;
-  // Resolve the effective hover index: explicit user hover when set,
-  // otherwise default to the very last real data point so a movable
-  // point + tooltip is always visible.
   const effectiveHoverIdx =
-    interactivePoints.length === 0
-      ? -1
-      : hoverIdx === null
-        ? interactivePoints.length - 1
-        : Math.max(0, Math.min(interactivePoints.length - 1, hoverIdx));
+    interactivePoints.length === 0 ? -1
+    : hoverIdx === null ? interactivePoints.length - 1
+    : Math.max(0, Math.min(interactivePoints.length - 1, hoverIdx));
   const hover = effectiveHoverIdx >= 0 ? interactivePoints[effectiveHoverIdx] : null;
-  const hoverPx = hover ? xAtData(hover.ts) : 0;
+  const hoverPx = hover ? xAt(hover.ts) : 0;
   const hoverPy = hover ? yAt(hover.value) : 0;
   let ttLeft = 0;
   if (hover) {
