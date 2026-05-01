@@ -211,45 +211,31 @@ function buildChartData(
 
 // Builds exactly `intervals` equal divisions from 0 to a "nice" ceiling that
 // is strictly above maxVal. Always returns (intervals + 1) tick values.
-function barYAxis(maxVal: number, _intervals = 5): { ticks: number[]; topVal: number; step: number } {
-  if (maxVal <= 0) {
-    return { ticks: [0, 1, 2, 3, 4, 5], topVal: 5, step: 1 };
-  }
-  // Target ~5 intervals. Pick a "nice" step that produces clean, readable labels.
-  const target = 5;
+// Shared smart Y-axis builder.
+// Targets ~`target` intervals, picks a "nice" step (1/2/2.5/5/10 × magnitude)
+// and snaps the ceiling up to the next step boundary.
+// Returns evenly-spaced ticks from 0 → topVal with exactly (topVal/step + 1) marks.
+function niceYAxis(maxVal: number, target = 5): { ticks: number[]; topVal: number; step: number } {
+  if (maxVal <= 0) return { ticks: [0, 1, 2, 3, 4, 5], topVal: 5, step: 1 };
   const rawStep = maxVal / target;
   const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-  const niceMultiples = [1, 2, 2.5, 5, 10];
-  const normalized = rawStep / mag;
-  const niceMult = niceMultiples.find((n) => n >= normalized) ?? 10;
-  const step = niceMult * mag;
-  // Ceiling of maxVal to next step boundary
-  const topVal = Math.ceil(maxVal / step) * step;
+  const norm = rawStep / mag;
+  const mult = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10;
+  const step = mult * mag;
+  const topVal = Math.ceil((maxVal + step * 0.01) / step) * step;
   const count = Math.round(topVal / step);
-  const ticks = Array.from({ length: count + 1 }, (_, i) => i * step);
+  const ticks = Array.from({ length: count + 1 }, (_, i) =>
+    Math.round(i * step * 1e9) / 1e9,
+  );
   return { ticks, topVal, step };
 }
 
-function computeYTicks(minVal: number, maxVal: number, maxTicks = 5): number[] {
-  const span = Math.max(1, maxVal - minVal);
-  const rough = span / Math.max(1, maxTicks - 1);
-  const pow10 = 10 ** Math.floor(Math.log10(rough));
-  const err = rough / pow10;
-  let step = pow10;
-  if (err >= 7.5) step = 10 * pow10;
-  else if (err >= 3.5) step = 5 * pow10;
-  else if (err >= 1.5) step = 2 * pow10;
-  const ticks: number[] = [];
-  const start = Math.floor(minVal / step) * step;
-  let t = start;
-  let i = 0;
-  while (t <= maxVal + step * 0.01 && i < maxTicks * 6) {
-    if (t >= minVal - step * 0.01) ticks.push(t);
-    t += step;
-    i++;
-  }
-  if (ticks.length === 0) ticks.push(minVal, maxVal);
-  return ticks;
+// Keep alias for bar chart callers.
+function barYAxis(maxVal: number, _intervals = 5) { return niceYAxis(maxVal, 5); }
+
+// Keep alias for line chart callers.
+function computeYTicks(minVal: number, maxVal: number, _maxTicks = 5): number[] {
+  return niceYAxis(Math.max(0, maxVal - minVal > 0 ? maxVal : maxVal + 1), 5).ticks;
 }
 
 // Monotone-cubic Hermite — guarantees no overshoot / no false dips between
