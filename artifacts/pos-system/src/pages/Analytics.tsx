@@ -889,7 +889,7 @@ function TopProductsBar({
         </div>
 
         {/* ── Chart area: grid lines + bars ─────────────────────────────── */}
-        <div className="flex-1 min-w-0 relative pl-5">
+        <div className="flex-1 min-w-0 relative pl-2 sm:pl-5">
 
           {/* Horizontal grid lines — one per tick, z-index above bars so they
               always read regardless of bar height. The overlay is offset by
