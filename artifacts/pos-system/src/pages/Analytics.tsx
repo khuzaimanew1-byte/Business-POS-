@@ -1055,6 +1055,12 @@ function TopProductsBar({
 // ──────────────────────────────────────────────────────────────────────────
 //  TOP 10 PRODUCTS LIST
 // ──────────────────────────────────────────────────────────────────────────
+const RANK_COLORS: Record<number, string> = {
+  0: "text-amber-400",
+  1: "text-slate-400",
+  2: "text-[#cd7f32]",
+};
+
 function TopProductsList({
   items,
   metric,
@@ -1068,50 +1074,61 @@ function TopProductsList({
   if (items.length === 0) return null;
 
   return (
-    <div className="px-5 sm:px-6 pt-1 pb-5">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-[11px] font-semibold tracking-wider uppercase text-muted-foreground/70">
-          Full ranking · top {items.length}
-        </h3>
-      </div>
-      <ul className="flex flex-col gap-0">
+    <div className="flex flex-col h-full px-4 pt-3 pb-3">
+      <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50 font-semibold mb-2">
+        Full ranking · top {items.length}
+      </p>
+      <ul className="flex flex-col flex-1">
         {items.map((p, i) => {
           const isZero = p.value === 0;
           const widthPct = isZero ? 1 : Math.max(3, (p.value / max) * 100);
+          const isTop = i === 0;
+          const rankColorClass = RANK_COLORS[i] ?? "text-muted-foreground/25";
+
           return (
             <li
               key={p.id}
-              className="group flex items-center gap-3 py-2 px-2 -mx-2 rounded-lg hover:bg-secondary/20 transition-colors"
+              className={`group flex items-center gap-2.5 py-1.5 px-2 -mx-2 rounded-lg transition-colors ${
+                isTop
+                  ? "bg-amber-500/[0.07] hover:bg-amber-500/[0.12]"
+                  : "hover:bg-secondary/20"
+              }`}
             >
-              <span className="w-5 text-[11px] font-bold tabular-nums text-muted-foreground/50 text-right shrink-0">
+              <span
+                className={`w-4 text-[11px] font-bold tabular-nums text-right shrink-0 ${rankColorClass}`}
+              >
                 {i + 1}
               </span>
-              <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
               <div className="flex-1 min-w-0">
-                <p className="text-[12px] font-medium truncate text-foreground/85 group-hover:text-foreground transition-colors mb-1">
+                <p className="text-[11px] font-medium truncate text-foreground/80 group-hover:text-foreground transition-colors mb-1">
                   {p.name}
                 </p>
-                <div className="h-[5px] w-full bg-secondary/30 rounded-full overflow-hidden">
+                <div className="h-[4px] w-full bg-secondary/25 rounded-full overflow-hidden">
                   <div
                     className="h-full rounded-full transition-all duration-500 ease-out"
                     style={{
                       width: `${widthPct}%`,
                       background: isZero
                         ? "hsl(240 6% 25%)"
-                        : `linear-gradient(90deg, color-mix(in oklab, ${p.color} 60%, transparent), ${p.color})`,
-                      boxShadow: !isZero ? `0 0 6px -2px ${p.color}` : undefined,
+                        : `linear-gradient(90deg, color-mix(in oklab, ${p.color} 55%, transparent), ${p.color})`,
+                      boxShadow: !isZero ? `0 0 5px -2px ${p.color}` : undefined,
                       opacity: isZero ? 0.4 : 1,
                     }}
                   />
                 </div>
               </div>
-              <span className="text-[12px] font-semibold tabular-nums shrink-0 text-foreground/80 group-hover:text-foreground transition-colors">
+              <span className="text-[11px] font-semibold tabular-nums shrink-0 text-foreground/70 group-hover:text-foreground transition-colors">
                 {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
               </span>
             </li>
           );
         })}
       </ul>
+      {/* Legend */}
+      <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/30">
+        <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+        <span className="text-[10px] text-muted-foreground/50">Top performer</span>
+      </div>
     </div>
   );
 }
@@ -1351,28 +1368,27 @@ export default function Analytics() {
                 />
               </div>
 
-              {/* Product analytics — mobile: stacked, desktop: side-by-side with sticky graph */}
-              <div className="sm:flex sm:items-start sm:gap-5">
+              {/* Product analytics — unified container, bar chart left + ranking right */}
+              <div className="rounded-2xl bg-card/35 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] flex">
 
-                {/* Graph column — sticky on desktop so it stays visible while list scrolls */}
-                <div className="sm:flex-[3] sm:sticky sm:top-5 sm:self-start">
-                  <div className="rounded-2xl bg-card/35 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
-                    <TopProductsBar
-                      slots={barSlots}
-                      metric={metric}
-                      sym={sym}
-                      excludeIds={new Set()}
-                      onSwap={swapSlot}
-                    />
-                  </div>
+                {/* Left panel — bar chart, 55% */}
+                <div className="w-[55%] shrink-0">
+                  <TopProductsBar
+                    slots={barSlots}
+                    metric={metric}
+                    sym={sym}
+                    excludeIds={new Set()}
+                    onSwap={swapSlot}
+                  />
                 </div>
 
-                {/* List column — scrolls naturally with the page on desktop */}
+                {/* Vertical divider */}
+                <div className="w-px bg-border/40 shrink-0 self-stretch" />
+
+                {/* Right panel — ranking list, 45% */}
                 {listItems.length > 0 && (
-                  <div className="mt-4 sm:mt-0 sm:flex-[2]">
-                    <div className="rounded-2xl bg-card/35 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
-                      <TopProductsList items={listItems} metric={metric} sym={sym} />
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    <TopProductsList items={listItems} metric={metric} sym={sym} />
                   </div>
                 )}
 
