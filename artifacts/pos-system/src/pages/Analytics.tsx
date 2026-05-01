@@ -984,7 +984,7 @@ function TopProductsBar({
                     {/* Value label — inside bar near the top, only if bar tall enough */}
                     {barH > 26 && (
                       <span
-                        className={`absolute top-[7px] inset-x-0 text-center text-[10px] sm:text-[11px] font-semibold tabular-nums transition-colors duration-150 ${
+                        className={`absolute top-[7px] inset-x-0 text-center text-[12px] sm:text-[13px] font-bold tabular-nums transition-colors duration-150 ${
                           isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
                         }`}
                       >
