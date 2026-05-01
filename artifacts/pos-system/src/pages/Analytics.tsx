@@ -816,8 +816,8 @@ function Chart({
 // ──────────────────────────────────────────────────────────────────────────
 //  TOP 5 PRODUCTS BAR CHART
 // ──────────────────────────────────────────────────────────────────────────
-// Approximate height of the value label + its bottom margin (mb-1.5 ≈ 6px)
-const BAR_LABEL_H = 22;
+// Labels are now inside bars — no top offset needed for Y-axis or grid lines
+const BAR_LABEL_H = 0;
 
 function TopProductsBar({
   slots,
@@ -882,7 +882,7 @@ function TopProductsBar({
   const yAxisW = Math.max(28, 8 + maxTickStr.length * 7);
 
   return (
-    <div ref={containerRef} className="px-5 sm:px-6 pr-[15px] pt-[10px] pb-[10px] pl-[5px]">
+    <div ref={containerRef} className="px-5 sm:px-6 pr-[15px] pt-[10px] pb-[60px] pl-[5px]">
       {/* Y-axis column + bar area side by side */}
       <div className="flex items-stretch gap-0">
 
@@ -961,56 +961,55 @@ function TopProductsBar({
                       setOpenIdx(i);
                     }
                   }}
-                  className="flex flex-col items-center gap-0 focus:outline-none group"
-                  style={{ minWidth: 0 }}
+                  className="relative flex items-end focus:outline-none group w-full"
+                  style={{ minWidth: 0, height: barChartH }}
                 >
-                  {/* Bar container — label + bar stack from bottom */}
+                  {/* Bar — fills from bottom, padded horizontally */}
                   <div
-                    className="relative w-full flex flex-col justify-end items-center sm:px-[8%]"
-                    style={{ height: barChartH }}
+                    className="bar-rise-in relative w-full transition-all duration-500 ease-out rounded-t-sm sm:mx-[8%]"
+                    style={{
+                      height: barH,
+                      animationDelay: `${i * 70}ms`,
+                      background: isZero
+                        ? "hsl(240 6% 20%)"
+                        : `linear-gradient(180deg, ${color} 0%, color-mix(in oklab, ${color} 50%, hsl(240 10% 8%)) 100%)`,
+                      boxShadow:
+                        isHover && !isZero
+                          ? `0 0 20px -4px ${color}88, inset 0 1px 0 rgba(255,255,255,0.2)`
+                          : !isZero
+                          ? `inset 0 1px 0 rgba(255,255,255,0.12)`
+                          : undefined,
+                    }}
                   >
-                    {/* Value label in normal flow directly above bar */}
-                    <span
-                      className={`text-center text-[10px] sm:text-[11px] font-semibold tabular-nums mb-1.5 transition-colors duration-150 ${
-                        isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
-                      }`}
-                    >
-                      {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
-                    </span>
+                    {/* Value label — inside bar near the top, only if bar tall enough */}
+                    {barH > 26 && (
+                      <span
+                        className={`absolute top-[7px] inset-x-0 text-center text-[10px] sm:text-[11px] font-semibold tabular-nums transition-colors duration-150 ${
+                          isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
+                        }`}
+                      >
+                        {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
+                      </span>
+                    )}
 
-                    {/* Bar — rises from baseline via clip-path animation */}
-                    <div
-                      className="bar-rise-in relative w-full transition-all duration-500 ease-out rounded-t-sm"
-                      style={{
-                        height: barH,
-                        animationDelay: `${i * 70}ms`,
-                        background: isZero
-                          ? "hsl(240 6% 20%)"
-                          : `linear-gradient(180deg, ${color} 0%, color-mix(in oklab, ${color} 50%, hsl(240 10% 8%)) 100%)`,
-                        boxShadow:
-                          isHover && !isZero
-                            ? `0 0 20px -4px ${color}88, inset 0 1px 0 rgba(255,255,255,0.2)`
-                            : !isZero
-                            ? `inset 0 1px 0 rgba(255,255,255,0.12)`
-                            : undefined,
-                      }}
-                    >
-                      {/* Top glow stripe */}
-                      {!isZero && (
-                        <div
-                          className="absolute top-0 left-0 right-0 h-[3px] rounded-t-sm transition-opacity duration-300"
-                          style={{
-                            background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
-                            opacity: isHover ? 1 : 0.7,
-                            boxShadow: `0 0 8px 1px ${color}`,
-                          }}
-                        />
-                      )}
-                    </div>
+                    {/* Top glow stripe */}
+                    {!isZero && (
+                      <div
+                        className="absolute top-0 left-0 right-0 h-[3px] rounded-t-sm transition-opacity duration-300"
+                        style={{
+                          background: `linear-gradient(90deg, transparent, ${color}, transparent)`,
+                          opacity: isHover ? 1 : 0.7,
+                          boxShadow: `0 0 8px 1px ${color}`,
+                        }}
+                      />
+                    )}
                   </div>
 
-                  {/* Label: product thumbnail + name */}
-                  <div className="mt-2.5 flex flex-col items-center gap-1 w-full">
+                  {/* Bottom label overlay — floats below bar, no layout space */}
+                  <div
+                    className="absolute left-0 right-0 flex flex-col items-center gap-1 pointer-events-none"
+                    style={{ top: barChartH + 10 }}
+                  >
                     <ProductThumb meta={getProductMeta(p.id, p.name)} size={28} />
                     <span className="text-[10px] truncate text-muted-foreground/80 group-hover:text-foreground transition-colors leading-tight text-center w-full px-0.5">
                       {p.name}
