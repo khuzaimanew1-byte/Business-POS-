@@ -1088,7 +1088,7 @@ function TopProductsList({
           return (
             <li
               key={p.id}
-              className={`group flex items-center gap-2.5 py-1.5 px-2 -mx-2 rounded-lg transition-colors ${
+              className={`group flex items-center gap-2 py-1.5 px-2 -mx-2 rounded-lg transition-colors ${
                 isTop
                   ? "bg-amber-500/[0.07] hover:bg-amber-500/[0.12]"
                   : "hover:bg-secondary/20"
@@ -1099,6 +1099,7 @@ function TopProductsList({
               >
                 {i + 1}
               </span>
+              <ProductThumb meta={getProductMeta(p.id, p.name)} size={26} />
               <div className="flex-1 min-w-0">
                 <p className="text-[11px] font-medium truncate text-foreground/80 group-hover:text-foreground transition-colors mb-1">
                   {p.name}
@@ -1124,11 +1125,6 @@ function TopProductsList({
           );
         })}
       </ul>
-      {/* Legend */}
-      <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/30">
-        <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-        <span className="text-[10px] text-muted-foreground/50">Top performer</span>
-      </div>
     </div>
   );
 }
