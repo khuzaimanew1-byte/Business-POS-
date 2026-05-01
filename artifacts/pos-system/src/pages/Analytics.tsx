@@ -984,9 +984,7 @@ function TopProductsBar({
                     {/* Value label — inside bar near the top, only if bar tall enough */}
                     {barH > 26 && (
                       <span
-                        className={`absolute top-[7px] inset-x-0 text-center text-[12px] sm:text-[18px] font-extrabold tabular-nums transition-colors duration-150 ${
-                          isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
-                        }`}
+                        className="absolute top-[7px] inset-x-0 text-center sm:text-[18px] tabular-nums transition-colors duration-150 text-foreground text-[15px] font-bold"
                       >
                         {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
                       </span>
@@ -1004,7 +1002,6 @@ function TopProductsBar({
                       />
                     )}
                   </div>
-
                   {/* Bottom label overlay — floats below bar, no layout space */}
                   <div
                     className="absolute left-0 right-0 flex flex-col items-center gap-1 pointer-events-none"
