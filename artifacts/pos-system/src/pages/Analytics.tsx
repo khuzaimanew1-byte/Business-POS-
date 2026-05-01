@@ -128,15 +128,18 @@ function buildChartData(
     rangeStart = startOfMonth(now);
     rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
     rangeLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-    // Anchor day "1" at the left edge and the last day of the month at the
-    // right edge of the plot. Tick positions span the full [start, end]
-    // range; labels interpolate between 1 → lastDay so the rightmost tick
-    // visibly reads "30"/"31" sitting on the chart's right edge.
+    // Pin each tick to midnight of an exact integer day so data points sit
+    // directly above their labels. dayOffset uses Math.round so ticks always
+    // land on whole-day boundaries regardless of month length.
+    // xSpan = (lastDay-1) days → Day 1 at left edge, Day lastDay at right edge.
     const lastDay = new Date(rangeEnd - 86400000).getDate();
-    xTicks = Array.from({ length: 7 }, (_, i) => ({
-      ts: rangeStart + ((rangeEnd - rangeStart) * i) / 6,
-      label: String(Math.round(1 + (lastDay - 1) * (i / 6))),
-    }));
+    xTicks = Array.from({ length: 7 }, (_, i) => {
+      const dayOffset = Math.round((i * (lastDay - 1)) / 6);
+      return {
+        ts: rangeStart + dayOffset * 86400000,
+        label: String(1 + dayOffset),
+      };
+    });
   } else if (mode === "yearly") {
     const yr = now.getFullYear();
     rangeStart = startOfYear(now);
@@ -480,9 +483,9 @@ function Chart({
   const baseY = margin.top + plotH;
   const span = Math.max(1, rangeEnd - rangeStart);
   // Use the last x-tick as the right-edge anchor so the chart always fills
-  // the full plot width. In weekly mode the ticks run Mon–Sun (6 intervals),
-  // so xSpan = 6 days and Sun lands exactly at the right edge instead of 6/7.
-  // In monthly/yearly the last tick is rangeEnd, so xSpan == span (no change).
+  // the full plot width. Weekly: ticks run Mon–Sun (6 intervals), xSpan = 6d.
+  // Monthly: ticks span Day 1 → Day lastDay midnight, xSpan = (lastDay-1) days.
+  // This keeps data points at their exact day boundaries aligned with labels.
   const xSpan = Math.max(1, xTicks.length >= 2 ? xTicks[xTicks.length - 1].ts - rangeStart : span);
   const xAt = (ts: number) => margin.left + (plotW * (ts - rangeStart)) / xSpan;
   const yAt = (v: number) =>
