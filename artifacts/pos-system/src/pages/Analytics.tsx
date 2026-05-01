@@ -934,17 +934,16 @@ function TopProductsBar({
                       className="flex flex-col items-center gap-0 focus:outline-none group"
                       style={{ minWidth: 0 }}
                     >
-                      {/* Bar container */}
+                      {/* Bar container — flex column, pushes label+bar to bottom */}
                       <div
-                        className="relative w-full flex items-end sm:px-[8%]"
+                        className="relative w-full flex flex-col justify-end items-center sm:px-[8%]"
                         style={{ height: barChartH }}
                       >
-                        {/* Value label — anchored just above this bar's own top */}
+                        {/* Value label — sits in normal flow directly above the bar */}
                         <span
-                          className={`absolute inset-x-0 text-center text-[10px] sm:text-[11px] font-semibold tabular-nums transition-colors duration-150 pointer-events-none ${
+                          className={`text-center text-[10px] sm:text-[11px] font-semibold tabular-nums mb-1.5 transition-colors duration-150 ${
                             isZero ? "text-muted-foreground/40" : isHover ? "text-foreground" : "text-foreground/80"
                           }`}
-                          style={{ bottom: barH + 5 }}
                         >
                           {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
                         </span>
