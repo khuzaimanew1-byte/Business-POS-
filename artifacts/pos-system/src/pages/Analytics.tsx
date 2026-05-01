@@ -211,18 +211,23 @@ function buildChartData(
 
 // Builds exactly `intervals` equal divisions from 0 to a "nice" ceiling that
 // is strictly above maxVal. Always returns (intervals + 1) tick values.
-function barYAxis(maxVal: number, intervals = 6): { ticks: number[]; topVal: number; step: number } {
+function barYAxis(maxVal: number, _intervals = 5): { ticks: number[]; topVal: number; step: number } {
   if (maxVal <= 0) {
-    const step = 1;
-    return { ticks: Array.from({ length: intervals + 1 }, (_, i) => i * step), topVal: intervals * step, step };
+    return { ticks: [0, 1, 2, 3, 4, 5], topVal: 5, step: 1 };
   }
-  const rawStep = maxVal / intervals;
+  // Target ~5 intervals. Pick a "nice" step that produces clean, readable labels.
+  const target = 5;
+  const rawStep = maxVal / target;
   const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
-  // Pick smallest "nice" multiple of mag whose product with `intervals` exceeds maxVal
-  const candidates = [1, 1.5, 2, 2.5, 3, 4, 5, 7.5, 10].map((n) => n * mag);
-  const step = candidates.find((s) => s * intervals > maxVal) ?? 10 * mag;
-  const topVal = step * intervals;
-  return { ticks: Array.from({ length: intervals + 1 }, (_, i) => i * step), topVal, step };
+  const niceMultiples = [1, 2, 2.5, 5, 10];
+  const normalized = rawStep / mag;
+  const niceMult = niceMultiples.find((n) => n >= normalized) ?? 10;
+  const step = niceMult * mag;
+  // Ceiling of maxVal to next step boundary
+  const topVal = Math.ceil(maxVal / step) * step;
+  const count = Math.round(topVal / step);
+  const ticks = Array.from({ length: count + 1 }, (_, i) => i * step);
+  return { ticks, topVal, step };
 }
 
 function computeYTicks(minVal: number, maxVal: number, maxTicks = 5): number[] {
