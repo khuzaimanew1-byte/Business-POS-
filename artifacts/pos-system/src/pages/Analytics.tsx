@@ -939,7 +939,7 @@ function TopProductsBar({
           </div>
 
           {/* Bars */}
-          <div className="grid grid-cols-5 gap-2 sm:gap-5 items-end relative z-10">
+          <div className="grid grid-cols-5 gap-1 sm:gap-2 items-end relative z-10">
             {slots.map((p, i) => {
               const isZero = p.value === 0;
               const barH = isZero ? 4 : Math.max(8, (p.value / topVal) * barChartH);
@@ -966,7 +966,7 @@ function TopProductsBar({
                 >
                   {/* Bar — fills from bottom, padded horizontally */}
                   <div
-                    className="bar-rise-in relative w-full transition-all duration-500 ease-out rounded-t-sm sm:mx-[8%]"
+                    className="bar-rise-in relative w-full transition-all duration-500 ease-out rounded-t-sm sm:mx-[4%]"
                     style={{
                       height: barH,
                       animationDelay: `${i * 70}ms`,
