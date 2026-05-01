@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { useLocation } from "wouter";
 import { ArrowLeft, Plus, Check, X, ChevronDown, FolderPlus, Loader2, Trash2, Upload } from "lucide-react";
 import { useStore, normalizeCode, type Product } from "@/lib/store";
-import { useSettings, getCurrencySymbol, formatAmountForCurrency } from "@/lib/settings";
+import { useSettings, getCurrencySymbol, formatAmountForCurrency, convertToUSD } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
 import { useDemoIndicatorPlacement } from "@/components/DemoModeIndicator";
 import { toast } from "sonner";
@@ -10,6 +10,48 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Add-Product draft  (persists for 1 week; cleared on successful create)
+// ─────────────────────────────────────────────────────────────────────────────
+const DRAFT_KEY = "pos.addproduct.draft.v1";
+const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 1 week
+
+type DraftData = {
+  expires: number;
+  name: string;
+  quickCodeRaw: string;
+  price: string;
+  profit: string;
+  stock: string;
+  category: string;
+  image: string | null;
+};
+
+function loadDraft(): DraftData | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const d: DraftData = JSON.parse(raw);
+    if (!d.expires || d.expires < Date.now()) {
+      localStorage.removeItem(DRAFT_KEY);
+      return null;
+    }
+    return d;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(data: Omit<DraftData, "expires">) {
+  try {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...data, expires: Date.now() + DRAFT_TTL_MS }));
+  } catch { /* quota exceeded — silently skip */ }
+}
+
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Floating-label, border-trace input
@@ -124,14 +166,19 @@ export default function AddProduct() {
   // bottom-left corner so it stays clear of inputs and the action row.
   useDemoIndicatorPlacement("1rem");
 
-  // Form state (defaults pre-filled from Settings → Defaults)
-  const [name, setName] = useState("");
-  const [quickCodeRaw, setQuickCodeRaw] = useState("");
-  const [price, setPrice] = useState("");
-  const [profit, setProfit] = useState(settings.defaultProfit);
-  const [stock, setStock] = useState(settings.defaultStock);
-  const [category, setCategory] = useState<string>(settings.defaultCategory);
-  const [image, setImage] = useState<string | null>(null);
+  // Draft restore — runs once at mount before any user interaction.
+  // loadDraft() handles expiry so stale drafts never surface.
+  const [_draftRef] = useState<DraftData | null>(loadDraft);
+
+  // Form state — seeded from a saved draft if one exists, otherwise from
+  // the Settings defaults (profit, stock, category) or blank (name, etc.).
+  const [name, setName] = useState(_draftRef?.name ?? "");
+  const [quickCodeRaw, setQuickCodeRaw] = useState(_draftRef?.quickCodeRaw ?? "");
+  const [price, setPrice] = useState(_draftRef?.price ?? "");
+  const [profit, setProfit] = useState(_draftRef?.profit ?? settings.defaultProfit);
+  const [stock, setStock] = useState(_draftRef?.stock ?? settings.defaultStock);
+  const [category, setCategory] = useState<string>(_draftRef?.category ?? settings.defaultCategory);
+  const [image, setImage] = useState<string | null>(_draftRef?.image ?? null);
 
   // UI state
   const [dragOver, setDragOver] = useState(false);
@@ -223,8 +270,26 @@ export default function AddProduct() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profitTooHigh, profit]);
 
-  // Focus name on mount
-  useEffect(() => { nameInputRef.current?.focus(); }, []);
+  // Focus name on mount (skip if draft restored so the user can see what they had)
+  useEffect(() => { if (!_draftRef) nameInputRef.current?.focus(); }, []);
+
+  // Persist draft on every change, debounced 600 ms so rapid keystrokes
+  // don't hammer localStorage. Draft is keyed with a 1-week TTL and is
+  // cleared automatically on successful product creation.
+  const draftSaveTimerRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (draftSaveTimerRef.current !== null) window.clearTimeout(draftSaveTimerRef.current);
+    draftSaveTimerRef.current = window.setTimeout(() => {
+      saveDraft({ name, quickCodeRaw, price, profit, stock, category, image });
+      draftSaveTimerRef.current = null;
+    }, 600);
+    return () => {
+      if (draftSaveTimerRef.current !== null) {
+        window.clearTimeout(draftSaveTimerRef.current);
+        draftSaveTimerRef.current = null;
+      }
+    };
+  }, [name, quickCodeRaw, price, profit, stock, category, image]);
 
   // ── Intelligent flow helpers ───────────────────────────────────────────
   function triggerShake(f: FieldKey) {
@@ -354,8 +419,12 @@ export default function AddProduct() {
     id: Math.random().toString(36).slice(2, 11),
     quickCode: fullQuickCode,
     name: name.trim(),
-    price: priceNum,
-    profit: profitNum,
+    // Convert the user-entered amount from the active currency to the USD
+    // base that the rest of the system expects. formatCurrency / Money will
+    // multiply back by the exchange rate when displaying, so the product
+    // always shows exactly the amount the operator typed in their currency.
+    price:  convertToUSD(priceNum,  settings),
+    profit: convertToUSD(profitNum, settings),
     stock: stockNum,
     category,
     image: image ?? undefined,
@@ -367,6 +436,8 @@ export default function AddProduct() {
     const product = buildProduct();
     await new Promise(r => setTimeout(r, 240));
     setProducts(prev => [...prev, product]);
+    // Product successfully saved — draft is no longer needed.
+    clearDraft();
     toast.success(`${product.name} created`, { icon: <Check className="text-green-500" /> });
     if (mode === 'redirect') {
       setTimeout(() => { setSubmittingMode(null); setLocation('/'); }, 200);

@@ -292,6 +292,20 @@ export function convertFromUSD(usd: number, s: SettingsState): number {
   return usd * (rate ?? 1);
 }
 
+/**
+ * Convert an amount expressed in the active currency back to USD-base so it
+ * can be stored in a product record. `convertFromUSD(convertToUSD(x, s), s)`
+ * round-trips back to x (modulo floating-point rounding).
+ *
+ * USD → no change.  PKR 500 → USD 500/280 ≈ 1.786.  OMR 2.500 → USD 2.5/0.385 ≈ 6.49.
+ */
+export function convertToUSD(amount: number, s: SettingsState): number {
+  if (s.currency === "USD") return amount;
+  const rates = s.rates ?? DEFAULT_RATES;
+  const rate = rates[s.currency] ?? DEFAULT_RATES[s.currency];
+  return rate ? amount / rate : amount;
+}
+
 /** Format with no forced trailing zeros (3.4 stays 3.4 even at decimals=2). */
 function formatNumberTrimmed(v: number, decimals: number): string {
   const fixed = v.toFixed(decimals);
