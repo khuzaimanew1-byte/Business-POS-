@@ -984,7 +984,7 @@ function TopProductsBar({
                     {/* Value label — inside bar near the top, only if bar tall enough */}
                     {barH > 26 && (
                       <span
-                        className="absolute top-[7px] inset-x-0 text-center sm:text-[18px] tabular-nums transition-colors duration-150 text-foreground text-[15px] font-bold"
+                        className="absolute top-[7px] inset-x-0 text-center sm:text-[18px] tabular-nums transition-colors duration-150 text-foreground text-[14px] font-semibold"
                       >
                         {isZero ? "—" : fmtBarLabel(p.value, metric, sym)}
                       </span>
