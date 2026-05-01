@@ -444,6 +444,26 @@ function ProductPicker({
   );
 }
 
+// ── Responsive height helpers ──────────────────────────────────────────────
+
+// Line chart: tall on mobile (immersive, readable), balanced on desktop
+// (prevents the wide-container flatness at a fixed 300px).
+function computeLineChartHeight(w: number): number {
+  if (w < 480) return 340;
+  if (w < 768) return 370;
+  // Desktop: proportional to width, clamped so it never gets too tall.
+  // Math.max(380) ensures it never drops below 380 on narrower desktop viewports.
+  return Math.min(420, Math.max(380, Math.round(w * 0.42)));
+}
+
+// Bar chart plotting area: taller on mobile so bars have room to breathe,
+// slightly larger than the original 180 on desktop to match the line chart scaling.
+function computeBarChartH(w: number): number {
+  if (w < 480) return 220;
+  if (w < 768) return 210;
+  return 200;
+}
+
 // ──────────────────────────────────────────────────────────────────────────
 //  LINE CHART
 // ──────────────────────────────────────────────────────────────────────────
@@ -462,7 +482,10 @@ function Chart({
 }) {
   const { bins, rangeStart, rangeEnd, xTicks } = data;
   const wrapRef = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ w: 800, h: 300 });
+  const [size, setSize] = useState(() => {
+    const w = 800;
+    return { w, h: computeLineChartHeight(w) };
+  });
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const [animKey, setAnimKey] = useState(0);
 
@@ -477,10 +500,8 @@ function Chart({
     if (!wrapRef.current) return;
     const ro = new ResizeObserver((entries) => {
       for (const e of entries) {
-        setSize({
-          w: Math.max(280, e.contentRect.width),
-          h: Math.max(200, e.contentRect.height),
-        });
+        const w = Math.max(280, e.contentRect.width);
+        setSize({ w, h: computeLineChartHeight(w) });
       }
     });
     ro.observe(wrapRef.current);
@@ -603,7 +624,7 @@ function Chart({
     <div
       ref={wrapRef}
       className="relative w-full bg-card/40 rounded-xl border border-card-border overflow-hidden"
-      style={{ height: 300 }}
+      style={{ height: size.h }}
     >
       <svg width={size.w} height={size.h} className="block">
         <defs>
@@ -794,8 +815,6 @@ function Chart({
 // ──────────────────────────────────────────────────────────────────────────
 //  TOP 5 PRODUCTS BAR CHART
 // ──────────────────────────────────────────────────────────────────────────
-// Height of the bar plotting area in px (does not include the value label above)
-const BAR_CHART_H = 180;
 // Approximate height of the value label + its bottom margin (mb-1.5 ≈ 6px)
 const BAR_LABEL_H = 22;
 
@@ -814,6 +833,19 @@ function TopProductsBar({
 }) {
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [barChartH, setBarChartH] = useState(200);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) {
+        setBarChartH(computeBarChartH(e.contentRect.width));
+      }
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   const max = Math.max(1, ...slots.map((s) => s.value));
 
@@ -825,7 +857,7 @@ function TopProductsBar({
   const yAxisW = Math.max(28, 8 + maxTickStr.length * 7);
 
   return (
-    <div className="px-5 sm:px-6 pt-5 pb-4">
+    <div ref={containerRef} className="px-5 sm:px-6 pt-5 pb-4">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="text-sm font-semibold tracking-tight">Top 5 Products</h3>
@@ -843,7 +875,7 @@ function TopProductsBar({
           className="relative flex-shrink-0"
           style={{ width: yAxisW, paddingTop: BAR_LABEL_H }}
         >
-          <div className="relative" style={{ height: BAR_CHART_H }}>
+          <div className="relative" style={{ height: barChartH }}>
             {/* Tick labels — top (topVal) to bottom (0) */}
             {[...yTicks].reverse().map((tick, i) => (
               <div
@@ -873,7 +905,7 @@ function TopProductsBar({
               BAR_LABEL_H so lines align with the bar plotting area only. */}
           <div
             className="absolute inset-x-0 pointer-events-none z-20"
-            style={{ top: BAR_LABEL_H, height: BAR_CHART_H }}
+            style={{ top: BAR_LABEL_H, height: barChartH }}
           >
             {yTicks.map((tick) => (
               <div
@@ -894,7 +926,7 @@ function TopProductsBar({
           <div className="grid grid-cols-5 gap-2 sm:gap-4 items-end relative z-10">
             {slots.map((p, i) => {
               const isZero = p.value === 0;
-              const barH = isZero ? 4 : Math.max(8, (p.value / topVal) * BAR_CHART_H);
+              const barH = isZero ? 4 : Math.max(8, (p.value / topVal) * barChartH);
               const isHover = hoverIdx === i;
               const color = p.color;
 
@@ -923,7 +955,7 @@ function TopProductsBar({
                       {/* Bar container */}
                       <div
                         className="relative w-full flex items-end"
-                        style={{ height: BAR_CHART_H }}
+                        style={{ height: barChartH }}
                       >
                         {/* Bar — rises from baseline via clip-path animation.
                             Height is proportional to topVal (the tick ceiling),
