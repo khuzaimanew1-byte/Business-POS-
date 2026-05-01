@@ -1365,10 +1365,10 @@ export default function Analytics() {
               </div>
 
               {/* Product analytics — unified container, bar chart left + ranking right */}
-              <div className="rounded-2xl bg-card/35 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] flex">
+              <div className="rounded-2xl bg-card/35 border border-card-border overflow-hidden shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] flex flex-col md:flex-row">
 
-                {/* Left panel — bar chart, 55% */}
-                <div className="w-[55%] shrink-0">
+                {/* Left panel — bar chart, full width on mobile / 55% on desktop */}
+                <div className="w-full md:w-[55%] md:shrink-0">
                   <TopProductsBar
                     slots={barSlots}
                     metric={metric}
@@ -1378,12 +1378,12 @@ export default function Analytics() {
                   />
                 </div>
 
-                {/* Vertical divider */}
-                <div className="w-px bg-border/40 shrink-0 self-stretch" />
+                {/* Divider — horizontal on mobile, vertical on desktop */}
+                <div className="h-px w-full bg-border/40 md:h-auto md:w-px md:self-stretch" />
 
-                {/* Right panel — ranking list, 45% */}
+                {/* Right panel — ranking list, full width on mobile / 45% on desktop */}
                 {listItems.length > 0 && (
-                  <div className="flex-1 min-w-0">
+                  <div className="w-full md:flex-1 md:min-w-0">
                     <TopProductsList items={listItems} metric={metric} sym={sym} />
                   </div>
                 )}
