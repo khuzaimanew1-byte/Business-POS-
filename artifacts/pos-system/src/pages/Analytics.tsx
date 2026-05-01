@@ -475,7 +475,12 @@ function Chart({
   const plotH = Math.max(10, size.h - margin.top - margin.bottom);
   const baseY = margin.top + plotH;
   const span = Math.max(1, rangeEnd - rangeStart);
-  const xAt = (ts: number) => margin.left + (plotW * (ts - rangeStart)) / span;
+  // Use the last x-tick as the right-edge anchor so the chart always fills
+  // the full plot width. In weekly mode the ticks run Mon–Sun (6 intervals),
+  // so xSpan = 6 days and Sun lands exactly at the right edge instead of 6/7.
+  // In monthly/yearly the last tick is rangeEnd, so xSpan == span (no change).
+  const xSpan = Math.max(1, xTicks.length >= 2 ? xTicks[xTicks.length - 1].ts - rangeStart : span);
+  const xAt = (ts: number) => margin.left + (plotW * (ts - rangeStart)) / xSpan;
   const yAt = (v: number) =>
     margin.top + plotH * (1 - (v - yMin) / Math.max(1e-6, yMax - yMin));
 
