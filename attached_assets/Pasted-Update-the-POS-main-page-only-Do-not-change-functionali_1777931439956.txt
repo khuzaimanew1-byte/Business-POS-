@@ -1,0 +1,95 @@
+Update the POS main page only. Do not change functionality, data, animations, or any other page.
+
+Display sizes referenced below (largest to smallest):
+Desktop · Laptop L · Laptop S · Tablet · Mobile L · Mobile S
+
+---
+
+## Phase 1 — Foundation: Visual Hierarchy & Focal Structure
+
+### 1.1 Product Card — Internal Hierarchy
+
+Every card currently has product name, price, stock, and a badge at similar visual weight. The eye has no clear entry point. Fix the reading order:
+
+- Product name should be the dominant element — largest, clearest, and most readable on the card.
+- Price should be prominent but secondary — strong contrast, but visually below name in hierarchy.
+- Stock info should be visually quiet — smaller, lower opacity, muted. It exists but does not compete.
+- The card as a whole should communicate: image → name → price, in that visual order.
+-the card img ratio should be 1:1
+
+Apply this same hierarchy to cart panel item rows (name primary, price secondary, per-unit info quiet).
+
+### 1.2 Accent Color Discipline
+
+Yellow currently appears on price text, buttons, icons, and badges simultaneously — it loses meaning. Restrict yellow to only three things: the active category tab, the checkout button, and the cart quantity +/− controls. Remove it from price text, the header cart icon, and any decorative use. When yellow appears it should mean "this is interactive or selected" — nothing else.
+
+### 1.3 Layout Balance — No Focal Anchor
+
+The screen currently has no dominant focal region. Every element — search, tabs, cards, cart — competes equally. Establish visual weight distribution:
+
+- The product grid is the primary zone. It should feel like the heaviest, most grounded region on screen.
+- The cart panel is secondary. It should feel like a supporting panel, not an equal half.
+- The header bar (search + tabs) should feel lightweight — a utility strip, not a heavy block.
+
+This is about relative visual weight (size, contrast, density) — not about moving elements. Do not reorganize the layout structure.
+
+### 1.4 Bottom Order Strip — Visual Grounding
+
+The "Current Order" strip at the bottom of Mobile L and Mobile S feels visually detached and lightweight. Give it more presence — it should feel like a grounded, tappable surface that clearly belongs at the bottom. Ensure it does not overlap with the bottom navigation bar.
+in desktop display it looks very small in height nearly invisible
+
+---
+
+## Phase 2 — Layout & Grid System
+
+### 2.1 Product Card — Proportions & Max-Width
+
+Cards currently stretch to fill all available space, becoming wide flat rectangles at larger sizes. Fix this:
+
+- Set a max-width on cards so they stop growing beyond a comfortable scan size.
+- Cards should maintain a consistent aspect ratio — when width increases, height should increase proportionally. The card should always feel like a near-square or portrait tile, not a landscape rectangle.
+- Use CSS grid `auto-fill` or `auto-fit` with `minmax()` so columns self-adjust naturally as available width changes (cart open/close, breakpoint changes). Do not hardcode column counts.
+
+### 2.2 Card Internal Proportions
+
+Inside each card, maintain consistent zone ratios regardless of card size:
+
+- Image area: majority of card height. Lock it to a fixed aspect ratio (e.g. square or 4:3) so images don't stretch or shrink unpredictably.
+- Info area (name + price): compact, consistent height. Should not grow excessively on larger cards.
+- The card should feel intentionally designed at every size — not like a stretched or squashed version of itself.
+
+### 2.3 Cart Panel Width — Scale With Viewport
+
+The cart panel width should not be fixed at one size across all breakpoints. Scale it relative to the viewport:
+
+- Desktop: cart can be wider — screen has room.
+- Laptop L · Laptop S: reduce cart width proportionally. Grid needs more of the available space.
+- Tablet: cart panel is currently nearly half the screen — the product grid is left with only 2 columns. Make the cart panel significantly narrower at Tablet. Achieve this by tightening cart item layout (smaller thumbnails, tighter padding) rather than just clamping width. Grid should have enough room for at least 3 card columns with cart open.
+- Cart stays as an inline sidebar at all sizes from Tablet up. No bottom sheet for Tablet.
+- Mobile L · Mobile S: bottom sheet behavior stays unchanged.
+
+When cart is closed at any size, product grid expands to fill full available width. Cards scale up to max-width and columns adjust automatically.
+
+### 2.4 Spacing System Consistency
+
+Card gap, grid outer padding, and card internal padding should all derive from the same base spacing unit. Currently spacing feels arbitrary at different sizes. Tighten it into a consistent scale:
+
+- Outer grid padding should reduce slightly at smaller sizes to give cards more room.
+- Card internal padding should stay generous enough for comfortable reading at all sizes.
+- Card gap should be consistent and proportional — not too tight (cards feel cramped) nor too loose (grid feels scattered).
+
+### 2.5 Category Tabs — Overflow
+
+If category tabs overflow the row. Make the tab row horizontally scrollable. Add a right-edge fade to indicate overflow. Do not hide tab labels.
+
+---
+
+## Do Not Change in This Phase
+
+- Add-to-cart behavior, cart logic, checkout flow
+- Hover states, animations, micro-interactions
+- Navigation sidebar
+- Search functionality
+- Any element not explicitly mentioned above
+
+---

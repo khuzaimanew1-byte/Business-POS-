@@ -949,7 +949,7 @@ export default function POS() {
         </header>
 
         {/* CATEGORY BAR */}
-        <div className={`border-b bg-background shrink-0 overflow-hidden transition-colors duration-400 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
+        <div className={`relative border-b bg-background shrink-0 overflow-hidden transition-colors duration-400 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
           <div ref={categoryBarRef} className="flex items-center px-3 sm:px-4 py-2.5 gap-2 overflow-x-auto scrollbar-none scroll-smooth">
             {isEditMode ? (
               <>
@@ -1073,6 +1073,8 @@ export default function POS() {
               </>
             )}
           </div>
+          {/* Right-edge fade — signals horizontal overflow without hiding labels */}
+          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background to-transparent" aria-hidden="true" />
         </div>
 
         {/* PRODUCT GRID */}
@@ -1083,8 +1085,8 @@ export default function POS() {
             We use a CSS custom property approach via inline style + CSS var trick.
           */}
           <div
-            className={`p-2 pb-20 product-grid${isEditModeArming ? ' edit-mode-arming' : ''}`}
-            style={{ display: 'grid', gap: '6px' }}
+            className={`p-2 sm:p-3 product-grid${isEditModeArming ? ' edit-mode-arming' : ''}`}
+            style={{ display: 'grid' }}
           >
             {filteredProducts.map(product => {
               const currentImage = isEditMode ? (editDrafts[product.id]?.image ?? product.image) : product.image;
@@ -1271,10 +1273,10 @@ export default function POS() {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-1.5 sm:p-2 flex flex-col gap-0.5">
+                    <div className="p-2 sm:p-2.5 flex flex-col gap-1">
                       <Tooltip delayDuration={300}>
                         <TooltipTrigger asChild>
-                          <p className="font-semibold truncate leading-snug text-foreground text-fluid-base cursor-default">{product.name}</p>
+                          <p className="font-bold truncate leading-snug text-foreground text-fluid-base cursor-default">{product.name}</p>
                         </TooltipTrigger>
                         <TooltipContent
                           side="top"
@@ -1286,10 +1288,10 @@ export default function POS() {
                       </Tooltip>
                       <Money
                         value={product.price}
-                        className="font-semibold text-primary leading-none text-fluid-sm"
+                        className="font-semibold text-foreground/85 leading-none text-fluid-sm"
                       />
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-muted-foreground text-fluid-xs leading-none">Stock: {product.stock}</span>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className="text-muted-foreground/55 text-fluid-xs leading-none">Stock: {product.stock}</span>
                         <button
                           disabled={product.stock <= 0}
                           onClick={e => { e.stopPropagation(); addToCart(product); }}
@@ -1357,24 +1359,24 @@ export default function POS() {
         {/* BOTTOM CART STRIP */}
         <div
           onClick={() => setIsCartOpen(!isCartOpen)}
-          className={`fixed left-0 sm:left-[60px] right-0 h-14 sm:h-16 glass-panel border-t flex items-center justify-between px-4 sm:px-6 cursor-pointer hover:bg-background/70 transition-colors duration-250 z-20 cart-strip-right${isCartOpen ? ' cart-pushed' : ''}${cartFlash ? ' cart-flash' : ''}`}
+          className={`fixed left-0 sm:left-[60px] right-0 h-14 sm:h-[72px] glass-panel border-t flex items-center justify-between px-4 sm:px-7 cursor-pointer hover:bg-background/70 transition-colors duration-250 z-20 cart-strip-right${isCartOpen ? ' cart-pushed' : ''}${cartFlash ? ' cart-flash' : ''}`}
           style={{ bottom: 'var(--mobile-nav-height, 0px)' }}
           data-testid="cart-strip"
         >
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/20 text-primary">
-              <ShoppingCart className="w-4 h-4" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-secondary/70 text-foreground/70">
+              <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
             <div>
-              <p className="font-semibold text-[14px] sm:text-[16px]">Current Order</p>
-              <p className="text-muted-foreground text-[12px] sm:text-[14px]">
+              <p className="font-semibold text-[14px] sm:text-[17px]">Current Order</p>
+              <p className="text-muted-foreground text-[12px] sm:text-[13px]">
                 <span className="font-mono font-semibold text-foreground">{cartCount}</span> items
               </p>
             </div>
           </div>
           <Money
             value={cartTotal}
-            className="currency-hero font-bold text-primary tracking-tight text-xl sm:text-2xl"
+            className="currency-hero font-bold text-foreground tracking-tight text-xl sm:text-[26px]"
           />
         </div>
 
@@ -1434,7 +1436,7 @@ export default function POS() {
       <aside
         className={`cart-panel fixed z-50 bg-background shadow-2xl flex flex-col
           bottom-0 left-0 right-0 h-[80vh] rounded-t-3xl border-t border-border
-          sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-[380px] sm:h-auto sm:rounded-none sm:border-t-0 sm:border-l
+          sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:h-auto sm:rounded-none sm:border-t-0 sm:border-l
           ${isCartOpen ? 'cart-panel-open' : 'cart-panel-closed'}`}
         data-testid="cart-sidebar"
       >
@@ -1496,7 +1498,7 @@ export default function POS() {
                 return (
                 <div key={item.productId} className="flex bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
                   {/* IMAGE — edge-to-edge square */}
-                  <div className="w-[72px] h-[72px] shrink-0 bg-secondary">
+                  <div className="w-[56px] h-[56px] sm:w-[62px] sm:h-[62px] lg:w-[72px] lg:h-[72px] shrink-0 bg-secondary">
                     {prod.image
                       ? <img src={prod.image} alt={prod.name} className="w-full h-full object-cover block" />
                       : <div className="w-full h-full flex items-center justify-center">
@@ -1504,13 +1506,13 @@ export default function POS() {
                         </div>}
                   </div>
                   {/* CONTENT */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-center px-3 py-2.5">
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="font-medium text-sm truncate pr-2">{prod.name}</h4>
-                      <Money value={prod.price * item.quantity} className="font-semibold text-sm" />
+                  <div className="flex-1 min-w-0 flex flex-col justify-center px-2.5 sm:px-3 py-2">
+                    <div className="flex justify-between items-start mb-0.5">
+                      <h4 className="font-semibold text-sm truncate pr-2">{prod.name}</h4>
+                      <Money value={prod.price * item.quantity} className="font-semibold text-sm text-foreground/90 shrink-0" />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground inline-flex items-baseline gap-1">
+                      <span className="text-xs text-muted-foreground/60 inline-flex items-baseline gap-1">
                         <Money value={prod.price} />
                         <span>/ ea</span>
                       </span>
@@ -1617,7 +1619,7 @@ export default function POS() {
          * their own offsets from layout primitives, not from these. */
         :root {
           --mobile-nav-height: 0px;
-          --bottom-strip-height: 4rem; /* matches sm:h-16 cart strip */
+          --bottom-strip-height: 4.5rem; /* matches sm:h-[72px] cart strip */
         }
         @media (max-width: 639px) {
           :root {
@@ -1647,6 +1649,12 @@ export default function POS() {
           }
           .cart-panel-closed { transform: translateX(100%); }
           .cart-panel-open   { transform: translateX(0); }
+          /* Tablet: narrow cart so grid keeps ≥3 columns */
+          .cart-panel { width: 280px; }
+        }
+        @media (min-width: 1024px) {
+          /* Laptop-S and up: slightly more room */
+          .cart-panel { width: 340px; }
         }
 
         /* ── Mobile cart backdrop: gradual dim + blur ── */
@@ -1673,16 +1681,22 @@ export default function POS() {
           transition: right 320ms cubic-bezier(0.32, 0.72, 0, 1);
         }
         @media (min-width: 640px) {
-          .cart-strip-right.cart-pushed { right: 380px; }
-          .main-cart-pushed { margin-right: 380px; }
+          .cart-strip-right.cart-pushed { right: 280px; }
+          .main-cart-pushed { margin-right: 280px; }
+        }
+        @media (min-width: 1024px) {
+          .cart-strip-right.cart-pushed { right: 340px; }
+          .main-cart-pushed { margin-right: 340px; }
         }
 
         /* ── Product grid columns ── */
         .product-grid {
+          gap: 10px;
           grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 11vw, 200px), 1fr));
         }
         @media (max-width: 639px) {
           .product-grid {
+            gap: 6px;
             grid-template-columns: repeat(auto-fill, minmax(clamp(100px, 28vw, 130px), 1fr));
           }
         }
@@ -1751,7 +1765,7 @@ export default function POS() {
         }
         @media (min-width: 640px) {
           [data-radix-scroll-area-viewport] > div {
-            padding-bottom: 80px !important;
+            padding-bottom: 92px !important;
           }
         }
 
@@ -1858,10 +1872,8 @@ export default function POS() {
         .cart-flash { animation: cart-flash-anim 700ms cubic-bezier(0.4,0,0.2,1); }
 
         /* ── Large-screen layout: cart grows, grid breathes ─────────────────
-           Only shifts when the screen is wide enough that the existing 380px
-           cart panel starts to feel disproportionate. Below 1280px the layout
-           is unchanged. Each step adds a proportional amount of space without
-           forcing a hard reflow of anything that already looks good.        */
+           Cart scales up progressively at wider viewports. Below 1280px the
+           layout is governed by the 640px/1024px rules above.              */
         @media (min-width: 1280px) {
           .cart-panel { width: 420px; }
           .cart-strip-right.cart-pushed { right: 420px; }
