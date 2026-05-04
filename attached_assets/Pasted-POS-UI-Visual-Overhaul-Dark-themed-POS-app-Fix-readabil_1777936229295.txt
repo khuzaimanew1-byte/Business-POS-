@@ -1,0 +1,50 @@
+POS UI — Visual Overhaul
+Dark-themed POS app. Fix readability and layout across 1440px, 1024px, 768px, 425px. No logic changes.
+
+1. Design Tokens (do this first)
+Define CSS custom properties at root, replace all hardcoded values. Cover:
+background layers · gold accent · text hierarchy (primary, secondary, muted) · stock status (green, amber, orange-red) · card border · icon label color · quick-code chip colors
+
+2. Product Grid
+CSS Grid auto-fill. Account for cart sidebar width per breakpoint:
+
+1440px — cart ~420px · min card width 160px
+1024px — cart ~320px · min card width 150px
+768px — cart ~200px · min card width 140px
+425px — cart hidden · min card width 110px
+
+Gap reduces slightly on smaller screens.
+
+3. Typography
+Category tabs on tablet and mobile: horizontal scroll, no wrap, hidden scrollbar.
+Desktop
+product name 14px · price 13px bold gold · stock 11px muted · cart item name 14px · per-unit $x/ea 12px · tabs 13px
+Tablet
+product name 13px · cart item name 13px · tabs 12px scroll · rest unchanged
+Mobile
+product name 12px + 2-line ellipsis · price 12px · stock 10px · tabs 11px scroll · rest unchanged
+
+4. Left Navbar
+Add label below each icon — HOME · ANALYTICS · ADD · SETTINGS · small uppercase · dimmed at rest · full opacity on hover and active · gold accent on active state. Hide sidebar on mobile.
+Icon size: 20px desktop · 18px tablet
+
+5. Top Bar & Cart Header Icons
+Pencil, Bell — 22px desktop · 18px tablet and below
+Cart timer, Close — 18px all sizes
+Opacity 0.7 at rest · 1 on hover · 36px minimum tap area
+
+6. Quick-Code Chips
+Restyle #esp style tags → pill chip · semi-transparent dark bg · thin muted-gold border · monospace uppercase amber text · subtle backdrop blur · remove hash symbol, show ESP LAT CAP
+Font size: 10px desktop · 9px tablet · 8px mobile
+
+7. Product Card Image
+aspect-ratio: 11/9 · object-fit: cover · placeholder same ratio, centered letter, slightly lighter background
+
+8. Stock Label
+≥50 green · 20–49 amber · <20 orange-red + warning symbol · min opacity 0.65
+
+9. Mobile 425px
+Bottom nav 56px · main content clears nav with bottom padding · cart icon shows item count badge · product name max 2 lines ellipsis
+
+10. Build Order
+Design tokens → per-unit price fix → card image ratio → grid breakpoints → typography → quick-code chips → navbar icons + labels → top bar icons → stock colors → mobile fixes

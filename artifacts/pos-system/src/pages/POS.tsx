@@ -769,16 +769,12 @@ export default function POS() {
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} />
 
       {/* ── DESKTOP LEFT SIDEBAR (hidden on mobile) ────────────────────── */}
-      <aside className="hidden sm:flex w-[60px] shrink-0 border-r border-border bg-sidebar flex-col items-center py-4 z-20">
+      <aside className="hidden sm:flex w-[72px] shrink-0 border-r border-border bg-sidebar flex-col items-center py-4 z-20">
         <div className="flex flex-col gap-6">
-          <TooltipProvider delayDuration={250}>
             <TooltipItem icon={<Home size={20} />} label="Home" active />
             <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" onClick={() => setLocation("/analytics")} />
-            <div onClick={() => setLocation("/add-product")}>
-              <TooltipItem icon={<Plus size={20} />} label="Add Product" />
-            </div>
+            <TooltipItem icon={<Plus size={20} />} label="Add" onClick={() => setLocation("/add-product")} />
             <TooltipItem icon={<Settings size={20} />} label="Settings" onClick={() => setLocation("/settings")} />
-          </TooltipProvider>
         </div>
       </aside>
 
@@ -891,7 +887,7 @@ export default function POS() {
               {/* Pencil — always visible */}
               <TooltipProvider delayDuration={250}>
                 <TooltipItem
-                  icon={<Pencil className="text-muted-foreground" size={16} />}
+                  icon={<Pencil className="text-muted-foreground opacity-70 group-hover:opacity-100" size={18} />}
                   label="Edit Products"
                   onClick={enterEditMode}
                 />
@@ -911,7 +907,7 @@ export default function POS() {
                         data-testid="btn-notifications"
                         aria-label={unreadCount > 0 ? `${unreadCount} new notification${unreadCount === 1 ? "" : "s"}` : "Notifications"}
                       >
-                        <Bell className="text-muted-foreground hover:text-foreground transition-colors duration-200 w-[17px] h-[17px]" />
+                        <Bell className="text-muted-foreground opacity-70 hover:opacity-100 transition-opacity duration-200 w-5 h-5" />
                         {unreadCount > 0 && (
                           <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-none flex items-center justify-center border border-background tabular-nums">
                             <span className="notif-bell-pulse" aria-hidden="true" />
@@ -1121,7 +1117,7 @@ export default function POS() {
               const cardBody = (
                 <div {...cardCommonProps}>
                   {/* Image area */}
-                  <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1/1' }}>
+                  <div className="relative w-full overflow-hidden" style={{ aspectRatio: '11/9' }}>
                     {currentImage ? (
                       <img
                         src={currentImage}
@@ -1129,7 +1125,7 @@ export default function POS() {
                         className={`w-full h-full object-cover transition-all duration-400 ease-in-out group-hover:scale-[1.015] ${product.stock <= 0 ? 'opacity-55 grayscale-[0.6]' : ''}`}
                       />
                     ) : (
-                      <div className={`w-full h-full bg-secondary flex items-center justify-center text-xl font-bold text-muted-foreground/30 ${product.stock <= 0 ? 'opacity-55' : ''}`}>
+                      <div className={`w-full h-full bg-secondary/70 flex items-center justify-center text-xl font-bold text-muted-foreground/40 ${product.stock <= 0 ? 'opacity-55' : ''}`}>
                         {renderInitials(product.name)}
                       </div>
                     )}
@@ -1154,11 +1150,11 @@ export default function POS() {
                     {/* Quick code badge — lowercase, hyphen-segmented (e.g. Apple Juice → #ap-j) */}
                     {!isEditMode && (
                       <div
-                        className={`quick-code-badge absolute top-1.5 left-1.5 flex items-center justify-center rounded-md select-none${activeQuickCodeId === product.id ? ' quick-code-active' : ''}`}
+                        className={`quick-code-badge absolute top-1.5 left-1.5 flex items-center justify-center select-none${activeQuickCodeId === product.id ? ' quick-code-active' : ''}`}
                         title={`Quick code: ${qc}`}
                       >
-                        <span className="quick-code-text text-white text-[12px] sm:text-[13px] leading-none">
-                          {qc}
+                        <span className="quick-code-text leading-none">
+                          {qc.replace(/^#/, '').toUpperCase()}
                         </span>
                       </div>
                     )}
@@ -1276,7 +1272,7 @@ export default function POS() {
                     <div className="p-2 sm:p-2.5 flex flex-col gap-1">
                       <Tooltip delayDuration={300}>
                         <TooltipTrigger asChild>
-                          <p className="font-bold truncate leading-snug text-foreground text-fluid-base cursor-default">{product.name}</p>
+                          <p className="pos-card-name font-bold text-foreground cursor-default">{product.name}</p>
                         </TooltipTrigger>
                         <TooltipContent
                           side="top"
@@ -1288,10 +1284,12 @@ export default function POS() {
                       </Tooltip>
                       <Money
                         value={product.price}
-                        className="font-semibold text-foreground/85 leading-none text-fluid-sm"
+                        className="pos-card-price font-bold text-primary leading-none"
                       />
                       <div className="flex items-center justify-between mt-0.5">
-                        <span className="text-muted-foreground/55 text-fluid-xs leading-none">Stock: {product.stock}</span>
+                        <span className={`pos-card-stock leading-none ${product.stock >= 50 ? 'pos-stock-ok' : product.stock >= 20 ? 'pos-stock-warn' : 'pos-stock-low'}`}>
+                          {product.stock > 0 && product.stock < 20 ? '⚠ ' : ''}Stock: {product.stock}
+                        </span>
                         <button
                           disabled={product.stock <= 0}
                           onClick={e => { e.stopPropagation(); addToCart(product); }}
@@ -1359,13 +1357,18 @@ export default function POS() {
         {/* BOTTOM CART STRIP */}
         <div
           onClick={() => setIsCartOpen(!isCartOpen)}
-          className={`fixed left-0 sm:left-[60px] right-0 h-14 sm:h-[72px] glass-panel border-t flex items-center justify-between px-4 sm:px-7 cursor-pointer hover:bg-background/70 transition-colors duration-250 z-20 cart-strip-right${isCartOpen ? ' cart-pushed' : ''}${cartFlash ? ' cart-flash' : ''}`}
+          className={`fixed left-0 sm:left-[72px] right-0 h-14 sm:h-[72px] glass-panel border-t flex items-center justify-between px-4 sm:px-7 cursor-pointer hover:bg-background/70 transition-colors duration-250 z-20 cart-strip-right${isCartOpen ? ' cart-pushed' : ''}${cartFlash ? ' cart-flash' : ''}`}
           style={{ bottom: 'var(--mobile-nav-height, 0px)' }}
           data-testid="cart-strip"
         >
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-secondary/70 text-foreground/70">
+            <div className="relative flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-secondary/70 text-foreground/70">
               <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
+              {cartCount > 0 && (
+                <span className="sm:hidden absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold leading-none flex items-center justify-center border border-background tabular-nums">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
             </div>
             <div>
               <p className="font-semibold text-[14px] sm:text-[17px]">Current Order</p>
@@ -1383,7 +1386,7 @@ export default function POS() {
       </main>
 
       {/* ── MOBILE BOTTOM NAV (hidden on desktop) ─────────────────────────── */}
-      <nav className="mobile-bottom-nav sm:hidden fixed bottom-0 left-0 right-0 h-[60px] bg-sidebar border-t border-border flex items-center justify-around px-2 z-30">
+      <nav className="mobile-bottom-nav sm:hidden fixed bottom-0 left-0 right-0 h-[56px] bg-sidebar border-t border-border flex items-center justify-around px-2 z-30">
         {/* Home */}
         <MobileNavBtn icon={<Home size={20} />} label="Home" active />
 
@@ -1473,8 +1476,8 @@ export default function POS() {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)} className="rounded-full">
-              <X className="w-4 h-4" />
+            <Button variant="ghost" size="icon" onClick={() => setIsCartOpen(false)} className="rounded-full opacity-70 hover:opacity-100 transition-opacity duration-200 min-w-9 min-h-9">
+              <X className="w-[18px] h-[18px]" />
             </Button>
           </div>
         </div>
@@ -1508,7 +1511,7 @@ export default function POS() {
                   {/* CONTENT */}
                   <div className="flex-1 min-w-0 flex flex-col justify-center px-2.5 sm:px-3 py-2">
                     <div className="flex justify-between items-start mb-0.5">
-                      <h4 className="font-semibold text-sm truncate pr-2">{prod.name}</h4>
+                      <h4 className="pos-cart-name font-semibold truncate pr-2">{prod.name}</h4>
                       <Money value={prod.price * item.quantity} className="font-semibold text-sm text-foreground/90 shrink-0" />
                     </div>
                     <div className="flex items-center justify-between">
@@ -1613,35 +1616,39 @@ export default function POS() {
       />
 
       <style>{`
-        /* ── CSS custom properties for bottom-of-page chrome ──
-         * Owned by the POS page (only POS has the mobile bottom-nav and
-         * the cart strip). Other pages — Analytics, Add Product — derive
-         * their own offsets from layout primitives, not from these. */
+        /* ═══════════════════════════════════════════════════════════════════
+           POS PAGE STYLES — Visual Overhaul
+           Design tokens → cart layout → grid → typography → chips → colors
+           ═══════════════════════════════════════════════════════════════════ */
+
+        /* ── 1. Design tokens ─────────────────────────────────────────────── */
         :root {
           --mobile-nav-height: 0px;
-          --bottom-strip-height: 4.5rem; /* matches sm:h-[72px] cart strip */
+          --bottom-strip-height: 4.5rem;
+          --pos-stock-ok:    142 71% 45%;
+          --pos-stock-warn:  43  90% 58%;
+          --pos-stock-low:   22  90% 55%;
+          --pos-chip-bg:     rgba(8, 10, 18, 0.84);
+          --pos-chip-border: rgba(212, 175, 90, 0.28);
+          --pos-chip-text:   hsl(43 90% 66%);
         }
         @media (max-width: 639px) {
           :root {
-            --mobile-nav-height: 60px;
-            --bottom-strip-height: 3.5rem; /* matches h-14 cart strip on mobile */
+            --mobile-nav-height: 56px;
+            --bottom-strip-height: 3.5rem;
           }
         }
 
-        /* ── Cart panel slide transforms ── */
+        /* ── 2. Cart panel slide transforms ───────────────────────────────── */
         .cart-panel {
           will-change: transform;
-          /* Mobile open: calm, gradual rise */
           transition: transform 460ms cubic-bezier(0.22, 0.61, 0.36, 1);
         }
         .cart-panel.cart-panel-closed {
-          /* Mobile close: slightly quicker, soft ease-in */
           transition: transform 320ms cubic-bezier(0.4, 0, 0.6, 1);
         }
-        /* Mobile: slide up from bottom */
         .cart-panel-closed { transform: translateY(100%); }
         .cart-panel-open   { transform: translateY(0); }
-        /* Desktop: slide in from right (keep original snappier feel) */
         @media (min-width: 640px) {
           .cart-panel,
           .cart-panel.cart-panel-closed {
@@ -1649,59 +1656,177 @@ export default function POS() {
           }
           .cart-panel-closed { transform: translateX(100%); }
           .cart-panel-open   { transform: translateX(0); }
-          /* Tablet: narrow cart so grid keeps ≥3 columns */
-          .cart-panel { width: 280px; }
+          .cart-panel { width: 200px; }
         }
-        @media (min-width: 1024px) {
-          /* Laptop-S and up: slightly more room */
-          .cart-panel { width: 340px; }
-        }
+        @media (min-width: 768px)  { .cart-panel { width: 240px; } }
+        @media (min-width: 1024px) { .cart-panel { width: 320px; } }
+        @media (min-width: 1280px) { .cart-panel { width: 380px; } }
+        @media (min-width: 1440px) { .cart-panel { width: 420px; } }
+        @media (min-width: 1536px) { .cart-panel { width: 480px; } }
+        @media (min-width: 1920px) { .cart-panel { width: 520px; } }
 
-        /* ── Mobile cart backdrop: gradual dim + blur ── */
+        /* ── Mobile cart backdrop ─────────────────────────────────────────── */
         .cart-backdrop {
-          background: rgba(0, 0, 0, 0.35);
+          background: rgba(0,0,0,0.35);
           -webkit-backdrop-filter: blur(3px);
           backdrop-filter: blur(3px);
           transition: opacity 460ms cubic-bezier(0.22, 0.61, 0.36, 1);
           will-change: opacity;
         }
-        .cart-backdrop-open {
-          opacity: 1;
-          pointer-events: auto;
-        }
+        .cart-backdrop-open  { opacity: 1; pointer-events: auto; }
         .cart-backdrop-closed {
           opacity: 0;
           pointer-events: none;
           transition: opacity 320ms cubic-bezier(0.4, 0, 0.6, 1);
         }
 
-        /* ── Desktop-only push when cart is open ── */
+        /* ── Desktop push when cart is open ───────────────────────────────── */
         .cart-strip-right {
           right: 0;
           transition: right 320ms cubic-bezier(0.32, 0.72, 0, 1);
         }
         @media (min-width: 640px) {
-          .cart-strip-right.cart-pushed { right: 280px; }
-          .main-cart-pushed { margin-right: 280px; }
+          .cart-strip-right.cart-pushed { right: 200px; }
+          .main-cart-pushed { margin-right: 200px; }
+        }
+        @media (min-width: 768px) {
+          .cart-strip-right.cart-pushed { right: 240px; }
+          .main-cart-pushed { margin-right: 240px; }
         }
         @media (min-width: 1024px) {
-          .cart-strip-right.cart-pushed { right: 340px; }
-          .main-cart-pushed { margin-right: 340px; }
+          .cart-strip-right.cart-pushed { right: 320px; }
+          .main-cart-pushed { margin-right: 320px; }
+        }
+        @media (min-width: 1280px) {
+          .cart-strip-right.cart-pushed { right: 380px; }
+          .main-cart-pushed { margin-right: 380px; }
+        }
+        @media (min-width: 1440px) {
+          .cart-strip-right.cart-pushed { right: 420px; }
+          .main-cart-pushed { margin-right: 420px; }
+        }
+        @media (min-width: 1536px) {
+          .cart-strip-right.cart-pushed { right: 480px; }
+          .main-cart-pushed { margin-right: 480px; }
+        }
+        @media (min-width: 1920px) {
+          .cart-strip-right.cart-pushed { right: 520px; }
+          .main-cart-pushed { margin-right: 520px; }
         }
 
-        /* ── Product grid columns ── */
+        /* ── 3. Product grid ──────────────────────────────────────────────── */
         .product-grid {
-          gap: 10px;
-          grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 11vw, 200px), 1fr));
+          gap: 6px;
+          grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
         }
-        @media (max-width: 639px) {
+        @media (min-width: 640px) {
           .product-grid {
-            gap: 6px;
-            grid-template-columns: repeat(auto-fill, minmax(clamp(100px, 28vw, 130px), 1fr));
+            gap: 8px;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
           }
         }
+        @media (min-width: 1024px) {
+          .product-grid {
+            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+          }
+        }
+        @media (min-width: 1280px) {
+          .product-grid { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); }
+        }
+        @media (min-width: 1440px) {
+          .product-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+        }
+        @media (min-width: 1536px) {
+          .product-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+        }
+        @media (min-width: 1920px) {
+          .product-grid { grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); }
+        }
 
-        /* ── Sold Out stamp — temporary status overlay (not a category) ── */
+        /* ── 4. Typography ────────────────────────────────────────────────── */
+        .pos-card-name {
+          font-size: 12px;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          white-space: normal;
+          line-height: 1.3;
+        }
+        @media (min-width: 640px) {
+          .pos-card-name {
+            font-size: 13px;
+            -webkit-line-clamp: 1;
+            white-space: nowrap;
+          }
+        }
+        @media (min-width: 1024px) { .pos-card-name { font-size: 14px; } }
+
+        .pos-card-price { font-size: 12px; }
+        @media (min-width: 1024px) { .pos-card-price { font-size: 13px; } }
+
+        .pos-card-stock { font-size: 10px; }
+        @media (min-width: 1024px) { .pos-card-stock { font-size: 11px; } }
+
+        .pos-cart-name { font-size: 13px; }
+        @media (min-width: 1024px) { .pos-cart-name { font-size: 14px; } }
+
+        .cat-chip { font-size: 11px; }
+        @media (min-width: 640px)  { .cat-chip { font-size: 12px; } }
+        @media (min-width: 1024px) { .cat-chip { font-size: 13px; } }
+
+        /* ── 5. Stock status colors ───────────────────────────────────────── */
+        .pos-stock-ok   { color: hsl(var(--pos-stock-ok));   opacity: 0.9; }
+        .pos-stock-warn { color: hsl(var(--pos-stock-warn)); opacity: 0.9; }
+        .pos-stock-low  { color: hsl(var(--pos-stock-low));  opacity: 0.9; }
+
+        /* ── 6. Quick-code chip: amber pill ───────────────────────────────── */
+        .quick-code-badge {
+          padding: 2px 6px;
+          background: var(--pos-chip-bg);
+          border: 1px solid var(--pos-chip-border);
+          border-radius: 9999px;
+          box-shadow:
+            0 1px 0 rgba(255,255,255,0.06) inset,
+            0 2px 6px rgba(0,0,0,0.55);
+          backdrop-filter: blur(10px) saturate(140%);
+          -webkit-backdrop-filter: blur(10px) saturate(140%);
+          transition: transform 220ms cubic-bezier(0.34, 1.4, 0.64, 1),
+                      background 220ms ease, box-shadow 220ms ease;
+        }
+        .quick-code-text {
+          font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+          font-weight: 700;
+          letter-spacing: 0.07em;
+          color: var(--pos-chip-text);
+          font-size: 8px;
+          text-transform: uppercase;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+          font-feature-settings: "tnum" 1, "ss01" 1;
+        }
+        @media (min-width: 640px)  { .quick-code-text { font-size: 9px; } }
+        @media (min-width: 1024px) { .quick-code-text { font-size: 10px; } }
+
+        @keyframes quick-code-active-anim {
+          0%   { opacity: 0.85; }
+          50%  { opacity: 1; }
+          100% { opacity: 0.95; }
+        }
+        .quick-code-active {
+          background: rgba(59,110,165,0.78);
+          border-color: rgba(120,165,210,0.45);
+          box-shadow:
+            0 0 0 1px rgba(80,130,185,0.28) inset,
+            0 1px 0 rgba(255,255,255,0.12) inset;
+          animation: quick-code-active-anim 180ms ease-out;
+        }
+        .quick-code-active .quick-code-text {
+          color: #fff;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.55);
+        }
+
+        /* ── Sold Out stamp ───────────────────────────────────────────────── */
         .sold-out-stamp { z-index: 3; }
         .sold-out-stamp-text {
           font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -1726,55 +1851,31 @@ export default function POS() {
         :root[data-perf="fast"]  .sold-out-stamp-text { animation-duration: 220ms; }
         :root[data-perf="ultra"] .sold-out-stamp-text { animation: none; }
 
-        /* ── Image upload overlay: hover on desktop, always visible on touch ── */
-        .img-upload-btn {
-          opacity: 0;
-          background: rgba(0,0,0,0);
-        }
-        .img-upload-btn:hover {
-          opacity: 1;
-          background: rgba(0,0,0,0.18);
-        }
+        /* ── Image upload overlay ─────────────────────────────────────────── */
+        .img-upload-btn { opacity: 0; background: rgba(0,0,0,0); }
+        .img-upload-btn:hover { opacity: 1; background: rgba(0,0,0,0.18); }
         .img-upload-btn:hover .img-upload-circle {
           background: rgba(0,0,0,0.60) !important;
           transform: scale(1.08);
         }
-        .img-upload-circle {
-          transition: background 220ms ease, transform 200ms ease;
-        }
-        /* On touch devices: always show (no hover available) */
-        @media (hover: none) {
-          .img-upload-btn {
-            opacity: 1;
-            background: rgba(0,0,0,0.12);
-          }
-        }
-        /* On mobile breakpoint: always show, regardless of hover capability */
-        @media (max-width: 639px) {
-          .img-upload-btn {
-            opacity: 1;
-            background: rgba(0,0,0,0.12);
-          }
-        }
+        .img-upload-circle { transition: background 220ms ease, transform 200ms ease; }
+        @media (hover: none)       { .img-upload-btn { opacity: 1; background: rgba(0,0,0,0.12); } }
+        @media (max-width: 639px)  { .img-upload-btn { opacity: 1; background: rgba(0,0,0,0.12); } }
 
-        /* ── Scroll area: account for both strips on mobile ── */
+        /* ── Scroll area padding ──────────────────────────────────────────── */
         @media (max-width: 639px) {
-          [data-radix-scroll-area-viewport] > div {
-            padding-bottom: 132px !important;
-          }
+          [data-radix-scroll-area-viewport] > div { padding-bottom: 124px !important; }
         }
         @media (min-width: 640px) {
-          [data-radix-scroll-area-viewport] > div {
-            padding-bottom: 92px !important;
-          }
+          [data-radix-scroll-area-viewport] > div { padding-bottom: 92px !important; }
         }
 
-        /* ── Hide spinners ── */
+        /* ── Hide spinners ────────────────────────────────────────────────── */
         .no-spinners::-webkit-outer-spin-button,
         .no-spinners::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         .no-spinners { -moz-appearance: textfield; }
 
-        /* ── Modal animations ── */
+        /* ── Modal animations ─────────────────────────────────────────────── */
         .modal-backdrop {
           animation: backdrop-in 220ms cubic-bezier(0.4,0,0.2,1) both;
           background: rgba(0,0,0,0.48);
@@ -1789,67 +1890,25 @@ export default function POS() {
         [data-radix-dialog-overlay] { animation: backdrop-in 200ms ease both !important; }
         [data-radix-dialog-content] { animation: modal-in 220ms cubic-bezier(0.34,1.1,0.64,1) both !important; }
 
-        /* ── Quick code badge: high contrast pill, readable over any image ── */
-        .quick-code-badge {
-          padding: 3px 8px;
-          background: rgba(8, 10, 18, 0.86);
-          border: 1px solid rgba(255, 255, 255, 0.14);
-          border-radius: 6px;
-          box-shadow:
-            0 1px 0 rgba(255, 255, 255, 0.08) inset,
-            0 2px 6px rgba(0, 0, 0, 0.55);
-          backdrop-filter: blur(10px) saturate(140%);
-          -webkit-backdrop-filter: blur(10px) saturate(140%);
-          transition: transform 220ms cubic-bezier(0.34, 1.4, 0.64, 1),
-                      background 220ms ease, box-shadow 220ms ease;
-        }
-        .quick-code-text {
-          font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-          font-weight: 700;
-          letter-spacing: 0.06em;
-          color: #ffffff;
-          text-shadow:
-            0 1px 2px rgba(0, 0, 0, 0.7),
-            0 0 1px rgba(0, 0, 0, 0.6);
-          font-feature-settings: "tnum" 1, "ss01" 1;
-        }
-        /* Soft blue micro-feedback when product is added to cart */
-        @keyframes quick-code-active-anim {
-          0%   { opacity: 0.85; }
-          50%  { opacity: 1; }
-          100% { opacity: 0.95; }
-        }
-        .quick-code-active {
-          background: rgba(59, 110, 165, 0.78);
-          border-color: rgba(120, 165, 210, 0.45);
-          box-shadow:
-            0 0 0 1px rgba(80, 130, 185, 0.28) inset,
-            0 1px 0 rgba(255, 255, 255, 0.12) inset;
-          animation: quick-code-active-anim 180ms ease-out;
-        }
-        .quick-code-active .quick-code-text {
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
-        }
-
-        /* ── Top search match: subtle golden highlight (premium, no harsh glow) ── */
+        /* ── Search-match highlight ───────────────────────────────────────── */
         .search-match-card {
-          border-color: rgba(212, 175, 90, 0.55) !important;
+          border-color: rgba(212,175,90,0.55) !important;
           background:
-            linear-gradient(180deg, rgba(212, 175, 90, 0.10), rgba(212, 175, 90, 0.04)) ,
+            linear-gradient(180deg, rgba(212,175,90,0.10), rgba(212,175,90,0.04)),
             hsl(var(--card));
           box-shadow:
-            0 0 0 1px rgba(212, 175, 90, 0.22),
-            0 4px 18px rgba(212, 175, 90, 0.08);
+            0 0 0 1px rgba(212,175,90,0.22),
+            0 4px 18px rgba(212,175,90,0.08);
           transition: background 220ms ease, box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease;
         }
         .search-match-card:hover {
           transform: translateY(-1px);
           box-shadow:
-            0 0 0 1px rgba(212, 175, 90, 0.32),
-            0 6px 22px rgba(212, 175, 90, 0.12);
+            0 0 0 1px rgba(212,175,90,0.32),
+            0 6px 22px rgba(212,175,90,0.12);
         }
 
-        /* ── Autofill: keep dark-UI palette (no yellow/blue browser tint) ── */
+        /* ── Autofill neutralization ──────────────────────────────────────── */
         input:-webkit-autofill,
         input:-webkit-autofill:hover,
         input:-webkit-autofill:focus,
@@ -1857,76 +1916,38 @@ export default function POS() {
         textarea:-webkit-autofill,
         select:-webkit-autofill {
           -webkit-text-fill-color: hsl(var(--foreground)) !important;
-          -webkit-box-shadow: 0 0 0 1000px hsl(var(--secondary) / 0.55) inset !important;
-          box-shadow: 0 0 0 1000px hsl(var(--secondary) / 0.55) inset !important;
+          -webkit-box-shadow: 0 0 0 1000px hsl(var(--secondary)/0.55) inset !important;
+          box-shadow: 0 0 0 1000px hsl(var(--secondary)/0.55) inset !important;
           caret-color: hsl(var(--foreground));
           transition: background-color 9999s ease-in-out 0s;
         }
 
-        /* ── Cart flash ── */
+        /* ── Cart flash ───────────────────────────────────────────────────── */
         @keyframes cart-flash-anim {
           0%   { background-color: transparent; }
           25%  { background-color: rgba(99,102,241,0.08); }
           100% { background-color: transparent; }
         }
         .cart-flash { animation: cart-flash-anim 700ms cubic-bezier(0.4,0,0.2,1); }
-
-        /* ── Large-screen layout: cart grows, grid breathes ─────────────────
-           Cart scales up progressively at wider viewports. Below 1280px the
-           layout is governed by the 640px/1024px rules above.              */
-        @media (min-width: 1280px) {
-          .cart-panel { width: 420px; }
-          .cart-strip-right.cart-pushed { right: 420px; }
-          .main-cart-pushed { margin-right: 420px; }
-          .product-grid {
-            grid-template-columns: repeat(auto-fill, minmax(clamp(160px, 10.5vw, 215px), 1fr));
-          }
-        }
-        @media (min-width: 1536px) {
-          .cart-panel { width: 480px; }
-          .cart-strip-right.cart-pushed { right: 480px; }
-          .main-cart-pushed { margin-right: 480px; }
-          .product-grid {
-            grid-template-columns: repeat(auto-fill, minmax(clamp(170px, 10vw, 235px), 1fr));
-          }
-        }
-        @media (min-width: 1920px) {
-          .cart-panel { width: 520px; }
-          .cart-strip-right.cart-pushed { right: 520px; }
-          .main-cart-pushed { margin-right: 520px; }
-          .product-grid {
-            grid-template-columns: repeat(auto-fill, minmax(clamp(180px, 9.5vw, 255px), 1fr));
-          }
-        }
-        /* Scroll area: slightly more bottom breathing room on large screens */
-        @media (min-width: 1280px) {
-          [data-radix-scroll-area-viewport] > div {
-            padding-bottom: 92px !important;
-          }
-        }
       `}</style>
     </div>
   );
 }
 
-// ── Desktop sidebar tooltip button ───────────────────────────────────────────
+// ── Desktop sidebar nav button (icon + label, no tooltip) ────────────────────
 function TooltipItem({ icon, label, active = false, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
+  const navLabel = label.split(' ')[0].toUpperCase();
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          onClick={onClick}
-          className={`relative p-3 rounded-xl transition-all duration-250 ease-in-out group ${active ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
-        >
-          {icon}
-          {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-md" />}
-          <div className="absolute inset-0 rounded-xl bg-primary/0 group-hover:bg-primary/5 transition-colors duration-250" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="right" className="ml-2 font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: '12px' }}>
-        {label}
-      </TooltipContent>
-    </Tooltip>
+    <button
+      onClick={onClick}
+      className={`relative flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl w-[56px] transition-all duration-250 ease-in-out group ${active ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
+    >
+      {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-md" />}
+      {icon}
+      <span className={`text-[8px] font-semibold uppercase tracking-wider leading-none transition-opacity duration-200 ${active ? 'opacity-100 text-primary' : 'opacity-55 group-hover:opacity-100'}`}>
+        {navLabel}
+      </span>
+    </button>
   );
 }
 
