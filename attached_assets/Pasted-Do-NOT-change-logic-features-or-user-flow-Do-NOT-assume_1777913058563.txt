@@ -1,0 +1,56 @@
+Do NOT change logic, features, or user flow. Do NOT assume behavior (e.g., cart always open or not). Only fix DESIGN, UI consistency, layout quality, and visual readiness.
+
+---
+
+## GLOBAL DESIGN FIXES
+
+* Current UI lacks visual hierarchy → make clear distinction between primary (products), secondary (support elements), and tertiary information using size, contrast, and spacing.
+* Reduce visual noise → limit accent color (yellow) to key actions only; remove excessive glow, shadows, and gradients.
+* Standardize components → all cards, buttons, and panels must follow consistent sizing, padding, radius, and style.
+* Fix spacing → apply consistent spacing system (e.g., 8px grid) across entire UI.
+* Improve typography → make price visually dominant, name secondary, and de-emphasize less important text.
+* Remove clutter → hide or reduce non-essential information unless necessary.
+* Ensure alignment → all elements must align cleanly in a structured grid.
+* Improve color system → define clear layers (background, surface, elevated) with consistent contrast.
+* Add visual feedback states → hover, active, focus (purely visual, no behavior logic).
+
+---
+
+## LAYOUT & STRUCTURE FIXES (DESKTOP)
+
+* Current layout feels unbalanced → restructure into a clean, proportional layout with clear separation between sections.
+* Improve grid consistency → enforce equal card sizes, aligned rows, and predictable spacing.
+* Fix panel balance → ensure all major sections visually relate to each other (no isolated or “detached” panels).
+* Improve content density → avoid both overcrowding and excessive empty space; maintain balance.
+* Strengthen section distinction → use spacing, contrast, and subtle dividers instead of heavy borders.
+
+---
+
+## COMPONENT-LEVEL FIXES
+
+* Product cards:
+
+  * Inconsistent visual weight → balance image, text, and actions
+  * Weak CTA visibility → make action elements clearer and more readable
+* Buttons:
+
+  * Replace unclear icon-only actions (where confusing) with clearer visual emphasis
+  * Ensure consistent sizing and style across all buttons
+* Cart / side panel:
+
+  * Improve visual hierarchy between item name, quantity, and price
+  * Fix spacing and alignment for readability
+* Top section (search / categories):
+
+  * Improve clarity and separation from content below
+  * Strengthen active/selected visual states
+
+---
+
+## FINAL REQUIREMENT
+
+* Do NOT redesign behavior or logic
+* Do NOT add new features
+* Only improve visual clarity, consistency, balance, and professional readiness
+
+Goal: Make the UI look clean, consistent, modern, and production-ready without changing how it works.
