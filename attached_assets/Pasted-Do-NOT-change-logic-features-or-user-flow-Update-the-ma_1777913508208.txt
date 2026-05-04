@@ -1,0 +1,107 @@
+Do NOT change logic, features, or user flow.
+Update the main POS page design, UI consistency, layout quality, and full responsive readiness.
+
+---
+
+## GLOBAL DESIGN FIXES
+
+* Current UI lacks visual hierarchy → clearly separate primary (products), secondary (support elements), and tertiary info using size, contrast, and spacing.
+* Reduce visual noise → limit accent color (yellow) to key actions only; reduce excessive shadows, glow, and gradients.
+* Standardize components → all cards, buttons, and panels must follow consistent sizing, padding, radius, and style.
+* Fix spacing → apply a consistent spacing system (e.g., 8px grid) across the entire UI.
+* Improve typography → price must be most dominant, name secondary, less important text de-emphasized.
+* Remove clutter → hide or reduce non-essential information unless necessary.
+* Ensure alignment → enforce clean grid-based alignment across all elements.
+* Improve color system → define clear layers (background, surface, elevated) with consistent contrast.
+* Add visual feedback states → hover, active, focus (visual only, no behavior changes).
+
+---
+
+## LAYOUT & STRUCTURE FIXES (DESKTOP)
+
+* Current layout feels unbalanced → restructure into a clean, proportional layout with clear section separation.
+* Improve grid consistency → enforce equal card sizes, aligned rows, predictable spacing.
+* Fix panel balance → ensure all major sections feel visually connected (no detached panels).
+* Improve content density → avoid overcrowding and excessive empty space; maintain balance.
+* Strengthen section distinction → use spacing, contrast, and subtle dividers instead of heavy borders.
+
+---
+
+## RESPONSIVE & ADAPTIVE DESIGN FIXES (ALL SCREEN SIZES)
+
+* Do NOT only scale UI → redesign layout to adapt per screen size while preserving clarity and usability.
+
+* Ensure layout reflows intelligently across:
+
+  * Large desktop
+  * Small desktop / laptop
+  * Tablet
+  * Mobile
+
+* Improve responsiveness by:
+
+  * Adjusting layout structure (not just width)
+  * Rebalancing sections based on available space
+  * Maintaining clear hierarchy at every breakpoint
+
+* Product grid:
+
+  * Dynamically adjust column count based on screen size
+  * Maintain consistent card proportions and readability
+
+* Panels and sections:
+
+  * Prevent overcrowding or unusable compressed layouts
+  * Ensure each section remains readable and visually distinct
+
+* Typography:
+
+  * Scale font sizes proportionally (not just shrink)
+  * Preserve hierarchy across all devices
+
+* Spacing:
+
+  * Adapt spacing system per screen size (not fixed values everywhere)
+
+* Touch readiness (for smaller screens):
+
+  * Ensure buttons and interactive elements remain visually clear and properly sized
+
+* Goal:
+
+  * UI must remain clean, structured, and usable on every screen size
+  * No broken layouts, no cramped UI, no oversized empty areas
+
+---
+
+## COMPONENT-LEVEL FIXES
+
+* Product cards:
+
+  * Fix inconsistent visual weight → balance image, text, and actions
+  * Improve CTA visibility → make action elements clearer and readable
+
+* Buttons:
+
+  * Replace unclear icon-only actions (where confusing) with clearer visual emphasis
+  * Ensure consistent sizing, padding, and style
+
+* Cart / side panel:
+
+  * Improve hierarchy between item name, quantity, and price
+  * Fix spacing and alignment for readability
+
+* Top section (search / categories):
+
+  * Improve clarity and separation from content below
+  * Strengthen active/selected visual states
+
+---
+
+## FINAL REQUIREMENT
+
+* Do NOT redesign behavior or logic
+* Do NOT add new features
+* Focus only on visual clarity, consistency, layout balance, and responsive readiness
+
+Goal: Make the UI clean, consistent, adaptive across all devices, and production-ready without changing how it works.
