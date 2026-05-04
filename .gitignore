@@ -1,2 +1,6 @@
 # dependencies
 node_modules
+
+# compiled output
+*.tsbuildinfo
+dist

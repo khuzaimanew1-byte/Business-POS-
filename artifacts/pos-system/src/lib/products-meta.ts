@@ -6,7 +6,7 @@ export type ProductMeta = {
 };
 
 export const PRODUCTS_META: ProductMeta[] = [
-  { id: "1",  name: "Espresso",        image: "/images/espresso.png",     category: "Drinks" },
+  { id: "1",  name: "Espresso",                                           category: "Drinks" },
   { id: "2",  name: "Latte",           image: "/images/latte.png",        category: "Drinks" },
   { id: "3",  name: "Cappuccino",      image: "/images/cappuccino.png",   category: "Drinks" },
   { id: "4",  name: "Trail Mix",       image: "/images/trail-mix.png",    category: "Snacks" },

@@ -8,6 +8,12 @@ export type Category = string;
 // label is "Sold Out" (a status indicator, not a real category).
 export const OUT_OF_STOCK_CATEGORY = "Sold Out";
 
+const OUT_OF_STOCK_CATEGORY_PATTERN = /^sold[\s_-]*out$/i;
+
+export function isOutOfStockCategoryName(name: string): boolean {
+  return OUT_OF_STOCK_CATEGORY_PATTERN.test(name.trim());
+}
+
 export type Product = {
   id: string;
   quickCode?: string;  // user-defined / generated quick code (e.g. "#wi-e")
@@ -19,7 +25,7 @@ export type Product = {
   profit?: number;
 };
 
-export const INITIAL_CATEGORIES: Category[] = ["All", "Drinks", "Snacks", "Electronics", "Clothing", "Food"];
+const INITIAL_CATEGORIES: Category[] = ["All", "Drinks", "Snacks", "Electronics", "Clothing", "Food"];
 
 // Demo products are an additive overlay shown only when Settings → Data &
 // Safety → Demo Mode is ON. They share the global `products` list with any
@@ -27,7 +33,7 @@ export const INITIAL_CATEGORIES: Category[] = ["All", "Drinks", "Snacks", "Elect
 // but they are stored in their own bucket so toggling Demo Mode off cleanly
 // reveals just the user's real catalogue.
 export const DEMO_PRODUCTS: Product[] = [
-  { id: "demo-1",  name: "Espresso",        price: 3.50,  category: "Drinks",      stock: 50,  image: "/images/espresso.png" },
+  { id: "demo-1",  name: "Espresso",        price: 3.50,  category: "Drinks",      stock: 50 },
   { id: "demo-2",  name: "Latte",            price: 4.50,  category: "Drinks",      stock: 45,  image: "/images/latte.png" },
   { id: "demo-3",  name: "Cappuccino",       price: 4.00,  category: "Drinks",      stock: 30,  image: "/images/cappuccino.png" },
   { id: "demo-4",  name: "Trail Mix",        price: 2.99,  category: "Snacks",      stock: 100, image: "/images/trail-mix.png" },

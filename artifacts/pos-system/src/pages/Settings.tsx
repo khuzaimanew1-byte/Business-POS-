@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import {
-  Home, BarChart2, Plus, Settings as SettingsIcon, ArrowLeft,
-  Zap, Keyboard, BarChart3, ShieldCheck, Sliders, Globe, ArrowRight,
+  ArrowLeft,
+  Zap, Keyboard, Sliders, Globe, ArrowRight,
   CornerDownLeft, ArrowUpRight, Info,
   Database, FlaskConical, Clock, RotateCcw, Undo2, ShieldAlert, Lock, Layers,
 } from "lucide-react";
 import {
   useSettings,
-  type PerformanceMode, type CurrencyCode, type RoundingMode, type RetentionMode, type DecimalPrecision,
-  type ShortcutAction, type ShortcutBinding, type RegionKey,
-  SHORTCUT_LABELS, DEFAULT_RATES, REGIONS, detectRegion,
+  type PerformanceMode, type CurrencyCode, type RetentionMode,
+  type ShortcutAction, type RegionKey,
+  SHORTCUT_LABELS, REGIONS, detectRegion,
   shortcutToString, detectConflicts, bindingFromKeyEvent,
 } from "@/lib/settings";
 import { AlertTriangle } from "lucide-react";
@@ -176,75 +176,6 @@ function Toggle({ checked, onChange, label, desc }: { checked: boolean; onChange
         <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${checked ? 'translate-x-4' : 'translate-x-0'}`} />
       </button>
     </div>
-  );
-}
-
-function Segmented<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string; sub?: string }[]; onChange: (v: T) => void }) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-      {options.map(opt => {
-        const active = opt.value === value;
-        return (
-          <button
-            key={opt.value}
-            onClick={() => onChange(opt.value)}
-            className={`text-left px-4 py-3 rounded-xl border transition-all duration-200 ${
-              active
-                ? 'border-primary/50 bg-primary/[0.06] shadow-[0_0_0_1px_rgba(212,175,90,0.12)]'
-                : 'border-border/50 bg-white/[0.015] hover:border-border hover:bg-white/[0.03]'
-            }`}
-          >
-            <div className={`text-sm font-medium ${active ? 'text-foreground' : 'text-foreground/85'}`}>{opt.label}</div>
-            {opt.sub && <div className="text-xs text-muted-foreground mt-0.5">{opt.sub}</div>}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function Select<T extends string>({ value, options, onChange }: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void }) {
-  return (
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value as T)}
-      className="bg-input/50 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:border-ring/60 focus:ring-1 focus:ring-ring/20 transition-all duration-200 min-w-[140px]"
-    >
-      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-    </select>
-  );
-}
-
-function NumberInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
-  return (
-    <input
-      type="text"
-      inputMode="decimal"
-      value={value}
-      onChange={e => onChange(e.target.value.replace(/[^0-9.]/g, ''))}
-      placeholder={placeholder}
-      className="bg-input/50 border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground outline-none focus:border-ring/60 focus:ring-1 focus:ring-ring/20 transition-all duration-200 min-w-[140px] placeholder:text-muted-foreground/60"
-    />
-  );
-}
-
-function Row({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-4 py-3">
-      <div className="min-w-0">
-        <div className="text-sm font-medium text-foreground">{label}</div>
-        {desc && <div className="text-xs text-muted-foreground mt-0.5">{desc}</div>}
-      </div>
-      <div className="shrink-0">{children}</div>
-    </div>
-  );
-}
-
-function Kbd({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="inline-flex items-center justify-center min-w-[26px] h-7 px-2 rounded-md bg-secondary/80 border border-border/60 text-[11px] font-mono font-semibold text-foreground/90 shadow-[0_1px_0_rgba(255,255,255,0.05),0_1px_2px_rgba(0,0,0,0.4)]">
-      {children}
-    </kbd>
   );
 }
 

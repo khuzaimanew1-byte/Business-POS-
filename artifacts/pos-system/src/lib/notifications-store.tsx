@@ -13,10 +13,10 @@ import { useStore, type Product } from "./store";
 //  TYPES
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type NotificationType = "alert" | "warning";
+type NotificationType = "alert" | "warning";
 
 /** All actionable events the system understands. Keep this list small. */
-export type EventKind = "out_of_stock" | "low_stock";
+type EventKind = "out_of_stock" | "low_stock";
 
 export type Notification = {
   id: string;                 // stable: `${kind}:${productId}`
@@ -64,7 +64,7 @@ const LOW_STOCK_THRESHOLD = 10;
 const TOAST_TTL_MS = 4500;
 
 /** Maximum number of stacked toasts shown at once. */
-export const MAX_TOAST_STACK = 3;
+const MAX_TOAST_STACK = 3;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  EVENT MODEL

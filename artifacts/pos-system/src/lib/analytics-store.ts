@@ -121,7 +121,7 @@ export function restoreRealEvents(events: SaleEvent[]) {
 // either direction restores the demo view automatically.
 let _demoViewCleared = false;
 
-export function isDemoViewCleared(): boolean {
+function isDemoViewCleared(): boolean {
   return _demoViewCleared;
 }
 
@@ -316,7 +316,7 @@ let _demoCache: SaleEvent[] | null = null;
  * 2025 (Jan 1 → Dec 31). Cached after first generation; consumers should
  * treat the returned array as immutable.
  */
-export function getDemoEvents2025(): SaleEvent[] {
+function getDemoEvents2025(): SaleEvent[] {
   if (_demoCache) return _demoCache;
   const rand = mulberry32(20250101);
   const events: SaleEvent[] = [];

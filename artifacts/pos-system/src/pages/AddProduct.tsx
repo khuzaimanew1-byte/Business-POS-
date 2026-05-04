@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, Plus, Check, X, ChevronDown, FolderPlus, Loader2, Trash2, Upload } from "lucide-react";
-import { useStore, normalizeCode, type Product } from "@/lib/store";
+import { useStore, normalizeCode, isOutOfStockCategoryName, type Product } from "@/lib/store";
 import { useSettings, getCurrencySymbol, formatAmountForCurrency, convertToUSD } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
 import { useDemoIndicatorPlacement } from "@/components/DemoModeIndicator";
@@ -143,6 +143,7 @@ const TraceField = React.forwardRef<HTMLInputElement, TraceFieldProps>(function 
             max={max}
             maxLength={maxLength}
             autoFocus={autoFocus}
+            required={required}
             data-testid={testId}
             className={`trace-input ${inputClassName}`}
           />
@@ -452,7 +453,7 @@ export default function AddProduct() {
     if (!cat) { setIsAddingCategory(false); return; }
     if (cat.toLowerCase() === 'all') { toast.error('Reserved name'); return; }
     // "Sold Out" is a system status (auto-applied at stock 0), not a category.
-    if (/^sold[\s_-]*out$/i.test(cat)) {
+    if (isOutOfStockCategoryName(cat)) {
       toast.error('"Sold Out" is a system state, not a category');
       return;
     }

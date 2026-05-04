@@ -157,5 +157,3 @@ export function DemoModeIndicator() {
     </>
   );
 }
-
-export default DemoModeIndicator;

@@ -2,9 +2,9 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 
 export type PerformanceMode = "smooth" | "fast" | "ultra";
 export type CurrencyCode = "PKR" | "USD" | "OMR";
-export type RoundingMode = "standard" | "floor" | "ceiling";
+type RoundingMode = "standard" | "floor" | "ceiling";
 export type RetentionMode = "1y" | "2y" | "5y" | "all" | "custom";
-export type DecimalPrecision = 0 | 1 | 2 | 3;
+type DecimalPrecision = 0 | 1 | 2 | 3;
 
 // ── Shortcuts ─────────────────────────────────────────────────────────────
 export type ShortcutAction =
@@ -23,7 +23,7 @@ export type ShortcutAction =
   | "prevSettingsTab"
   | "nextSettingsTab";
 
-export type ShortcutBinding = {
+type ShortcutBinding = {
   ctrl: boolean;
   shift: boolean;
   alt: boolean;
@@ -49,7 +49,7 @@ export const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   nextSettingsTab:  "Next Settings Tab",
 };
 
-export const DEFAULT_SHORTCUTS: Record<ShortcutAction, ShortcutBinding> = {
+const DEFAULT_SHORTCUTS: Record<ShortcutAction, ShortcutBinding> = {
   addProduct:       { ctrl: false, shift: true,  alt: false, meta: false, key: "p" },
   openAnalytics:    { ctrl: false, shift: true,  alt: false, meta: false, key: "a" },
   openNotifications:{ ctrl: false, shift: true,  alt: false, meta: false, key: "n" },
@@ -68,9 +68,9 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, ShortcutBinding> = {
 
 // ── Currency ──────────────────────────────────────────────────────────────
 /** USD is the base reference. 1 USD = X of target currency. */
-export type ExchangeRates = Record<Exclude<CurrencyCode, "USD">, number>;
+type ExchangeRates = Record<Exclude<CurrencyCode, "USD">, number>;
 
-export const DEFAULT_RATES: ExchangeRates = {
+const DEFAULT_RATES: ExchangeRates = {
   PKR: 280,
   OMR: 0.385,
 };
@@ -95,7 +95,7 @@ export function getCurrencySymbol(currency: CurrencyCode): string {
 }
 
 /** Decimal places enforced for a currency (OMR is always 3, others use the user's setting). */
-export function currencyDecimals(currency: CurrencyCode, fallback: number): number {
+function currencyDecimals(currency: CurrencyCode, fallback: number): number {
   return currency === "OMR" ? 3 : fallback;
 }
 
@@ -139,7 +139,7 @@ export function detectRegion(): RegionKey {
 }
 
 // ── State ─────────────────────────────────────────────────────────────────
-export type SettingsState = {
+type SettingsState = {
   performance: PerformanceMode;
   currency: CurrencyCode;
   region: RegionKey;
@@ -277,7 +277,7 @@ export function useSettings(): Ctx {
 }
 
 // ── Currency helpers ──────────────────────────────────────────────────────
-export function applyRounding(v: number, decimals: number, mode: RoundingMode): number {
+function applyRounding(v: number, decimals: number, mode: RoundingMode): number {
   const f = Math.pow(10, decimals);
   if (mode === "floor")   return Math.floor(v * f) / f;
   if (mode === "ceiling") return Math.ceil(v * f)  / f;
@@ -285,7 +285,7 @@ export function applyRounding(v: number, decimals: number, mode: RoundingMode): 
 }
 
 /** Convert a USD-base value to the active currency. */
-export function convertFromUSD(usd: number, s: SettingsState): number {
+function convertFromUSD(usd: number, s: SettingsState): number {
   if (s.currency === "USD") return usd;
   const rates = s.rates ?? DEFAULT_RATES;
   const rate = rates[s.currency] ?? DEFAULT_RATES[s.currency];
@@ -340,7 +340,7 @@ export function formatCurrency(v: number, s: SettingsState): string {
  * spacing is owned by the consumer's layout (typically the `<Money>` flex
  * gap), which lets it scale per-currency.
  */
-export function formatCurrencyParts(
+function formatCurrencyParts(
   v: number,
   s: SettingsState,
 ): { symbol: string; value: string } {
@@ -351,11 +351,6 @@ export function formatCurrencyParts(
     ? rounded.toFixed(3)
     : formatNumberTrimmed(rounded, decimals);
   return { symbol: getCurrencySymbol(s.currency), value };
-}
-
-export function useCurrency() {
-  const { settings } = useSettings();
-  return useMemo(() => (v: number) => formatCurrency(v, settings), [settings]);
 }
 
 /**
@@ -412,11 +407,6 @@ export function shortcutToString(b: ShortcutBinding): string {
     : b.key.charAt(0).toUpperCase() + b.key.slice(1);
   parts.push(k);
   return parts.join(" + ");
-}
-
-export function bindingsEqual(a: ShortcutBinding, b: ShortcutBinding): boolean {
-  if (!a || !b) return false;
-  return a.ctrl === b.ctrl && a.shift === b.shift && a.alt === b.alt && a.meta === b.meta && a.key === b.key;
 }
 
 /** Returns the set of action keys that share their binding with another action. */

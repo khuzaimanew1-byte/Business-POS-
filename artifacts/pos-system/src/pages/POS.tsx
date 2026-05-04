@@ -2,13 +2,12 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from "react"
 import { useLocation } from "wouter";
 import { 
   Home, BarChart2, Plus, Pencil, Settings, Search, X, Bell, 
-  ShoppingCart, Trash2, Minus, Check, Camera, MousePointer,
-  FolderInput, ChevronRight, LogOut, Clock
+  ShoppingCart, Trash2, Minus, Check, MousePointer,
+  FolderInput, LogOut, Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
@@ -21,8 +20,17 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem
 } from "@/components/ui/dropdown-menu";
 
-import { useStore, DEMO_PRODUCTS, DEMO_CART_SEED, type Product, type Category, OUT_OF_STOCK_CATEGORY } from "@/lib/store";
-import { useSettings, formatCurrency, Money } from "@/lib/settings";
+import {
+  useStore,
+  DEMO_PRODUCTS,
+  DEMO_CART_SEED,
+  generateQuickCode,
+  isOutOfStockCategoryName,
+  type Product,
+  type Category,
+  OUT_OF_STOCK_CATEGORY,
+} from "@/lib/store";
+import { useSettings, Money } from "@/lib/settings";
 import { useShortcut } from "@/lib/shortcuts";
 import { useNotifications } from "@/lib/notifications-store";
 import { recordSale } from "@/lib/analytics-store";
@@ -49,7 +57,6 @@ export default function POS() {
   useDemoIndicatorPlacement(
     "calc(var(--mobile-nav-height, 0px) + var(--bottom-strip-height, 0px) + 12px)",
   );
-  const fmtCur = (v: number) => formatCurrency(v, settings);
   const { unreadCount, pendingFocusId, consumeProductFocus } = useNotifications();
   // Product currently highlighted via a notification deep-link. The CSS
   // animation auto-completes; we just clear the id when it's done so the
@@ -203,21 +210,6 @@ export default function POS() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Quick code: lowercase, hyphen-segmented shorthand prefixed with "#".
-  // e.g. "Wireless Earbuds" -> "#wi-e", "Apple Juice" -> "#ap-j", "Cola" -> "#co-l"
-  const quickCode = useCallback((name: string) => {
-    const cleaned = name.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
-    const parts = cleaned.split(/\s+/).filter(Boolean);
-    if (parts.length === 0) return '#';
-    if (parts.length === 1) {
-      // Single-word names: no hyphen, just up to 3 chars (e.g. "Cola" -> "#col")
-      return `#${parts[0].slice(0, 3)}`;
-    }
-    const head = parts[0].slice(0, 2).padEnd(1, '');
-    const tail = parts[1][0];
-    return `#${head}-${tail}`;
-  }, []);
-
   // Normalize a query so "wie", "wi-e", "#wi-e" all match the same code.
   const normalize = (s: string) => s.toLowerCase().replace(/[#\-\s]/g, '');
 
@@ -227,7 +219,7 @@ export default function POS() {
     const ql = q.toLowerCase();
     const qn = normalize(q);
     const name = p.name.toLowerCase();
-    const qc = p.quickCode || quickCode(p.name);
+    const qc = p.quickCode || generateQuickCode(p.name);
     const qcn = normalize(qc);
     if (qcn === qn) return 0;
     if (name === ql) return 1;
@@ -254,7 +246,7 @@ export default function POS() {
       }
       if (!matchesCat) return false;
       if (!q) return true;
-      const qcn = normalize(p.quickCode || quickCode(p.name));
+      const qcn = normalize(p.quickCode || generateQuickCode(p.name));
       return (
         p.name.toLowerCase().includes(q) ||
         (qn && qcn.includes(qn))
@@ -264,7 +256,7 @@ export default function POS() {
       list.sort((a, b) => scoreMatch(a, q) - scoreMatch(b, q));
     }
     return list;
-  }, [products, selectedCategory, debouncedSearch, quickCode]);
+  }, [products, selectedCategory, debouncedSearch]);
 
   const topMatchId = debouncedSearch ? filteredProducts[0]?.id : null;
 
@@ -305,7 +297,7 @@ export default function POS() {
       setSelectedCategory(product.category);
     }
 
-    const qc = product.quickCode || quickCode(product.name);
+    const qc = product.quickCode || generateQuickCode(product.name);
 
     const findEl = (): HTMLElement | null =>
       document.querySelector<HTMLElement>(`[data-quick-code="${qc}"]`) ||
@@ -379,7 +371,7 @@ export default function POS() {
     };
 
     requestAnimationFrame(() => requestAnimationFrame(tryFind));
-  }, [pendingFocusId, consumeProductFocus, products, selectedCategory, quickCode]);
+  }, [pendingFocusId, consumeProductFocus, products, selectedCategory]);
 
   // ── Actions ──────────────────────────────────────────────────────────────
   const addToCart = (product: Product) => {
@@ -405,7 +397,7 @@ export default function POS() {
     setSavedProducts(products);
     setSavedCategories(categories);
     const drafts: Record<string, EditDraft> = {};
-    products.forEach(p => { drafts[p.id] = { name: p.name, price: String(p.price), stock: String(p.stock), quickCode: (p.quickCode || quickCode(p.name)).replace(/^#/, ''), profit: String(p.profit ?? 0), image: p.image }; });
+    products.forEach(p => { drafts[p.id] = { name: p.name, price: String(p.price), stock: String(p.stock), quickCode: (p.quickCode || generateQuickCode(p.name)).replace(/^#/, ''), profit: String(p.profit ?? 0), image: p.image }; });
     const catDrafts: Record<string, string> = {};
     categories.forEach(c => { catDrafts[c] = c; });
     setEditDrafts(drafts);
@@ -422,7 +414,7 @@ export default function POS() {
     // Reject any rename that targets the reserved "Sold Out" system state.
     for (const cat of categories) {
       const next = (categoryDrafts[cat] ?? cat).trim();
-      if (next && next !== cat && /^sold[\s_-]*out$/i.test(next)) {
+      if (next && next !== cat && isOutOfStockCategoryName(next)) {
         toast.error('"Sold Out" is a system state, not a category');
         return;
       }
@@ -440,7 +432,7 @@ export default function POS() {
         name: d.name.trim() || p.name,
         price: parseFloat(d.price) || p.price,
         stock: parseInt(d.stock, 10) >= 0 ? parseInt(d.stock, 10) : p.stock,
-        quickCode: qcRaw ? `#${qcRaw}` : (p.quickCode || quickCode(p.name)),
+        quickCode: qcRaw ? `#${qcRaw}` : (p.quickCode || generateQuickCode(p.name)),
         category: renamedMap[p.category] || p.category,
         image: d.image,
         profit: parseFloat(d.profit) >= 0 ? parseFloat(d.profit) : (p.profit ?? 0),
@@ -548,7 +540,7 @@ export default function POS() {
     const name = (fd.get("name") as string)?.trim();
     if (!name) { setIsAddCategoryModalOpen(false); return; }
     // "Sold Out" is a system state, not a user-creatable category.
-    if (/^sold[\s_-]*out$/i.test(name)) {
+    if (isOutOfStockCategoryName(name)) {
       toast.error('"Sold Out" is a system state, not a category');
       return;
     }
@@ -633,7 +625,7 @@ export default function POS() {
   };
 
   // ── Long-press helpers (mobile context menu trigger) ───────────────────
-  const startLongPress = (e: React.TouchEvent, onFire: () => void) => {
+  const startLongPress = (onFire: () => void) => {
     if (isEditMode) return;
     longPressFired.current = false;
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
@@ -1096,7 +1088,7 @@ export default function POS() {
           >
             {filteredProducts.map(product => {
               const currentImage = isEditMode ? (editDrafts[product.id]?.image ?? product.image) : product.image;
-              const qc = product.quickCode || quickCode(product.name);
+              const qc = product.quickCode || generateQuickCode(product.name);
               const isTopMatch = product.id === topMatchId;
               const isSelected = selectedIds.has(product.id);
               const isHighlighted = product.id === highlightId;
@@ -1118,7 +1110,7 @@ export default function POS() {
                   if (longPressFired.current) { longPressFired.current = false; return; }
                   addToCart(product);
                 },
-                onTouchStart: (e: React.TouchEvent) => startLongPress(e, () => enterSelectMode(product.id)),
+                onTouchStart: () => startLongPress(() => enterSelectMode(product.id)),
                 onTouchMove: cancelLongPress,
                 onTouchEnd: cancelLongPress,
                 onTouchCancel: cancelLongPress,

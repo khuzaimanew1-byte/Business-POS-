@@ -1,6 +1,6 @@
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import POS from "@/pages/POS";
@@ -47,7 +47,7 @@ function App() {
                 <DemoModeIndicator />
               </NotificationsProvider>
             </WouterRouter>
-            <Toaster />
+            <Toaster theme="dark" position="top-right" richColors />
           </StoreProvider>
         </SettingsProvider>
       </TooltipProvider>

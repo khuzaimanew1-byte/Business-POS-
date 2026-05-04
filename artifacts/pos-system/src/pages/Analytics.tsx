@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
-import { Home, BarChart2, Plus, Settings, Calendar as CalendarIcon, Check, Search, ArrowLeft, ShoppingBag, TrendingUp } from "lucide-react";
+import { Calendar as CalendarIcon, Check, Search, ArrowLeft, ShoppingBag, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useSaleEvents, type SaleEvent, type SaleItem } from "@/lib/analytics-store";
 import { PRODUCTS_META, getProductMeta, colorForProduct, type ProductMeta } from "@/lib/products-meta";
 import { useSettings, CURRENCY_SYMBOLS } from "@/lib/settings";
@@ -39,7 +38,6 @@ type ChartData = {
   bins: Bin[];
   rangeStart: number;
   rangeEnd: number;
-  rangeLabel: string;
   xTicks: XTick[];
   // Reference timestamp for the chart's data zone end (the "live" cap).
   // Carried on ChartData so demo mode can pin it to 2025 instead of wall clock.
@@ -107,7 +105,6 @@ function buildChartData(
 
   let rangeStart: number;
   let rangeEnd: number;
-  let rangeLabel: string;
   let xTicks: XTick[] = [];
 
   if (mode === "weekly") {
@@ -117,7 +114,6 @@ function buildChartData(
     const daysSinceMonday = (dayOfWeek + 6) % 7; // Mon → 0, Sun → 6
     rangeStart = startOfDay(now) - daysSinceMonday * 86400000;
     rangeEnd = rangeStart + 7 * 86400000;
-    rangeLabel = "This week";
     // Pin each tick to exact midnight of its day (i * 86400000 from Monday).
     // This gives xSpan = 6 days so Mon maps to the left edge and Sun to the
     // right edge, with perfectly even 1-day spacing between all 7 labels.
@@ -128,7 +124,6 @@ function buildChartData(
   } else if (mode === "monthly") {
     rangeStart = startOfMonth(now);
     rangeEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1).getTime();
-    rangeLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
     // Pin each tick to midnight of an exact integer day so data points sit
     // directly above their labels. dayOffset uses Math.round so ticks always
     // land on whole-day boundaries regardless of month length.
@@ -145,7 +140,6 @@ function buildChartData(
     const yr = now.getFullYear();
     rangeStart = startOfYear(now);
     rangeEnd = new Date(yr + 1, 0, 1).getTime();
-    rangeLabel = String(yr);
     // Same end-anchoring for the year: Jan sits flush at the left edge,
     // Dec sits flush at the right edge, with five evenly-spaced months
     // between (Mar, May, Jul, Aug, Oct in a typical 7-tick layout).
@@ -162,8 +156,6 @@ function buildChartData(
     };
     rangeStart = range.from;
     rangeEnd = range.to;
-    rangeLabel = `${new Date(rangeStart).toLocaleDateString()} – ${new Date(rangeEnd).toLocaleDateString()}`;
-
     const totalDays = Math.round((rangeEnd - rangeStart) / 86400000);
 
     const sameMonth =
@@ -204,7 +196,7 @@ function buildChartData(
     .map(([dayStart, value]) => ({ ts: dayStart, value, visible: true }));
 
   const bins = withZeroAnchors(real, rangeStart, rangeEnd, 12 * 3600000);
-  return { bins, rangeStart, rangeEnd, rangeLabel, xTicks, nowTs: now.getTime() };
+  return { bins, rangeStart, rangeEnd, xTicks, nowTs: now.getTime() };
 }
 
 // ── Y axis helpers ─────────────────────────────────────────────────────────
@@ -280,12 +272,6 @@ function smoothCurveTo(pts: { x: number; y: number }[]): string {
     d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${pts[i + 1].x} ${pts[i + 1].y}`;
   }
   return d;
-}
-
-function smoothPath(pts: { x: number; y: number }[]): string {
-  if (pts.length === 0) return "";
-  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
-  return `M ${pts[0].x} ${pts[0].y}` + smoothCurveTo(pts);
 }
 
 function fmtMetric(v: number, metric: Metric, sym = "$") {
@@ -588,7 +574,6 @@ function Chart({
     }
     setHoverIdx(bestIdx >= 0 ? bestIdx : null);
   };
-  const handleLeave = () => {};
   const TT_W_EST = metric === "profit" ? 180 : 200;
   const effectiveHoverIdx =
     interactivePoints.length === 0 ? -1
@@ -784,7 +769,7 @@ function Chart({
             zone never produces tooltips, crosshairs, or hover values. */}
         {interactiveWidth > 0 && (
           <rect x={margin.left} y={margin.top} width={interactiveWidth} height={plotH}
-            fill="transparent" onMouseMove={handleMove} onMouseLeave={handleLeave}
+            fill="transparent" onMouseMove={handleMove}
             style={{ cursor: "crosshair" }} />
         )}
       </svg>
@@ -1162,7 +1147,7 @@ export default function Analytics() {
     () => buildChartData(mode, events, metric, custom, nowRef),
     [mode, events, metric, custom, nowRef],
   );
-  const { bins, rangeLabel } = data;
+  const { bins } = data;
 
   const visibleBins = useMemo(() => bins.filter((b) => b.visible), [bins]);
   const totalValue = useMemo(
@@ -1364,7 +1349,7 @@ export default function Analytics() {
                     slots={barSlots}
                     metric={metric}
                     sym={sym}
-                    excludeIds={new Set()}
+                    excludeIds={barIds}
                     onSwap={swapSlot}
                   />
                 </div>
@@ -1470,40 +1455,5 @@ export default function Analytics() {
       </div>
 
     </div>
-  );
-}
-
-// ── Desktop sidebar tooltip button ───────────────────────────────────────────
-function AnalyticsTooltipItem({ icon, label, active = false, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          onClick={onClick}
-          className={`relative p-3 rounded-xl transition-all duration-250 ease-in-out group ${active ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
-        >
-          {icon}
-          {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-md" />}
-          <div className="absolute inset-0 rounded-xl bg-primary/0 group-hover:bg-primary/5 transition-colors duration-250" />
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="right" className="ml-2 font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: '12px' }}>
-        {label}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-// ── Mobile bottom nav button ──────────────────────────────────────────────────
-function AnalyticsMobileNavBtn({ icon, label, active = false, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex flex-col items-center justify-center gap-0.5 px-3 py-2 rounded-lg transition-colors duration-200 ${active ? 'text-primary' : 'text-muted-foreground'}`}
-      aria-label={label}
-    >
-      {icon}
-      <span className="text-[9px] font-medium">{label}</span>
-    </button>
   );
 }
