@@ -769,8 +769,8 @@ export default function POS() {
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} />
 
       {/* ── DESKTOP LEFT SIDEBAR (hidden on mobile) ────────────────────── */}
-      <aside className="hidden sm:flex w-[60px] shrink-0 border-r border-border bg-sidebar flex-col items-center py-4 z-20">
-        <div className="flex flex-col gap-6">
+      <aside className="hidden sm:flex w-[68px] lg:w-[210px] shrink-0 border-r border-border/50 bg-sidebar flex-col items-start py-5 z-20">
+        <div className="flex flex-col gap-1 w-full px-2 lg:px-3">
           <TooltipProvider delayDuration={250}>
             <TooltipItem icon={<Home size={20} />} label="Home" active />
             <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" onClick={() => setLocation("/analytics")} />
@@ -788,7 +788,7 @@ export default function POS() {
       >
 
         {/* TOP BAR */}
-        <header className={`h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-all duration-400 ${isEditMode ? 'border-b border-primary/25 bg-primary/5 shadow-none' : 'bg-background/90 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)]'}`}>
+        <header className={`h-[60px] sm:h-[70px] flex items-center justify-between px-3 sm:px-5 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-all duration-400 ${isEditMode ? 'border-b border-primary/25 bg-primary/5 shadow-none' : 'bg-background/95 border-b border-border/30 shadow-[0_2px_20px_rgba(0,0,0,0.18)]'}`}>
           {/* Search — hidden during selection mode */}
           {isSelectMode ? (
             <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
@@ -807,8 +807,8 @@ export default function POS() {
               </span>
             </div>
           ) : (
-            <div className="relative flex-1 max-w-xl xl:max-w-2xl group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-[14px] h-[14px]" />
+            <div className="relative flex-1 max-w-2xl group">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 w-[16px] h-[16px] sm:w-[17px] sm:h-[17px]" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -822,7 +822,7 @@ export default function POS() {
                     setSearchQuery('');
                   }
                 }}
-                className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-9 pr-9 outline-none transition-all duration-250 placeholder:text-muted-foreground text-[14px] sm:text-[16px]"
+                className="w-full bg-secondary/50 border border-border/40 hover:border-border/70 focus:border-primary/40 focus:bg-secondary/70 rounded-xl py-2 sm:py-2.5 pl-10 sm:pl-11 pr-9 outline-none transition-all duration-200 placeholder:text-muted-foreground/40 text-[14px] sm:text-[15px]"
                 data-testid="input-search"
               />
               {searchQuery && (
@@ -949,8 +949,9 @@ export default function POS() {
         </header>
 
         {/* CATEGORY BAR */}
-        <div className={`border-b bg-background shrink-0 overflow-hidden transition-colors duration-400 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
-          <div ref={categoryBarRef} className="flex items-center px-3 sm:px-4 py-2.5 gap-2 overflow-x-auto scrollbar-none scroll-smooth">
+        <div className={`border-b bg-background shrink-0 overflow-hidden transition-colors duration-400 ${isEditMode ? 'border-primary/20' : 'border-border/40'}`}>
+          <div className="flex items-center">
+          <div ref={categoryBarRef} className="flex-1 min-w-0 flex items-center px-3 sm:px-5 py-3 gap-2 overflow-x-auto scrollbar-none scroll-smooth">
             {isEditMode ? (
               <>
                 <button
@@ -1063,15 +1064,21 @@ export default function POS() {
                     </ContextMenu>
                   );
                 })}
-                <button
-                  onClick={() => setIsAddCategoryModalOpen(true)}
-                  className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium text-muted-foreground/50 border border-dashed border-border hover:border-primary hover:text-primary transition-colors duration-250 ml-1 flex items-center gap-1"
-                  data-testid="btn-add-category"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
               </>
             )}
+          </div>
+          {!isEditMode && (
+            <div className="shrink-0 px-3 sm:px-4 border-l border-border/30 flex items-center py-2.5">
+              <button
+                onClick={() => setIsAddCategoryModalOpen(true)}
+                className="flex items-center justify-center w-9 h-9 rounded-lg text-muted-foreground/50 border border-dashed border-border/50 hover:border-primary hover:text-primary transition-colors duration-200"
+                data-testid="btn-add-category"
+                aria-label="Add category"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          )}
           </div>
         </div>
 
@@ -1119,7 +1126,7 @@ export default function POS() {
               const cardBody = (
                 <div {...cardCommonProps}>
                   {/* Image area */}
-                  <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1/1' }}>
+                  <div className="relative w-full overflow-hidden" style={{ aspectRatio: '1/1', maxHeight: 'clamp(100px, 12vw, 185px)' }}>
                     {currentImage ? (
                       <img
                         src={currentImage}
@@ -1271,10 +1278,14 @@ export default function POS() {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-1.5 sm:p-2 flex flex-col gap-0.5">
+                    <div className="p-2 sm:p-2.5 flex flex-col gap-1">
+                      <Money
+                        value={product.price}
+                        className="font-bold text-primary leading-tight text-[15px] sm:text-[17px]"
+                      />
                       <Tooltip delayDuration={300}>
                         <TooltipTrigger asChild>
-                          <p className="font-semibold truncate leading-snug text-foreground text-fluid-base cursor-default">{product.name}</p>
+                          <p className="font-medium truncate leading-snug text-foreground/80 text-[12px] sm:text-[13px] cursor-default">{product.name}</p>
                         </TooltipTrigger>
                         <TooltipContent
                           side="top"
@@ -1284,20 +1295,16 @@ export default function POS() {
                           {product.name}
                         </TooltipContent>
                       </Tooltip>
-                      <Money
-                        value={product.price}
-                        className="font-semibold text-primary leading-none text-fluid-sm"
-                      />
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-muted-foreground text-fluid-xs leading-none">Stock: {product.stock}</span>
+                      <div className="flex items-center justify-between mt-0.5">
+                        <span className="text-muted-foreground/60 text-[11px] sm:text-[12px] leading-none">{product.stock > 0 ? `${product.stock} left` : 'Out of stock'}</span>
                         <button
                           disabled={product.stock <= 0}
                           onClick={e => { e.stopPropagation(); addToCart(product); }}
-                          className="rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:brightness-110 active:scale-[0.93] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                          style={{ width: 'clamp(26px, 2.8vw, 40px)', height: 'clamp(26px, 2.8vw, 40px)' }}
+                          className="rounded-lg bg-primary text-primary-foreground flex items-center justify-center hover:brightness-110 active:scale-[0.93] transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                          style={{ width: 'clamp(28px, 2.6vw, 38px)', height: 'clamp(28px, 2.6vw, 38px)' }}
                           data-testid={`btn-add-${product.id}`}
                         >
-                          <ShoppingCart style={{ width: 'clamp(12px, 1.8vw, 24px)', height: 'clamp(12px, 1.8vw, 24px)' }} />
+                          <ShoppingCart style={{ width: 'clamp(13px, 1.5vw, 19px)', height: 'clamp(13px, 1.5vw, 19px)' }} />
                         </button>
                       </div>
                     </div>
@@ -1357,24 +1364,24 @@ export default function POS() {
         {/* BOTTOM CART STRIP */}
         <div
           onClick={() => setIsCartOpen(!isCartOpen)}
-          className={`fixed left-0 sm:left-[60px] right-0 h-14 sm:h-16 glass-panel border-t flex items-center justify-between px-4 sm:px-6 cursor-pointer hover:bg-background/70 transition-colors duration-250 z-20 cart-strip-right${isCartOpen ? ' cart-pushed' : ''}${cartFlash ? ' cart-flash' : ''}`}
+          className={`fixed left-0 sm:left-[68px] lg:left-[210px] right-0 h-[60px] sm:h-[72px] glass-panel border-t border-border/40 flex items-center justify-between px-4 sm:px-6 lg:px-8 cursor-pointer hover:bg-background/80 transition-colors duration-250 z-20 cart-strip-right${isCartOpen ? ' cart-pushed' : ''}${cartFlash ? ' cart-flash' : ''}`}
           style={{ bottom: 'var(--mobile-nav-height, 0px)' }}
           data-testid="cart-strip"
         >
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-primary/20 text-primary">
-              <ShoppingCart className="w-4 h-4" />
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-primary/15 text-primary shrink-0">
+              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <p className="font-semibold text-[14px] sm:text-[16px]">Current Order</p>
-              <p className="text-muted-foreground text-[12px] sm:text-[14px]">
-                <span className="font-mono font-semibold text-foreground">{cartCount}</span> items
+              <p className="font-semibold text-[14px] sm:text-[17px]">Current Order</p>
+              <p className="text-muted-foreground/70 text-[12px] sm:text-[14px]">
+                <span className="font-semibold text-foreground tabular-nums">{cartCount}</span> items
               </p>
             </div>
           </div>
           <Money
             value={cartTotal}
-            className="currency-hero font-bold text-primary tracking-tight text-xl sm:text-2xl"
+            className="currency-hero font-bold text-primary tracking-tight text-[22px] sm:text-[28px]"
           />
         </div>
 
@@ -1434,7 +1441,7 @@ export default function POS() {
       <aside
         className={`cart-panel fixed z-50 bg-background shadow-2xl flex flex-col
           bottom-0 left-0 right-0 h-[80vh] rounded-t-3xl border-t border-border
-          sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-[380px] sm:h-auto sm:rounded-none sm:border-t-0 sm:border-l
+          sm:top-0 sm:bottom-0 sm:left-auto sm:right-0 sm:w-[400px] sm:h-auto sm:rounded-none sm:border-t-0 sm:border-l
           ${isCartOpen ? 'cart-panel-open' : 'cart-panel-closed'}`}
         data-testid="cart-sidebar"
       >
@@ -1444,9 +1451,9 @@ export default function POS() {
         </div>
 
         {/* Header */}
-        <div className="h-12 sm:h-16 flex items-center justify-between px-4 border-b border-border shrink-0">
-          <h2 className="font-semibold flex items-center gap-2 text-sm sm:text-base">
-            <ShoppingCart className="w-4 h-4" /> Cart Items
+        <div className="h-14 sm:h-[70px] flex items-center justify-between px-4 sm:px-5 border-b border-border/40 shrink-0">
+          <h2 className="font-semibold flex items-center gap-2 text-sm sm:text-[17px]">
+            <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" /> Cart Items
           </h2>
           <div className="flex items-center gap-1">
             {/* Order History — bare gold clock icon, no background or
@@ -1494,39 +1501,39 @@ export default function POS() {
                 // guard only; deletion also removes it from cartItems.
                 if (!prod) return null;
                 return (
-                <div key={item.productId} className="flex bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
-                  {/* IMAGE — edge-to-edge square */}
-                  <div className="w-[72px] h-[72px] shrink-0 bg-secondary">
+                <div key={item.productId} className="flex bg-secondary/30 rounded-xl border border-border/40 overflow-hidden group transition-colors duration-200 hover:border-border/70" data-testid={`cart-item-${item.productId}`}>
+                  {/* IMAGE */}
+                  <div className="w-[80px] h-[80px] sm:w-[88px] sm:h-[88px] shrink-0 bg-secondary">
                     {prod.image
                       ? <img src={prod.image} alt={prod.name} className="w-full h-full object-cover block" />
                       : <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-xs font-bold text-muted-foreground">{renderInitials(prod.name)}</span>
+                          <span className="text-sm font-bold text-muted-foreground">{renderInitials(prod.name)}</span>
                         </div>}
                   </div>
                   {/* CONTENT */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-center px-3 py-2.5">
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="font-medium text-sm truncate pr-2">{prod.name}</h4>
-                      <Money value={prod.price * item.quantity} className="font-semibold text-sm" />
+                  <div className="flex-1 min-w-0 flex flex-col justify-center px-3 sm:px-4 py-3">
+                    <div className="flex justify-between items-start mb-1.5">
+                      <h4 className="font-semibold text-[13px] sm:text-[15px] truncate pr-2 leading-tight">{prod.name}</h4>
+                      <Money value={prod.price * item.quantity} className="font-bold text-[13px] sm:text-[15px] shrink-0 text-primary" />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground inline-flex items-baseline gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[11px] sm:text-[12px] text-muted-foreground/70 inline-flex items-baseline gap-0.5">
                         <Money value={prod.price} />
                         <span>/ ea</span>
                       </span>
-                      <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
-                        <button onClick={() => updateCartQty(item.productId, item.quantity - 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-minus-${item.productId}`}>
+                      <div className="flex items-center bg-background/70 rounded-lg border border-border/60 overflow-hidden h-7 sm:h-8">
+                        <button onClick={() => updateCartQty(item.productId, item.quantity - 1)} className="px-2 sm:px-2.5 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-minus-${item.productId}`}>
                           <Minus className="w-3 h-3" />
                         </button>
-                        <input type="number" value={item.quantity} onChange={e => updateCartQty(item.productId, parseInt(e.target.value) || 0)} className="w-8 h-full bg-transparent text-center text-xs font-medium outline-none no-spinners" />
-                        <button onClick={() => updateCartQty(item.productId, item.quantity + 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-plus-${item.productId}`}>
+                        <input type="number" value={item.quantity} onChange={e => updateCartQty(item.productId, parseInt(e.target.value) || 0)} className="w-8 sm:w-9 h-full bg-transparent text-center text-[12px] sm:text-[13px] font-semibold outline-none no-spinners" />
+                        <button onClick={() => updateCartQty(item.productId, item.quantity + 1)} className="px-2 sm:px-2.5 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-plus-${item.productId}`}>
                           <Plus className="w-3 h-3" />
                         </button>
                       </div>
                     </div>
                   </div>
                   {/* DELETE */}
-                  <button onClick={() => removeFromCart(item.productId)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive self-center pr-3 pl-1 py-2 shrink-0">
+                  <button onClick={() => removeFromCart(item.productId)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive self-center pr-3 sm:pr-4 pl-1 py-2 shrink-0">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -1537,13 +1544,13 @@ export default function POS() {
         </ScrollArea>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border bg-background shrink-0 pb-safe">
-          <div className="flex justify-between font-bold text-lg mb-4 text-foreground">
-            <span>Total</span>
-            <Money value={cartTotal} className="currency-hero text-primary" />
+        <div className="p-4 sm:p-5 border-t border-border/40 bg-background shrink-0 pb-safe">
+          <div className="flex justify-between items-center mb-4 sm:mb-5">
+            <span className="text-muted-foreground/70 text-[12px] sm:text-[13px] font-medium uppercase tracking-widest">Total</span>
+            <Money value={cartTotal} className="currency-hero text-primary font-bold text-[22px] sm:text-[26px]" />
           </div>
           <Button
-            className={`w-full h-12 sm:h-14 text-base sm:text-lg font-bold rounded-xl transition-all duration-200 active:scale-[0.98] ${
+            className={`w-full h-12 sm:h-14 text-base sm:text-[17px] font-bold rounded-xl transition-all duration-200 active:scale-[0.98] ${
               checkoutSuccess
                 ? 'bg-emerald-600 hover:bg-emerald-600 text-white shadow-[0_0_0_3px_rgba(16,185,129,0.18)] disabled:opacity-100'
                 : ''
@@ -1617,7 +1624,7 @@ export default function POS() {
          * their own offsets from layout primitives, not from these. */
         :root {
           --mobile-nav-height: 0px;
-          --bottom-strip-height: 4rem; /* matches sm:h-16 cart strip */
+          --bottom-strip-height: 4.5rem; /* matches sm:h-[72px] cart strip */
         }
         @media (max-width: 639px) {
           :root {
@@ -1673,13 +1680,13 @@ export default function POS() {
           transition: right 320ms cubic-bezier(0.32, 0.72, 0, 1);
         }
         @media (min-width: 640px) {
-          .cart-strip-right.cart-pushed { right: 380px; }
-          .main-cart-pushed { margin-right: 380px; }
+          .cart-strip-right.cart-pushed { right: 400px; }
+          .main-cart-pushed { margin-right: 400px; }
         }
 
         /* ── Product grid columns ── */
         .product-grid {
-          grid-template-columns: repeat(auto-fill, minmax(clamp(150px, 11vw, 200px), 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(clamp(140px, 10vw, 185px), 1fr));
         }
         @media (max-width: 639px) {
           .product-grid {
@@ -1863,27 +1870,27 @@ export default function POS() {
            is unchanged. Each step adds a proportional amount of space without
            forcing a hard reflow of anything that already looks good.        */
         @media (min-width: 1280px) {
-          .cart-panel { width: 420px; }
-          .cart-strip-right.cart-pushed { right: 420px; }
-          .main-cart-pushed { margin-right: 420px; }
+          .cart-panel { width: 440px; }
+          .cart-strip-right.cart-pushed { right: 440px; }
+          .main-cart-pushed { margin-right: 440px; }
           .product-grid {
-            grid-template-columns: repeat(auto-fill, minmax(clamp(160px, 10.5vw, 215px), 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(clamp(155px, 9.5vw, 210px), 1fr));
           }
         }
         @media (min-width: 1536px) {
-          .cart-panel { width: 480px; }
-          .cart-strip-right.cart-pushed { right: 480px; }
-          .main-cart-pushed { margin-right: 480px; }
+          .cart-panel { width: 490px; }
+          .cart-strip-right.cart-pushed { right: 490px; }
+          .main-cart-pushed { margin-right: 490px; }
           .product-grid {
-            grid-template-columns: repeat(auto-fill, minmax(clamp(170px, 10vw, 235px), 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(clamp(165px, 9vw, 230px), 1fr));
           }
         }
         @media (min-width: 1920px) {
-          .cart-panel { width: 520px; }
-          .cart-strip-right.cart-pushed { right: 520px; }
-          .main-cart-pushed { margin-right: 520px; }
+          .cart-panel { width: 540px; }
+          .cart-strip-right.cart-pushed { right: 540px; }
+          .main-cart-pushed { margin-right: 540px; }
           .product-grid {
-            grid-template-columns: repeat(auto-fill, minmax(clamp(180px, 9.5vw, 255px), 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(clamp(175px, 8.5vw, 250px), 1fr));
           }
         }
         /* Scroll area: slightly more bottom breathing room on large screens */
@@ -1904,14 +1911,14 @@ function TooltipItem({ icon, label, active = false, onClick }: { icon: React.Rea
       <TooltipTrigger asChild>
         <button
           onClick={onClick}
-          className={`relative p-3 rounded-xl transition-all duration-250 ease-in-out group ${active ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
+          className={`relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-250 ease-in-out group ${active ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary/70"}`}
         >
-          {icon}
-          {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-md" />}
-          <div className="absolute inset-0 rounded-xl bg-primary/0 group-hover:bg-primary/5 transition-colors duration-250" />
+          <span className="shrink-0">{icon}</span>
+          <span className="hidden lg:block text-[13px] font-medium tracking-tight truncate">{label}</span>
+          {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-primary rounded-r-full" />}
         </button>
       </TooltipTrigger>
-      <TooltipContent side="right" className="ml-2 font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: '12px' }}>
+      <TooltipContent side="right" className="lg:hidden ml-2 font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: '12px' }}>
         {label}
       </TooltipContent>
     </Tooltip>
