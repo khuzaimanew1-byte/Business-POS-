@@ -807,7 +807,7 @@ export default function POS() {
               </span>
             </div>
           ) : (
-            <div className="relative flex-1 max-w-xl group">
+            <div className="relative flex-1 max-w-xl xl:max-w-2xl group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-[14px] h-[14px]" />
               <input
                 ref={searchInputRef}
@@ -956,7 +956,7 @@ export default function POS() {
                 <button
                   onClick={() => setSelectedCategory('All')}
                   data-cat="All"
-                  className={`shrink-0 px-3 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 ${selectedCategory === 'All' ? 'text-primary-foreground bg-primary' : 'text-muted-foreground bg-secondary/50'}`}
+                  className={`shrink-0 px-3 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 ${selectedCategory === 'All' ? 'text-primary-foreground bg-primary' : 'text-muted-foreground bg-secondary/50'}`}
                 >All</button>
                 {/* Editable user categories — "Sold Out" is excluded here because
                     it's a system state, not a real category, so it must not be
@@ -991,7 +991,7 @@ export default function POS() {
                     data-cat={OUT_OF_STOCK_CATEGORY}
                     aria-label="Sold Out — system tab, not editable"
                     title="System tab — not editable"
-                    className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium border border-dashed transition-all duration-250 ${
+                    className={`shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full cat-chip font-medium border border-dashed transition-all duration-250 ${
                       selectedCategory === OUT_OF_STOCK_CATEGORY
                         ? 'border-destructive/70 bg-destructive/15 text-destructive'
                         : 'border-destructive/40 bg-destructive/5 text-destructive/80 hover:bg-destructive/10 hover:border-destructive/60 hover:text-destructive'
@@ -1016,12 +1016,12 @@ export default function POS() {
                   let chipClass: string;
                   if (isSoldOut) {
                     chipClass = isActive
-                      ? 'shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 border border-dashed border-destructive/70 bg-destructive/15 text-destructive shadow-[0_0_0_1px_hsl(var(--destructive)/0.15)]'
-                      : 'shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 border border-dashed border-destructive/45 bg-destructive/5 text-destructive/85 hover:bg-destructive/10 hover:border-destructive/60 hover:text-destructive';
+                      ? 'shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 border border-dashed border-destructive/70 bg-destructive/15 text-destructive shadow-[0_0_0_1px_hsl(var(--destructive)/0.15)]'
+                      : 'shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 border border-dashed border-destructive/45 bg-destructive/5 text-destructive/85 hover:bg-destructive/10 hover:border-destructive/60 hover:text-destructive';
                   } else {
                     chipClass = isActive
-                      ? 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 text-primary-foreground bg-primary shadow-sm'
-                      : 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-[13px] sm:text-[15px] font-medium transition-all duration-250 text-muted-foreground/60 hover:bg-secondary hover:text-foreground/90';
+                      ? 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 text-primary-foreground bg-primary shadow-sm'
+                      : 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 text-muted-foreground/60 hover:bg-secondary hover:text-foreground/90';
                   }
                   const btn = (
                     <button
@@ -1274,7 +1274,7 @@ export default function POS() {
                     <div className="p-1.5 sm:p-2 flex flex-col gap-0.5">
                       <Tooltip delayDuration={300}>
                         <TooltipTrigger asChild>
-                          <p className="font-semibold truncate leading-snug text-foreground text-[14px] sm:text-[17px] cursor-default">{product.name}</p>
+                          <p className="font-semibold truncate leading-snug text-foreground text-fluid-base cursor-default">{product.name}</p>
                         </TooltipTrigger>
                         <TooltipContent
                           side="top"
@@ -1286,10 +1286,10 @@ export default function POS() {
                       </Tooltip>
                       <Money
                         value={product.price}
-                        className="font-semibold text-primary leading-none text-[13px] sm:text-[16px]"
+                        className="font-semibold text-primary leading-none text-fluid-sm"
                       />
                       <div className="flex items-center justify-between mt-1">
-                        <span className="text-muted-foreground text-[11px] sm:text-[14px] leading-none">Stock: {product.stock}</span>
+                        <span className="text-muted-foreground text-fluid-xs leading-none">Stock: {product.stock}</span>
                         <button
                           disabled={product.stock <= 0}
                           onClick={e => { e.stopPropagation(); addToCart(product); }}
@@ -1856,6 +1856,42 @@ export default function POS() {
           100% { background-color: transparent; }
         }
         .cart-flash { animation: cart-flash-anim 700ms cubic-bezier(0.4,0,0.2,1); }
+
+        /* ── Large-screen layout: cart grows, grid breathes ─────────────────
+           Only shifts when the screen is wide enough that the existing 380px
+           cart panel starts to feel disproportionate. Below 1280px the layout
+           is unchanged. Each step adds a proportional amount of space without
+           forcing a hard reflow of anything that already looks good.        */
+        @media (min-width: 1280px) {
+          .cart-panel { width: 420px; }
+          .cart-strip-right.cart-pushed { right: 420px; }
+          .main-cart-pushed { margin-right: 420px; }
+          .product-grid {
+            grid-template-columns: repeat(auto-fill, minmax(clamp(160px, 10.5vw, 215px), 1fr));
+          }
+        }
+        @media (min-width: 1536px) {
+          .cart-panel { width: 480px; }
+          .cart-strip-right.cart-pushed { right: 480px; }
+          .main-cart-pushed { margin-right: 480px; }
+          .product-grid {
+            grid-template-columns: repeat(auto-fill, minmax(clamp(170px, 10vw, 235px), 1fr));
+          }
+        }
+        @media (min-width: 1920px) {
+          .cart-panel { width: 520px; }
+          .cart-strip-right.cart-pushed { right: 520px; }
+          .main-cart-pushed { margin-right: 520px; }
+          .product-grid {
+            grid-template-columns: repeat(auto-fill, minmax(clamp(180px, 9.5vw, 255px), 1fr));
+          }
+        }
+        /* Scroll area: slightly more bottom breathing room on large screens */
+        @media (min-width: 1280px) {
+          [data-radix-scroll-area-viewport] > div {
+            padding-bottom: 92px !important;
+          }
+        }
       `}</style>
     </div>
   );

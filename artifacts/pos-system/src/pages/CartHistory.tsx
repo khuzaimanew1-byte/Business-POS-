@@ -360,8 +360,8 @@ export default function CartHistory() {
               </ScrollArea>
             </div>
 
-            {/* ── DESKTOP: 320px order list ────────────────────────── */}
-            <aside className="hidden sm:flex flex-col w-[320px] border-r border-border min-h-0 shrink-0">
+            {/* ── DESKTOP: fluid order list — grows with the display ── */}
+            <aside className="hidden sm:flex flex-col w-[320px] lg:w-[360px] xl:w-[400px] 2xl:w-[440px] border-r border-border min-h-0 shrink-0 transition-[width] duration-300">
               <div className="px-4 pt-4 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground shrink-0">
                 Orders
               </div>
@@ -448,7 +448,7 @@ export default function CartHistory() {
       {/* Desktop: 3 segments — left half (320px wide, mirroring the orders
           aside above) holds Revenue + Profit; right half holds Order Total. */}
       <footer className="hidden sm:flex shrink-0 border-t border-border bg-background/95 backdrop-blur-sm">
-        <div className="w-[320px] flex border-r border-border shrink-0">
+        <div className="w-[320px] lg:w-[360px] xl:w-[400px] 2xl:w-[440px] flex border-r border-border shrink-0 transition-[width] duration-300">
           {RevenueSegment}
           <div className="w-px bg-border/60 self-stretch my-2" aria-hidden="true" />
           {ProfitSegment}

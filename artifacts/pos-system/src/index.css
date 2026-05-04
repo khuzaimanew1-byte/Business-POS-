@@ -412,6 +412,33 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* ── Fluid type scale — clamp(min, preferred, max) ───────────────────────
+   Scales smoothly from ~640px viewport up to 2000px+ without any hard
+   breakpoint snaps. Use these utility classes on key display text, labels,
+   headings, and any element where a fixed px size would feel cramped or
+   oversized across the display range the operator might use.            */
+@layer utilities {
+  .text-fluid-2xs  { font-size: clamp(0.625rem,  0.55rem  + 0.2vw,  0.75rem); }
+  .text-fluid-xs   { font-size: clamp(0.688rem,  0.62rem  + 0.25vw, 0.8125rem); }
+  .text-fluid-sm   { font-size: clamp(0.8125rem, 0.74rem  + 0.3vw,  0.9375rem); }
+  .text-fluid-base { font-size: clamp(0.875rem,  0.8rem   + 0.35vw, 1.0625rem); }
+  .text-fluid-lg   { font-size: clamp(1rem,      0.9rem   + 0.45vw, 1.25rem); }
+  .text-fluid-xl   { font-size: clamp(1.125rem,  0.98rem  + 0.6vw,  1.5rem); }
+  .text-fluid-2xl  { font-size: clamp(1.25rem,   1.05rem  + 0.85vw, 1.875rem); }
+  .text-fluid-3xl  { font-size: clamp(1.5rem,    1.2rem   + 1.2vw,  2.25rem); }
+  .text-fluid-4xl  { font-size: clamp(1.875rem,  1.4rem   + 1.8vw,  3rem); }
+
+  /* Fluid spacing — gap, padding, margin that breathe with the viewport */
+  .gap-fluid-sm  { gap: clamp(0.375rem,  0.3rem  + 0.25vw, 0.625rem); }
+  .gap-fluid-md  { gap: clamp(0.5rem,    0.4rem  + 0.35vw, 0.875rem); }
+  .gap-fluid-lg  { gap: clamp(0.75rem,   0.6rem  + 0.5vw,  1.25rem); }
+  .p-fluid-xs    { padding: clamp(0.375rem, 0.3rem + 0.25vw, 0.625rem); }
+  .p-fluid-sm    { padding: clamp(0.5rem,  0.42rem + 0.3vw,  0.75rem); }
+
+  /* Category filter chips — font scales smoothly without a hard sm: snap */
+  .cat-chip { font-size: clamp(12px, 1vw, 15px); }
+}
+
 @layer utilities {
   input[type="search"]::-webkit-search-cancel-button { @apply hidden; }
   [contenteditable][data-placeholder]:empty::before {

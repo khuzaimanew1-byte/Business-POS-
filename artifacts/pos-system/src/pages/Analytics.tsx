@@ -1231,7 +1231,7 @@ export default function Analytics() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* Minimal header — back arrow + title + time mode pills */}
-        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md h-14 flex items-center gap-3 px-3 sm:px-5">
+        <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md h-14 flex items-center gap-3 px-3 sm:px-5 xl:px-8 2xl:px-12">
 
           {/* Back arrow + title */}
           <button
@@ -1306,8 +1306,8 @@ export default function Analytics() {
         <div className="flex-1 flex overflow-hidden">
 
           {/* Scrollable analytics content */}
-          <main className="flex-1 overflow-y-auto p-3 sm:p-5 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            <div className="max-w-4xl w-full mx-auto">
+          <main className="flex-1 overflow-y-auto p-3 sm:p-5 xl:p-8 2xl:p-10 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="w-full mx-auto" style={{ maxWidth: 'clamp(56rem, 85vw, 88rem)' }}>
 
               {/* Summary */}
               <div className="mb-4 flex items-end gap-4">
@@ -1315,7 +1315,7 @@ export default function Analytics() {
                   <p className="text-[10px] uppercase tracking-widest text-muted-foreground/70">
                     {metric === "sales" ? "Total items sold" : "Total profit"}
                   </p>
-                  <p className="text-3xl sm:text-4xl font-bold tracking-tight mt-0.5">
+                  <p className="font-bold tracking-tight mt-0.5" style={{ fontSize: 'clamp(1.75rem, 2.5vw, 3.25rem)' }}>
                     {fmtMetric(totalValue, metric, sym)}
                   </p>
                 </div>
