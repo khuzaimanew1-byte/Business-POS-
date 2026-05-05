@@ -791,19 +791,22 @@ export default function POS() {
         {/* ── Brand ─────────────────────────────────────────────────────── */}
         <div className="flex flex-col items-center gap-2 mb-4 pb-4 border-b border-border/25 w-full px-2">
           <div
-            className="w-10 h-10 rounded-[11px] bg-primary flex items-center justify-center shrink-0"
-            style={{ boxShadow: '0 0 18px rgba(33,191,168,0.40), 0 0 5px rgba(33,191,168,0.18)' }}
+            className="w-10 h-10 rounded-[11px] flex items-center justify-center shrink-0"
+            style={{
+              background: 'linear-gradient(145deg, hsl(168 48% 28%), hsl(168 42% 18%))',
+              boxShadow: '0 2px 10px rgba(0,0,0,0.5), 0 1px 0 rgba(255,255,255,0.07) inset'
+            }}
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <circle cx="10" cy="10" r="2.6" fill="rgba(0,0,0,0.52)" />
-              <rect x="8.3" y="1.8" width="3.4" height="3.4" rx="1.1" fill="rgba(0,0,0,0.46)" />
-              <rect x="8.3" y="14.8" width="3.4" height="3.4" rx="1.1" fill="rgba(0,0,0,0.46)" />
-              <rect x="1.8" y="8.3" width="3.4" height="3.4" rx="1.1" fill="rgba(0,0,0,0.46)" />
-              <rect x="14.8" y="8.3" width="3.4" height="3.4" rx="1.1" fill="rgba(0,0,0,0.46)" />
-              <line x1="10" y1="5.2" x2="10" y2="7.4" stroke="rgba(0,0,0,0.38)" strokeWidth="1.1" strokeLinecap="round" />
-              <line x1="10" y1="12.6" x2="10" y2="14.8" stroke="rgba(0,0,0,0.38)" strokeWidth="1.1" strokeLinecap="round" />
-              <line x1="5.2" y1="10" x2="7.4" y2="10" stroke="rgba(0,0,0,0.38)" strokeWidth="1.1" strokeLinecap="round" />
-              <line x1="12.6" y1="10" x2="14.8" y2="10" stroke="rgba(0,0,0,0.38)" strokeWidth="1.1" strokeLinecap="round" />
+              <circle cx="10" cy="10" r="2.6" fill="rgba(255,255,255,0.48)" />
+              <rect x="8.3" y="1.8" width="3.4" height="3.4" rx="1.1" fill="rgba(255,255,255,0.38)" />
+              <rect x="8.3" y="14.8" width="3.4" height="3.4" rx="1.1" fill="rgba(255,255,255,0.38)" />
+              <rect x="1.8" y="8.3" width="3.4" height="3.4" rx="1.1" fill="rgba(255,255,255,0.38)" />
+              <rect x="14.8" y="8.3" width="3.4" height="3.4" rx="1.1" fill="rgba(255,255,255,0.38)" />
+              <line x1="10" y1="5.2" x2="10" y2="7.4" stroke="rgba(255,255,255,0.28)" strokeWidth="1.1" strokeLinecap="round" />
+              <line x1="10" y1="12.6" x2="10" y2="14.8" stroke="rgba(255,255,255,0.28)" strokeWidth="1.1" strokeLinecap="round" />
+              <line x1="5.2" y1="10" x2="7.4" y2="10" stroke="rgba(255,255,255,0.28)" strokeWidth="1.1" strokeLinecap="round" />
+              <line x1="12.6" y1="10" x2="14.8" y2="10" stroke="rgba(255,255,255,0.28)" strokeWidth="1.1" strokeLinecap="round" />
             </svg>
           </div>
           <div className="flex flex-col items-center leading-none gap-[3px]">
@@ -1955,20 +1958,20 @@ export default function POS() {
 
         /* ── Search-match highlight ───────────────────────────────────────── */
         .search-match-card {
-          border-color: rgba(33,191,168,0.55) !important;
+          border-color: hsl(var(--primary) / 0.4) !important;
           background:
-            linear-gradient(180deg, rgba(33,191,168,0.10), rgba(33,191,168,0.04)),
+            linear-gradient(180deg, hsl(var(--primary) / 0.09), hsl(var(--primary) / 0.03)),
             hsl(var(--card));
           box-shadow:
-            0 0 0 1px rgba(33,191,168,0.22),
-            0 4px 18px rgba(33,191,168,0.08);
+            0 0 0 1px hsl(var(--primary) / 0.18),
+            0 4px 18px hsl(var(--primary) / 0.07);
           transition: background 220ms ease, box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease;
         }
         .search-match-card:hover {
           transform: translateY(-1px);
           box-shadow:
-            0 0 0 1px rgba(33,191,168,0.32),
-            0 6px 22px rgba(33,191,168,0.12);
+            0 0 0 1px hsl(var(--primary) / 0.28),
+            0 6px 22px hsl(var(--primary) / 0.10);
         }
 
         /* ── Autofill neutralization ──────────────────────────────────────── */

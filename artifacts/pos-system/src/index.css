@@ -222,19 +222,19 @@
   --elevate-2: rgba(255,255,255, .09);
 
   /* ── Named sci-fi palette tokens ─────────────────────────────────── */
-  --void:         220 22% 5%;      /* deepest background */
-  --abyss:        224 26% 4%;      /* sidebar — one step darker/bluer */
-  --midnight:     222 18% 9%;      /* card & popover surfaces */
-  --surface-hi:   220 15% 14%;     /* elevated panels, secondary, hover */
-  --bio-teal:     174 72% 46%;     /* primary CTA */
-  --ocean:        210 70% 50%;     /* secondary actions */
-  --nebula:       270 58% 64%;     /* ring, active glow, focus */
-  --rose-frost:   342 60% 72%;     /* prices, money amounts */
-  --success:      142 60% 45%;     /* success states */
-  --warn:         38  88% 58%;     /* amber warnings */
-  --danger:       355 72% 54%;     /* destructive / red alerts */
-  --text-primary: 210 18% 93%;     /* foreground headings */
-  --text-muted:   220 12% 50%;     /* muted supporting text */
+  --void:         222 18% 5%;      /* deepest background — slightly warmer */
+  --abyss:        224 22% 3.5%;    /* sidebar — visually distinct from bg */
+  --midnight:     220 14% 9.5%;    /* card & popover — clearly above bg */
+  --surface-hi:   218 12% 13.5%;   /* elevated panels, secondary, hover */
+  --bio-teal:     168 44% 33%;     /* primary CTA — desaturated, professional */
+  --ocean:        214 32% 38%;     /* secondary actions — muted slate-blue */
+  --nebula:       268 34% 52%;     /* ring, active glow, focus — softer */
+  --rose-frost:   36  50% 60%;     /* prices — warm amber/gold, not pink */
+  --success:      142 40% 38%;     /* success states */
+  --warn:         38  74% 52%;     /* amber warnings */
+  --danger:       355 62% 50%;     /* destructive / red alerts */
+  --text-primary: 210 14% 90%;     /* foreground headings */
+  --text-muted:   220 8%  42%;     /* muted supporting text */
 
   /* ── Semantic tokens — mapped to named palette ────────────────────── */
   --background: var(--void);
@@ -242,14 +242,14 @@
 
   --card: var(--midnight);
   --card-foreground: var(--text-primary);
-  --card-border: 220 16% 16%;
+  --card-border: 220 13% 14%;
 
   --popover: var(--midnight);
   --popover-foreground: var(--text-primary);
-  --popover-border: 220 16% 18%;
+  --popover-border: 220 13% 16%;
 
   --primary: var(--bio-teal);
-  --primary-foreground: 224 26% 4%;
+  --primary-foreground: 224 22% 3.5%;
 
   --secondary: var(--surface-hi);
   --secondary-foreground: var(--text-primary);
@@ -258,20 +258,20 @@
   --muted-foreground: var(--text-muted);
 
   --accent: var(--bio-teal);
-  --accent-foreground: 224 26% 4%;
+  --accent-foreground: 224 22% 3.5%;
 
   --destructive: var(--danger);
   --destructive-foreground: 0 0% 98%;
 
-  --border: 220 16% 18%;
-  --input: 220 16% 18%;
+  --border: 220 13% 16%;
+  --input: 220 13% 16%;
   --ring: var(--nebula);
 
   --sidebar: var(--abyss);
   --sidebar-foreground: var(--text-primary);
-  --sidebar-border: 220 16% 13%;
+  --sidebar-border: 220 13% 11%;
   --sidebar-primary: var(--bio-teal);
-  --sidebar-primary-foreground: 224 26% 4%;
+  --sidebar-primary-foreground: 224 22% 3.5%;
   --sidebar-accent: var(--surface-hi);
   --sidebar-accent-foreground: var(--text-primary);
   --sidebar-ring: var(--nebula);
@@ -500,8 +500,8 @@
 
   @keyframes cart-flash-anim {
     0%   { box-shadow: none; border-top-color: hsl(var(--border)); }
-    20%  { box-shadow: 0 -4px 16px rgba(33,191,168,0.20), 0 -1px 6px rgba(33,191,168,0.10); border-top-color: hsl(var(--bio-teal) / 0.7); }
-    60%  { box-shadow: 0 -2px 8px rgba(33,191,168,0.08); border-top-color: hsl(var(--bio-teal) / 0.35); }
+    20%  { box-shadow: 0 -4px 16px hsl(var(--primary) / 0.18), 0 -1px 6px hsl(var(--primary) / 0.09); border-top-color: hsl(var(--primary) / 0.6); }
+    60%  { box-shadow: 0 -2px 8px hsl(var(--primary) / 0.07); border-top-color: hsl(var(--primary) / 0.28); }
     100% { box-shadow: none; border-top-color: hsl(var(--border)); }
   }
   .cart-flash {

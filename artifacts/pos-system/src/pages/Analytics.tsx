@@ -613,9 +613,9 @@ function Chart({
               and desaturated toward the right edge. Communicates
               "space exists but is not yet defined" without hiding the grid. */}
           <linearGradient id="futureFade" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="hsl(240 8% 6%)" stopOpacity="0" />
-            <stop offset="60%" stopColor="hsl(240 8% 6%)" stopOpacity="0.32" />
-            <stop offset="100%" stopColor="hsl(240 8% 6%)" stopOpacity="0.55" />
+            <stop offset="0%" stopColor="hsl(222 18% 5%)" stopOpacity="0" />
+            <stop offset="60%" stopColor="hsl(222 18% 5%)" stopOpacity="0.32" />
+            <stop offset="100%" stopColor="hsl(222 18% 5%)" stopOpacity="0.55" />
           </linearGradient>
           {/* Grid-fade mask: keeps grid fully visible up to the data boundary,
               then smoothly drops opacity through the future zone so the grid
@@ -947,8 +947,8 @@ function TopProductsBar({
                       height: barH,
                       animationDelay: `${i * 70}ms`,
                       background: isZero
-                        ? "hsl(240 6% 20%)"
-                        : `linear-gradient(180deg, ${color} 0%, color-mix(in oklab, ${color} 50%, hsl(240 10% 8%)) 100%)`,
+                        ? "hsl(220 10% 16%)"
+                        : `linear-gradient(180deg, ${color} 0%, color-mix(in oklab, ${color} 50%, hsl(220 14% 10%)) 100%)`,
                       boxShadow:
                         isHover && !isZero
                           ? `0 0 20px -4px ${color}88, inset 0 1px 0 rgba(255,255,255,0.2)`
@@ -1410,7 +1410,7 @@ export default function Analytics() {
         <div
           role="tablist"
           aria-label="Chart metric"
-          className="metric-segmented relative flex items-center w-[180px] h-9 p-1 rounded-full bg-[hsl(240_10%_6%/0.92)] border border-[hsl(240_10%_18%/0.9)] shadow-[0_4px_18px_rgba(0,0,0,0.45)] backdrop-blur-md overflow-hidden"
+          className="metric-segmented relative flex items-center w-[180px] h-9 p-1 rounded-full bg-[hsl(222_18%_5%/0.92)] border border-[hsl(220_13%_16%/0.9)] shadow-[0_4px_18px_rgba(0,0,0,0.45)] backdrop-blur-md overflow-hidden"
         >
           {/* Sliding gold indicator — single element, translated on metric change */}
           <span

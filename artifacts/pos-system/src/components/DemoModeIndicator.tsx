@@ -82,16 +82,16 @@ export function DemoModeIndicator() {
             "demo-mode-indicator fixed left-3 sm:left-4 z-40",
             "flex items-center gap-2.5 pl-3 pr-1.5 py-1.5",
             "rounded-full",
-            // Glass / frosted look — translucent, blurred, soft hairline border.
-            "border border-white/10",
-            "bg-white/[0.06] supports-[backdrop-filter]:bg-white/[0.04]",
+            // Glass / frosted look — translucent, blurred, soft teal-tinted border.
+            "border border-[hsl(168_44%_35%/0.22)]",
+            "bg-[hsl(168_44%_15%/0.22)] supports-[backdrop-filter]:bg-[hsl(168_44%_15%/0.16)]",
             "backdrop-blur-xl backdrop-saturate-150",
             "shadow-[0_8px_28px_-12px_rgba(0,0,0,0.55)]",
             "text-[12px] sm:text-[13px] text-foreground/90 font-medium",
             "select-none",
             // Entrance / exit + light hover affordance on the pill itself.
             "transition-[opacity,transform,background-color] duration-200 ease-out",
-            "hover:bg-white/[0.09]",
+            "hover:bg-[hsl(168_44%_15%/0.32)]",
             entered
               ? "opacity-100 translate-y-0"
               : "opacity-0 translate-y-2 pointer-events-none",
