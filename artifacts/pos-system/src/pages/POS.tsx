@@ -1513,54 +1513,57 @@ export default function POS() {
                 // guard only; deletion also removes it from cartItems.
                 if (!prod) return null;
                 return (
-                <div key={item.productId} className="flex items-stretch h-[72px] bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
-                  {/* IMAGE — far left, fills full row height */}
-                  <div className="w-[72px] shrink-0 bg-secondary">
+                <div key={item.productId} className="flex items-stretch bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
+                  {/* IMAGE — far left, fills full card height */}
+                  <div className="w-[68px] shrink-0 bg-secondary">
                     {prod.image
                       ? <img src={prod.image} alt={prod.name} className="w-full h-full object-cover block" />
                       : <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-xs font-bold text-muted-foreground">{renderInitials(prod.name)}</span>
+                          <span className="text-base font-bold text-muted-foreground/50">{renderInitials(prod.name)}</span>
                         </div>}
                   </div>
-                  {/* MIDDLE — name + per-unit price stacked, vertically centered */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-center px-2.5 sm:px-3">
-                    <h4 className="pos-cart-name font-semibold truncate">{prod.name}</h4>
-                    <span className="text-[11px] text-muted-foreground/60 inline-flex items-baseline gap-0.5">
-                      <Money value={prod.price} />
-                      <span>/ ea</span>
-                    </span>
-                  </div>
-                  {/* RIGHT — single horizontal line: minus, qty input, plus, total */}
-                  <div className="shrink-0 flex items-center gap-2 pr-2.5">
-                    <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
-                      <button
-                        onClick={() => updateCartQty(item.productId, item.quantity - 1)}
-                        className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground"
-                        data-testid={`btn-qty-minus-${item.productId}`}
-                      >
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <input
-                        type="number"
-                        value={qtyDrafts[item.productId] ?? String(item.quantity)}
-                        onFocus={() => setQtyDrafts(d => ({ ...d, [item.productId]: String(item.quantity) }))}
-                        onChange={e => setQtyDrafts(d => ({ ...d, [item.productId]: e.target.value }))}
-                        onBlur={() => {
-                          const v = parseInt(qtyDrafts[item.productId] ?? '') || 0;
-                          updateCartQty(item.productId, v);
-                          setQtyDrafts(d => { const n = { ...d }; delete n[item.productId]; return n; });
-                        }}
-                        className="w-8 h-full bg-transparent text-center text-xs font-medium outline-none no-spinners"
-                      />
-                      <button
-                        onClick={() => updateCartQty(item.productId, item.quantity + 1)}
-                        className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground"
-                        data-testid={`btn-qty-plus-${item.productId}`}
-                      >
-                        <Plus className="w-3 h-3" />
-                      </button>
+                  {/* CONTENT — two rows: [name + total] top, [per-unit + controls] bottom */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between py-2.5 pl-3 pr-2">
+                    {/* TOP ROW: name (left) · total price (right) */}
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="pos-cart-name font-semibold text-foreground truncate">{prod.name}</h4>
+                      <Money value={prod.price * item.quantity} className="shrink-0 font-bold text-[15px] text-foreground" />
                     </div>
-                    <Money value={prod.price * item.quantity} className="shrink-0 font-semibold text-[13px] text-foreground/90 w-[52px] text-right" />
+                    {/* BOTTOM ROW: per-unit price (left) · [−] qty [+] (right) */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[12px] text-muted-foreground/55 inline-flex items-baseline gap-0.5">
+                        <Money value={prod.price} />
+                        <span>/ ea</span>
+                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => updateCartQty(item.productId, item.quantity - 1)}
+                          className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors duration-200"
+                          data-testid={`btn-qty-minus-${item.productId}`}
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <input
+                          type="number"
+                          value={qtyDrafts[item.productId] ?? String(item.quantity)}
+                          onFocus={() => setQtyDrafts(d => ({ ...d, [item.productId]: String(item.quantity) }))}
+                          onChange={e => setQtyDrafts(d => ({ ...d, [item.productId]: e.target.value }))}
+                          onBlur={() => {
+                            const v = parseInt(qtyDrafts[item.productId] ?? '') || 0;
+                            updateCartQty(item.productId, v);
+                            setQtyDrafts(d => { const n = { ...d }; delete n[item.productId]; return n; });
+                          }}
+                          className="w-5 text-center text-[13px] font-semibold bg-transparent outline-none no-spinners text-foreground"
+                        />
+                        <button
+                          onClick={() => updateCartQty(item.productId, item.quantity + 1)}
+                          className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors duration-200"
+                          data-testid={`btn-qty-plus-${item.productId}`}
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   {/* DELETE — hover reveal */}
                   <button onClick={() => removeFromCart(item.productId)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive flex items-center pr-2 pl-0.5 shrink-0">
