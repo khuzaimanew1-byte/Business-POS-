@@ -1535,10 +1535,10 @@ export default function POS() {
                         <Money value={prod.price} />
                         <span>/ ea</span>
                       </span>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7 shrink-0">
                         <button
                           onClick={() => updateCartQty(item.productId, item.quantity - 1)}
-                          className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors duration-200"
+                          className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground"
                           data-testid={`btn-qty-minus-${item.productId}`}
                         >
                           <Minus className="w-3 h-3" />
@@ -1553,11 +1553,11 @@ export default function POS() {
                             updateCartQty(item.productId, v);
                             setQtyDrafts(d => { const n = { ...d }; delete n[item.productId]; return n; });
                           }}
-                          className="w-5 text-center text-[13px] font-semibold bg-transparent outline-none no-spinners text-foreground"
+                          className="w-8 h-full bg-transparent text-center text-xs font-medium outline-none no-spinners"
                         />
                         <button
                           onClick={() => updateCartQty(item.productId, item.quantity + 1)}
-                          className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors duration-200"
+                          className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground"
                           data-testid={`btn-qty-plus-${item.productId}`}
                         >
                           <Plus className="w-3 h-3" />
