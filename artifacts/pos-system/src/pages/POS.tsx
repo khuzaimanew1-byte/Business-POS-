@@ -599,6 +599,14 @@ export default function POS() {
     setSelectedIds(new Set());
   };
 
+  const exitEditModeToSelect = (id: string) => {
+    setProducts(savedProducts);
+    setCategories(savedCategories);
+    setIsEditMode(false);
+    setIsEditModeArming(false);
+    enterSelectMode(id);
+  };
+
   const toggleSelected = (id: string) => {
     setSelectedIds(prev => {
       const next = new Set(prev);
@@ -780,6 +788,30 @@ export default function POS() {
 
       {/* ── DESKTOP LEFT SIDEBAR (hidden on mobile) ────────────────────── */}
       <aside className="hidden sm:flex w-[72px] shrink-0 border-r border-border bg-sidebar flex-col items-center py-4 z-20">
+        {/* ── Brand ─────────────────────────────────────────────────────── */}
+        <div className="flex flex-col items-center gap-2 mb-4 pb-4 border-b border-border/25 w-full px-2">
+          <div
+            className="w-10 h-10 rounded-[11px] bg-primary flex items-center justify-center shrink-0"
+            style={{ boxShadow: '0 0 18px rgba(33,191,168,0.40), 0 0 5px rgba(33,191,168,0.18)' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <circle cx="10" cy="10" r="2.6" fill="rgba(0,0,0,0.52)" />
+              <rect x="8.3" y="1.8" width="3.4" height="3.4" rx="1.1" fill="rgba(0,0,0,0.46)" />
+              <rect x="8.3" y="14.8" width="3.4" height="3.4" rx="1.1" fill="rgba(0,0,0,0.46)" />
+              <rect x="1.8" y="8.3" width="3.4" height="3.4" rx="1.1" fill="rgba(0,0,0,0.46)" />
+              <rect x="14.8" y="8.3" width="3.4" height="3.4" rx="1.1" fill="rgba(0,0,0,0.46)" />
+              <line x1="10" y1="5.2" x2="10" y2="7.4" stroke="rgba(0,0,0,0.38)" strokeWidth="1.1" strokeLinecap="round" />
+              <line x1="10" y1="12.6" x2="10" y2="14.8" stroke="rgba(0,0,0,0.38)" strokeWidth="1.1" strokeLinecap="round" />
+              <line x1="5.2" y1="10" x2="7.4" y2="10" stroke="rgba(0,0,0,0.38)" strokeWidth="1.1" strokeLinecap="round" />
+              <line x1="12.6" y1="10" x2="14.8" y2="10" stroke="rgba(0,0,0,0.38)" strokeWidth="1.1" strokeLinecap="round" />
+            </svg>
+          </div>
+          <div className="flex flex-col items-center leading-none gap-[3px]">
+            <span className="text-[8px] font-black tracking-[0.30em] uppercase text-foreground/88">NEXUS</span>
+            <span className="text-[5.5px] font-medium tracking-[0.22em] uppercase text-muted-foreground/48">POS</span>
+          </div>
+        </div>
+        {/* ── Nav items ─────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-6">
             <TooltipItem icon={<Home size={20} />} label="Home" active />
             <TooltipItem icon={<BarChart2 size={20} />} label="Analytics" onClick={() => setLocation("/analytics")} />
@@ -794,10 +826,10 @@ export default function POS() {
       >
 
         {/* TOP BAR */}
-        <header className={`h-14 sm:h-16 flex items-center justify-between px-3 sm:px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-all duration-400 ${isEditMode ? 'border-b border-primary/25 bg-primary/5 shadow-none' : 'bg-background/90 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)]'}`}>
-          {/* Search — hidden during selection mode */}
+        <header className={`h-14 sm:h-16 flex items-center px-3 sm:px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-all duration-400 ${isSelectMode ? 'bg-background/90 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)] gap-2' : isEditMode ? 'border-b border-primary/25 bg-primary/5 shadow-none justify-between' : 'bg-background/90 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)] justify-between'}`}>
           {isSelectMode ? (
-            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+            /* ── SELECT MODE: unified full-width toolbar ───────────────── */
+            <>
               <button
                 onClick={exitSelectMode}
                 className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-white/[0.04] active:scale-[0.96] transition-all duration-200 shrink-0"
@@ -806,153 +838,141 @@ export default function POS() {
               >
                 <X size={17} strokeWidth={1.75} />
               </button>
-              <span className="text-[13px] sm:text-sm text-muted-foreground font-medium whitespace-nowrap tracking-tight">
-                <span className="text-foreground">Selected: </span>
-                <span className="text-foreground tabular-nums font-semibold">{selectedIds.size}</span>
-                <span className="ml-1">item{selectedIds.size === 1 ? '' : 's'}</span>
-              </span>
-            </div>
-          ) : (
-            <div className="relative flex-1 max-w-xl xl:max-w-2xl group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-[14px] h-[14px]" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder="Search products or quick-code (e.g. #wi-e)…"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === 'Enter' && topMatchId) {
-                    e.preventDefault();
-                    addTopMatchToCart();
-                    setSearchQuery('');
-                  }
+              <span className="text-[14px] font-semibold text-foreground tabular-nums">{selectedIds.size}</span>
+              <span className="text-[14px] text-muted-foreground ml-1">{selectedIds.size === 1 ? 'item' : 'items'}</span>
+              <div className="flex-1" />
+              <button
+                disabled={selectedIds.size === 0}
+                onClick={() => {
+                  const ids = Array.from(selectedIds);
+                  confirmAction(`Delete selected items?`, () => bulkDeleteProducts(ids));
                 }}
-                className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-9 pr-9 outline-none transition-all duration-250 placeholder:text-muted-foreground text-[14px] sm:text-[16px]"
-                data-testid="input-search"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200">
-                  <X className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Right controls */}
-          <div className="flex items-center gap-1.5 ml-3">
-            {/* Selection mode toolbar — overrides other controls when active */}
-            {isSelectMode && (
-              <div className="flex items-center gap-2 sm:gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
-                <button
-                  disabled={selectedIds.size === 0}
-                  onClick={() => {
-                    const ids = Array.from(selectedIds);
-                    confirmAction(
-                      `Delete selected items?`,
-                      () => bulkDeleteProducts(ids),
-                    );
-                  }}
-                  className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/[0.08] active:scale-[0.96] transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
-                  aria-label="Delete selected"
-                  data-testid="btn-selection-delete"
-                >
-                  <Trash2 size={16} strokeWidth={1.75} />
-                </button>
-                <DropdownMenu open={importMenuOpen} onOpenChange={setImportMenuOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      disabled={selectedIds.size === 0}
-                      className="h-9 px-3.5 rounded-full border border-border/60 bg-white/[0.02] hover:bg-white/[0.05] hover:border-border text-foreground text-[13px] sm:text-sm font-medium active:scale-[0.97] transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed flex items-center gap-1.5"
-                      data-testid="btn-selection-move"
+                className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/[0.08] active:scale-[0.96] transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                aria-label="Delete selected"
+                data-testid="btn-selection-delete"
+              >
+                <Trash2 size={16} strokeWidth={1.75} />
+              </button>
+              <DropdownMenu open={importMenuOpen} onOpenChange={setImportMenuOpen}>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    disabled={selectedIds.size === 0}
+                    className="h-9 px-3.5 rounded-full border border-border/60 bg-white/[0.02] hover:bg-white/[0.05] hover:border-border text-foreground text-[13px] font-medium active:scale-[0.97] transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed flex items-center gap-1.5 ml-1"
+                    data-testid="btn-selection-move"
+                  >
+                    <FolderInput size={14} strokeWidth={1.75} />
+                    <span>Move</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  {categories.filter(c => c !== 'All').map(c => (
+                    <DropdownMenuItem
+                      key={c}
+                      onSelect={() => moveProductsToCategory(Array.from(selectedIds), c)}
                     >
-                      <FolderInput size={14} strokeWidth={1.75} />
-                      <span>Move</span>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-44">
-                    {categories.filter(c => c !== 'All').map(c => (
-                      <DropdownMenuItem
-                        key={c}
-                        onSelect={() => moveProductsToCategory(Array.from(selectedIds), c)}
-                      >
-                        {c}
-                      </DropdownMenuItem>
-                    ))}
-                    {categories.filter(c => c !== 'All').length === 0 && (
-                      <div className="px-2 py-1.5 text-xs text-muted-foreground">No categories</div>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
-
-            {/* Editing indicator — desktop only, hidden on mobile to keep top bar clean */}
-            <div className={`hidden sm:block overflow-hidden transition-all duration-300 ease-in-out ${isEditMode && !isSelectMode ? 'max-w-[90px] opacity-100 mr-1' : 'max-w-0 opacity-0'}`}>
-              <span className="text-primary font-semibold tracking-widest uppercase whitespace-nowrap" style={{ fontSize: '10px' }}>● Editing</span>
-            </div>
-
-            {/* Normal mode controls */}
-            <div className={`flex items-center gap-1 transition-all duration-300 ease-in-out ${isEditMode || isSelectMode ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}>
-              {/* Pencil — always visible */}
-              <TooltipProvider delayDuration={250}>
-                <TooltipItem
-                  icon={<Pencil className="text-muted-foreground opacity-70 group-hover:opacity-100" size={18} />}
-                  label="Edit Products"
-                  hideLabel
-                  onClick={enterEditMode}
+                      {c}
+                    </DropdownMenuItem>
+                  ))}
+                  {categories.filter(c => c !== 'All').length === 0 && (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground">No categories</div>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            /* ── NORMAL / EDIT MODE ────────────────────────────────────── */
+            <>
+              <div className="relative flex-1 max-w-xl xl:max-w-2xl group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-[14px] h-[14px]" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Product name or #quick-code"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && topMatchId) {
+                      e.preventDefault();
+                      addTopMatchToCart();
+                      setSearchQuery('');
+                    }
+                  }}
+                  className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-9 pr-9 outline-none transition-all duration-250 placeholder:text-muted-foreground text-[14px] sm:text-[16px]"
+                  data-testid="input-search"
                 />
-              </TooltipProvider>
-
-              {/* Bell — desktop only (mobile has it in bottom nav).
-                  Navigates to the dedicated Notifications page; the badge
-                  shows the live unread count from the notifications store
-                  and the soft halo only animates while count > 0. */}
-              <div className="hidden sm:block">
-                <TooltipProvider delayDuration={250}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => setLocation("/notifications")}
-                        className="relative p-2 rounded-full hover:bg-secondary transition-colors duration-200"
-                        data-testid="btn-notifications"
-                        aria-label={unreadCount > 0 ? `${unreadCount} new notification${unreadCount === 1 ? "" : "s"}` : "Notifications"}
-                      >
-                        <Bell className="text-muted-foreground opacity-70 hover:opacity-100 transition-opacity duration-200 w-5 h-5" />
-                        {unreadCount > 0 && (
-                          <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-none flex items-center justify-center border border-background tabular-nums">
-                            <span className="notif-bell-pulse" aria-hidden="true" />
-                            <span className="relative">{unreadCount > 9 ? "9+" : unreadCount}</span>
-                          </span>
-                        )}
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: '12px' }}>
-                      Notifications
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-200">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-            </div>
 
-            {/* Edit mode: save + discard */}
-            <div className={`flex items-center gap-1 transition-all duration-300 ease-in-out ${isEditMode ? 'opacity-100' : 'opacity-0 pointer-events-none absolute'}`}>
-              <button
-                onClick={saveEditMode}
-                className="p-2 rounded-full bg-primary/15 hover:bg-primary/25 text-primary transition-colors duration-200"
-                data-testid="btn-save-edit"
-              >
-                <Check size={16} />
-              </button>
-              <button
-                onClick={cancelEditMode}
-                className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors duration-200"
-                data-testid="btn-cancel-edit"
-              >
-                <X size={16} />
-              </button>
-            </div>
-          </div>
+              {/* Right controls */}
+              <div className="flex items-center gap-1.5 ml-3">
+                {/* Editing indicator — desktop only */}
+                <div className={`hidden sm:block overflow-hidden transition-all duration-300 ease-in-out ${isEditMode ? 'max-w-[90px] opacity-100 mr-1' : 'max-w-0 opacity-0'}`}>
+                  <span className="text-primary font-semibold tracking-widest uppercase whitespace-nowrap" style={{ fontSize: '10px' }}>● Editing</span>
+                </div>
+
+                {/* Normal mode controls */}
+                <div className={`flex items-center gap-1 transition-all duration-300 ease-in-out ${isEditMode ? 'opacity-0 pointer-events-none absolute' : 'opacity-100'}`}>
+                  <TooltipProvider delayDuration={250}>
+                    <TooltipItem
+                      icon={<Pencil className="text-muted-foreground opacity-70 group-hover:opacity-100" size={18} />}
+                      label="Edit Products"
+                      hideLabel
+                      onClick={enterEditMode}
+                    />
+                  </TooltipProvider>
+
+                  {/* Bell — desktop only */}
+                  <div className="hidden sm:block">
+                    <TooltipProvider delayDuration={250}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => setLocation("/notifications")}
+                            className="relative p-2 rounded-full hover:bg-secondary transition-colors duration-200"
+                            data-testid="btn-notifications"
+                            aria-label={unreadCount > 0 ? `${unreadCount} new notification${unreadCount === 1 ? "" : "s"}` : "Notifications"}
+                          >
+                            <Bell className="text-muted-foreground opacity-70 hover:opacity-100 transition-opacity duration-200 w-5 h-5" />
+                            {unreadCount > 0 && (
+                              <span className="absolute top-1 right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold leading-none flex items-center justify-center border border-background tabular-nums">
+                                <span className="notif-bell-pulse" aria-hidden="true" />
+                                <span className="relative">{unreadCount > 9 ? "9+" : unreadCount}</span>
+                              </span>
+                            )}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: '12px' }}>
+                          Notifications
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                </div>
+
+                {/* Edit mode: save + discard */}
+                <div className={`flex items-center gap-1 transition-all duration-300 ease-in-out ${isEditMode ? 'opacity-100' : 'opacity-0 pointer-events-none absolute'}`}>
+                  <button
+                    onClick={saveEditMode}
+                    className="p-2 rounded-full bg-primary/15 hover:bg-primary/25 text-primary transition-colors duration-200"
+                    data-testid="btn-save-edit"
+                  >
+                    <Check size={16} />
+                  </button>
+                  <button
+                    onClick={cancelEditMode}
+                    className="p-2 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors duration-200"
+                    data-testid="btn-cancel-edit"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </header>
 
         {/* CATEGORY BAR */}
@@ -1119,7 +1139,7 @@ export default function POS() {
                   isEditMode
                     ? 'border border-primary/20 cursor-default'
                     : isSelectMode
-                      ? `border-2 ${isSelected ? 'border-primary shadow-[0_0_0_3px_rgba(99,102,241,0.18)]' : 'border-card-border hover:border-primary/40'} cursor-pointer`
+                      ? `border-2 ${isSelected ? 'border-primary shadow-[0_0_0_3px_rgba(33,191,168,0.18)]' : 'border-card-border hover:border-primary/40'} cursor-pointer`
                       : `border ${isTopMatch ? 'search-match-card' : 'border-card-border'} hover:-translate-y-0.5 hover:shadow-md cursor-pointer`
                 }`,
                 onClick: () => {
@@ -1213,16 +1233,15 @@ export default function POS() {
                       </div>
                     )}
 
-                    {/* Delete button — edit mode */}
+                    {/* Checkbox — edit mode: click to enter select mode with this card */}
                     {isEditMode && (
                       <button
-                        onClick={e => { e.stopPropagation(); confirmAction(`Delete "${product.name}"? This cannot be undone.`, () => deleteProduct(product.id)); }}
-                        className="absolute top-1.5 right-1.5 flex items-center justify-center rounded-full text-muted-foreground hover:text-white hover:bg-destructive/80 transition-colors duration-200 backdrop-blur-sm"
-                        style={{ width: 22, height: 22, background: 'rgba(0,0,0,0.55)' }}
-                        data-testid={`btn-delete-${product.id}`}
-                      >
-                        <Trash2 style={{ width: 11, height: 11 }} />
-                      </button>
+                        onClick={e => { e.stopPropagation(); exitEditModeToSelect(product.id); }}
+                        className="absolute top-1.5 right-1.5 flex items-center justify-center rounded-full transition-all duration-200 backdrop-blur-sm border-2 border-white/35 hover:border-white/65 hover:bg-white/10"
+                        style={{ width: 22, height: 22, background: 'rgba(0,0,0,0.42)' }}
+                        aria-label="Select product"
+                        data-testid={`btn-select-edit-${product.id}`}
+                      />
                     )}
 
                     {/* Sold Out — system state, NOT a category. Auto-applied
@@ -1292,7 +1311,7 @@ export default function POS() {
                     <div className="p-2 sm:p-2.5 flex flex-col gap-1">
                       <Tooltip delayDuration={300}>
                         <TooltipTrigger asChild>
-                          <p className="pos-card-name font-bold text-foreground cursor-default">{product.name}</p>
+                          <p className="pos-card-name font-semibold text-foreground cursor-default">{product.name}</p>
                         </TooltipTrigger>
                         <TooltipContent
                           side="top"
