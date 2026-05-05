@@ -439,7 +439,6 @@ export default function POS() {
       };
     }));
     setIsEditMode(false);
-    toast.success('Changes saved');
   };
 
   const cancelEditMode = () => {
@@ -466,7 +465,6 @@ export default function POS() {
     setCategories(prev => prev.filter(c => c !== cat));
     setCategoryDrafts(prev => { const n = { ...prev }; delete n[cat]; return n; });
     if (selectedCategory === cat) setSelectedCategory('All');
-    toast.success(`"${cat}" deleted`);
   };
 
   const updateCartQty = (productId: string, newQty: number) => {
@@ -531,7 +529,6 @@ export default function POS() {
       setCheckoutSuccess(false);
       checkoutSuccessTimerRef.current = null;
     }, 1100);
-    toast.success("Checkout successful!", { icon: <Check className="text-green-500" /> });
   };
 
   const handleAddCategory = (e: React.FormEvent<HTMLFormElement>) => {
@@ -598,13 +595,11 @@ export default function POS() {
   const moveProductToCategory = (productId: string, cat: Category) => {
     if (cat === 'All') return;
     setProducts(prev => prev.map(p => p.id === productId ? { ...p, category: cat } : p));
-    toast.success(`Moved to "${cat}"`);
   };
 
   const moveProductsToCategory = (ids: string[], cat: Category) => {
     if (cat === 'All' || ids.length === 0) return;
     setProducts(prev => prev.map(p => ids.includes(p.id) ? { ...p, category: cat } : p));
-    toast.success(`${ids.length} item${ids.length > 1 ? 's' : ''} moved to "${cat}"`);
     exitSelectMode();
   };
 
@@ -889,6 +884,7 @@ export default function POS() {
                 <TooltipItem
                   icon={<Pencil className="text-muted-foreground opacity-70 group-hover:opacity-100" size={18} />}
                   label="Edit Products"
+                  hideLabel
                   onClick={enterEditMode}
                 />
               </TooltipProvider>
@@ -945,8 +941,9 @@ export default function POS() {
         </header>
 
         {/* CATEGORY BAR */}
-        <div className={`relative border-b bg-background shrink-0 overflow-hidden transition-colors duration-400 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
-          <div ref={categoryBarRef} className="flex items-center px-3 sm:px-4 py-2.5 gap-2 overflow-x-auto scrollbar-none scroll-smooth">
+        <div className={`relative border-b bg-background shrink-0 transition-colors duration-400 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
+          <div className="flex items-center">
+          <div ref={categoryBarRef} className="flex-1 min-w-0 flex items-center px-3 sm:px-4 py-2.5 gap-2 overflow-x-auto scrollbar-none scroll-smooth">
             {isEditMode ? (
               <>
                 <button
@@ -954,6 +951,7 @@ export default function POS() {
                   data-cat="All"
                   className={`shrink-0 px-3 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 ${selectedCategory === 'All' ? 'text-primary-foreground bg-primary' : 'text-muted-foreground bg-secondary/50'}`}
                 >All</button>
+
                 {/* Editable user categories — "Sold Out" is excluded here because
                     it's a system state, not a real category, so it must not be
                     rename-able or delete-able. It's rendered separately below
@@ -1059,18 +1057,25 @@ export default function POS() {
                     </ContextMenu>
                   );
                 })}
-                <button
-                  onClick={() => setIsAddCategoryModalOpen(true)}
-                  className="shrink-0 px-3 py-1.5 rounded-full text-xs font-medium text-muted-foreground/50 border border-dashed border-border hover:border-primary hover:text-primary transition-colors duration-250 ml-1 flex items-center gap-1"
-                  data-testid="btn-add-category"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
               </>
             )}
           </div>
           {/* Right-edge fade — signals horizontal overflow without hiding labels */}
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-background to-transparent" aria-hidden="true" />
+          <div className="pointer-events-none absolute right-10 top-0 bottom-0 w-10 bg-gradient-to-l from-background to-transparent" aria-hidden="true" />
+          {/* Add category button — fixed at right edge, never scrolls */}
+          {!isEditMode && (
+            <div className="shrink-0 pr-2 sm:pr-3 pl-1">
+              <button
+                onClick={() => setIsAddCategoryModalOpen(true)}
+                className="flex items-center justify-center w-7 h-7 rounded-full text-muted-foreground/50 border border-dashed border-border hover:border-primary hover:text-primary transition-colors duration-250"
+                data-testid="btn-add-category"
+                aria-label="Add category"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+          </div>
         </div>
 
         {/* PRODUCT GRID */}
@@ -1154,7 +1159,7 @@ export default function POS() {
                         title={`Quick code: ${qc}`}
                       >
                         <span className="quick-code-text leading-none">
-                          {qc.replace(/^#/, '').toUpperCase()}
+                          {qc}
                         </span>
                       </div>
                     )}
@@ -1284,11 +1289,14 @@ export default function POS() {
                       </Tooltip>
                       <Money
                         value={product.price}
-                        className="pos-card-price font-bold text-primary leading-none"
+                        className="pos-card-price font-bold leading-none"
                       />
                       <div className="flex items-center justify-between mt-0.5">
-                        <span className={`pos-card-stock leading-none ${product.stock >= 50 ? 'pos-stock-ok' : product.stock >= 20 ? 'pos-stock-warn' : 'pos-stock-low'}`}>
-                          {product.stock > 0 && product.stock < 20 ? '⚠ ' : ''}Stock: {product.stock}
+                        <span className="pos-card-stock leading-none text-muted-foreground/50 inline-flex items-center gap-1">
+                          {product.stock > 0 && product.stock < 20 && (
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                          )}
+                          Stock: {product.stock}
                         </span>
                         <button
                           disabled={product.stock <= 0}
@@ -1357,18 +1365,13 @@ export default function POS() {
         {/* BOTTOM CART STRIP */}
         <div
           onClick={() => setIsCartOpen(!isCartOpen)}
-          className={`fixed left-0 sm:left-[72px] right-0 h-14 sm:h-[72px] glass-panel border-t flex items-center justify-between px-4 sm:px-7 cursor-pointer hover:bg-background/70 transition-colors duration-250 z-20 cart-strip-right${isCartOpen ? ' cart-pushed' : ''}${cartFlash ? ' cart-flash' : ''}`}
+          className={`fixed left-0 sm:left-[72px] right-0 cart-strip-h glass-panel border-t flex items-center justify-between px-4 sm:px-7 cursor-pointer hover:bg-background/70 transition-colors duration-250 z-20 cart-strip-right${isCartOpen ? ' cart-pushed' : ''}${cartFlash ? ' cart-flash' : ''}`}
           style={{ bottom: 'var(--mobile-nav-height, 0px)' }}
           data-testid="cart-strip"
         >
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="relative flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-secondary/70 text-foreground/70">
               <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
-              {cartCount > 0 && (
-                <span className="sm:hidden absolute -top-0.5 -right-0.5 min-w-[16px] h-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold leading-none flex items-center justify-center border border-background tabular-nums">
-                  {cartCount > 9 ? '9+' : cartCount}
-                </span>
-              )}
             </div>
             <div>
               <p className="font-semibold text-[14px] sm:text-[17px]">Current Order</p>
@@ -1501,7 +1504,7 @@ export default function POS() {
                 return (
                 <div key={item.productId} className="flex bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
                   {/* IMAGE — edge-to-edge square */}
-                  <div className="w-[56px] h-[56px] sm:w-[62px] sm:h-[62px] lg:w-[72px] lg:h-[72px] shrink-0 bg-secondary">
+                  <div className="cart-item-img-md w-[56px] h-[56px] sm:w-[62px] sm:h-[62px] lg:w-[72px] lg:h-[72px] shrink-0 bg-secondary">
                     {prod.image
                       ? <img src={prod.image} alt={prod.name} className="w-full h-full object-cover block" />
                       : <div className="w-full h-full flex items-center justify-center">
@@ -1629,8 +1632,8 @@ export default function POS() {
           --pos-stock-warn:  43  90% 58%;
           --pos-stock-low:   22  90% 55%;
           --pos-chip-bg:     rgba(8, 10, 18, 0.84);
-          --pos-chip-border: rgba(212, 175, 90, 0.28);
-          --pos-chip-text:   hsl(43 90% 66%);
+          --pos-chip-border: rgba(160, 160, 170, 0.18);
+          --pos-chip-text:   hsl(0 0% 74%);
         }
         @media (max-width: 639px) {
           :root {
@@ -1658,12 +1661,12 @@ export default function POS() {
           .cart-panel-open   { transform: translateX(0); }
           .cart-panel { width: 200px; }
         }
-        @media (min-width: 768px)  { .cart-panel { width: 240px; } }
-        @media (min-width: 1024px) { .cart-panel { width: 320px; } }
+        @media (min-width: 768px)  { .cart-panel { width: 320px; } }
+        @media (min-width: 1024px) { .cart-panel { width: 380px; } }
         @media (min-width: 1280px) { .cart-panel { width: 380px; } }
-        @media (min-width: 1440px) { .cart-panel { width: 420px; } }
-        @media (min-width: 1536px) { .cart-panel { width: 480px; } }
-        @media (min-width: 1920px) { .cart-panel { width: 520px; } }
+        @media (min-width: 1440px) { .cart-panel { width: 450px; } }
+        @media (min-width: 1536px) { .cart-panel { width: 450px; } }
+        @media (min-width: 1920px) { .cart-panel { width: 480px; } }
 
         /* ── Mobile cart backdrop ─────────────────────────────────────────── */
         .cart-backdrop {
@@ -1690,28 +1693,28 @@ export default function POS() {
           .main-cart-pushed { margin-right: 200px; }
         }
         @media (min-width: 768px) {
-          .cart-strip-right.cart-pushed { right: 240px; }
-          .main-cart-pushed { margin-right: 240px; }
-        }
-        @media (min-width: 1024px) {
           .cart-strip-right.cart-pushed { right: 320px; }
           .main-cart-pushed { margin-right: 320px; }
+        }
+        @media (min-width: 1024px) {
+          .cart-strip-right.cart-pushed { right: 380px; }
+          .main-cart-pushed { margin-right: 380px; }
         }
         @media (min-width: 1280px) {
           .cart-strip-right.cart-pushed { right: 380px; }
           .main-cart-pushed { margin-right: 380px; }
         }
         @media (min-width: 1440px) {
-          .cart-strip-right.cart-pushed { right: 420px; }
-          .main-cart-pushed { margin-right: 420px; }
+          .cart-strip-right.cart-pushed { right: 450px; }
+          .main-cart-pushed { margin-right: 450px; }
         }
         @media (min-width: 1536px) {
-          .cart-strip-right.cart-pushed { right: 480px; }
-          .main-cart-pushed { margin-right: 480px; }
+          .cart-strip-right.cart-pushed { right: 450px; }
+          .main-cart-pushed { margin-right: 450px; }
         }
         @media (min-width: 1920px) {
-          .cart-strip-right.cart-pushed { right: 520px; }
-          .main-cart-pushed { margin-right: 520px; }
+          .cart-strip-right.cart-pushed { right: 480px; }
+          .main-cart-pushed { margin-right: 480px; }
         }
 
         /* ── 3. Product grid ──────────────────────────────────────────────── */
@@ -1722,26 +1725,29 @@ export default function POS() {
         @media (min-width: 640px) {
           .product-grid {
             gap: 8px;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
           }
+        }
+        @media (min-width: 768px) {
+          .product-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
         }
         @media (min-width: 1024px) {
           .product-grid {
             gap: 10px;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
           }
         }
         @media (min-width: 1280px) {
-          .product-grid { grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); }
+          .product-grid { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); }
         }
         @media (min-width: 1440px) {
-          .product-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+          .product-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
         }
         @media (min-width: 1536px) {
-          .product-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+          .product-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
         }
         @media (min-width: 1920px) {
-          .product-grid { grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); }
+          .product-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
         }
 
         /* ── 4. Typography ────────────────────────────────────────────────── */
@@ -1763,7 +1769,7 @@ export default function POS() {
         }
         @media (min-width: 1024px) { .pos-card-name { font-size: 14px; } }
 
-        .pos-card-price { font-size: 12px; }
+        .pos-card-price { font-size: 12px; color: hsl(0 0% 87%); }
         @media (min-width: 1024px) { .pos-card-price { font-size: 13px; } }
 
         .pos-card-stock { font-size: 10px; }
@@ -1781,14 +1787,14 @@ export default function POS() {
         .pos-stock-warn { color: hsl(var(--pos-stock-warn)); opacity: 0.9; }
         .pos-stock-low  { color: hsl(var(--pos-stock-low));  opacity: 0.9; }
 
-        /* ── 6. Quick-code chip: amber pill ───────────────────────────────── */
+        /* ── 6. Quick-code chip: subtle grey ─────────────────────────────── */
         .quick-code-badge {
-          padding: 2px 6px;
+          padding: 2px 5px;
           background: var(--pos-chip-bg);
           border: 1px solid var(--pos-chip-border);
-          border-radius: 9999px;
+          border-radius: 4px;
           box-shadow:
-            0 1px 0 rgba(255,255,255,0.06) inset,
+            0 1px 0 rgba(255,255,255,0.04) inset,
             0 2px 6px rgba(0,0,0,0.55);
           backdrop-filter: blur(10px) saturate(140%);
           -webkit-backdrop-filter: blur(10px) saturate(140%);
@@ -1797,11 +1803,10 @@ export default function POS() {
         }
         .quick-code-text {
           font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-          font-weight: 700;
-          letter-spacing: 0.07em;
+          font-weight: 600;
+          letter-spacing: 0.04em;
           color: var(--pos-chip-text);
           font-size: 8px;
-          text-transform: uppercase;
           text-shadow: 0 1px 2px rgba(0,0,0,0.6);
           font-feature-settings: "tnum" 1, "ss01" 1;
         }
@@ -1922,6 +1927,18 @@ export default function POS() {
           transition: background-color 9999s ease-in-out 0s;
         }
 
+        /* ── Cart strip responsive height ────────────────────────────────── */
+        .cart-strip-h { height: 48px; }
+        @media (min-width: 1024px) { .cart-strip-h { height: 52px; } }
+        @media (min-width: 1440px) { .cart-strip-h { height: 56px; } }
+
+        /* ── Tablet (768-1023px) cart item sizing ─────────────────────────── */
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .cart-item-img-md { width: 52px !important; height: 52px !important; }
+          .cart-item-pad-md { padding-left: 8px !important; padding-right: 8px !important; }
+          .pos-cart-name { font-size: 12px; }
+        }
+
         /* ── Cart flash ───────────────────────────────────────────────────── */
         @keyframes cart-flash-anim {
           0%   { background-color: transparent; }
@@ -1935,7 +1952,7 @@ export default function POS() {
 }
 
 // ── Desktop sidebar nav button (icon + label, no tooltip) ────────────────────
-function TooltipItem({ icon, label, active = false, onClick }: { icon: React.ReactNode; label: string; active?: boolean; onClick?: () => void }) {
+function TooltipItem({ icon, label, active = false, hideLabel = false, onClick }: { icon: React.ReactNode; label: string; active?: boolean; hideLabel?: boolean; onClick?: () => void }) {
   const navLabel = label.split(' ')[0].toUpperCase();
   return (
     <button
@@ -1944,9 +1961,11 @@ function TooltipItem({ icon, label, active = false, onClick }: { icon: React.Rea
     >
       {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-md" />}
       {icon}
-      <span className={`text-[8px] font-semibold uppercase tracking-wider leading-none transition-opacity duration-200 ${active ? 'opacity-100 text-primary' : 'opacity-55 group-hover:opacity-100'}`}>
-        {navLabel}
-      </span>
+      {!hideLabel && (
+        <span className={`text-[8px] font-semibold uppercase tracking-wider leading-none transition-opacity duration-200 ${active ? 'opacity-100 text-primary' : 'opacity-55 group-hover:opacity-100'}`}>
+          {navLabel}
+        </span>
+      )}
     </button>
   );
 }
