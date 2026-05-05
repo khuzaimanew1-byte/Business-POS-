@@ -607,8 +607,9 @@ function Chart({
         <defs>
           {/* Area fill — clean vertical fade, single teal tone */}
           <linearGradient id="aFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="hsl(168 52% 48%)" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="hsl(168 52% 48%)" stopOpacity="0" />
+            <stop offset="0%"   stopColor="hsl(168 55% 46%)" stopOpacity="0.45" />
+            <stop offset="70%"  stopColor="hsl(168 52% 40%)" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="hsl(168 50% 36%)" stopOpacity="0" />
           </linearGradient>
           {/* Future-zone fade: transparent at the boundary, gently darker
               and desaturated toward the right edge. Communicates
