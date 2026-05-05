@@ -605,9 +605,22 @@ function Chart({
     >
       <svg width={size.w} height={size.h} className="block">
         <defs>
+          {/* Area fill — vertical fade, blends teal→amber to echo the line */}
           <linearGradient id="aFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(43 90% 55%)" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="hsl(43 90% 55%)" stopOpacity="0" />
+            <stop offset="0%"   stopColor="hsl(43 88% 56%)"  stopOpacity="0.20" />
+            <stop offset="48%"  stopColor="hsl(168 50% 40%)" stopOpacity="0.10" />
+            <stop offset="100%" stopColor="hsl(168 44% 33%)" stopOpacity="0" />
+          </linearGradient>
+          {/* Line gradient — horizontal, teal → amber → warm orange */}
+          <linearGradient
+            id="lineGradient"
+            x1={margin.left} y1="0"
+            x2={margin.left + plotW} y2="0"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0%"   stopColor="hsl(168 52% 46%)" />
+            <stop offset="45%"  stopColor="hsl(43 88% 56%)"  />
+            <stop offset="100%" stopColor="hsl(28 72% 52%)"  />
           </linearGradient>
           {/* Future-zone fade: transparent at the boundary, gently darker
               and desaturated toward the right edge. Communicates
@@ -704,8 +717,8 @@ function Chart({
             <path
               d={lineD}
               fill="none"
-              stroke="hsl(43 90% 55%)"
-              strokeWidth={2.25}
+              stroke="url(#lineGradient)"
+              strokeWidth={2.5}
               strokeLinecap="round"
               strokeLinejoin="round"
               pathLength={1}
@@ -759,9 +772,9 @@ function Chart({
           <>
             <line x1={hoverPx} x2={hoverPx} y1={margin.top} y2={baseY}
               stroke="hsl(240 5% 65%)" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
-            <circle cx={hoverPx} cy={hoverPy} r={7} fill="hsl(43 90% 55%)" opacity={0.18} />
-            <circle cx={hoverPx} cy={hoverPy} r={4} fill="hsl(43 90% 55%)"
-              stroke="hsl(240 10% 8%)" strokeWidth={1.75} />
+            <circle cx={hoverPx} cy={hoverPy} r={8} fill="hsl(43 88% 56%)" opacity={0.16} />
+            <circle cx={hoverPx} cy={hoverPy} r={4} fill="hsl(43 88% 56%)"
+              stroke="hsl(220 14% 9.5%)" strokeWidth={2} />
           </>
         )}
 
