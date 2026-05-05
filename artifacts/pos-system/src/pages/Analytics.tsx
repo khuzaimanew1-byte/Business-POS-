@@ -605,11 +605,10 @@ function Chart({
     >
       <svg width={size.w} height={size.h} className="block">
         <defs>
-          {/* Area fill — vertical fade using palette teal → ocean */}
+          {/* Area fill — clean vertical fade, single teal tone */}
           <linearGradient id="aFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="hsl(168 50% 48%)" stopOpacity="0.22" />
-            <stop offset="55%"  stopColor="hsl(214 38% 42%)" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="hsl(268 36% 38%)" stopOpacity="0" />
+            <stop offset="0%"   stopColor="hsl(168 52% 48%)" stopOpacity="0.28" />
+            <stop offset="100%" stopColor="hsl(168 52% 48%)" stopOpacity="0" />
           </linearGradient>
           {/* Line gradient — horizontal, bio-teal → ocean → nebula */}
           <linearGradient
