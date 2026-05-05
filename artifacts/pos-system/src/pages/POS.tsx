@@ -1537,7 +1537,7 @@ export default function POS() {
                 return (
                 <div key={item.productId} className="flex items-stretch bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
                   {/* IMAGE — far left, fills full card height */}
-                  <div className="w-[68px] shrink-0 bg-secondary">
+                  <div className="w-[68px] md:w-14 shrink-0 bg-secondary">
                     {prod.image
                       ? <img src={prod.image} alt={prod.name} className="w-full h-full object-cover block" />
                       : <div className="w-full h-full flex items-center justify-center">
@@ -1545,7 +1545,7 @@ export default function POS() {
                         </div>}
                   </div>
                   {/* CONTENT — two rows: [name + total] top · [per-unit + controls] bottom */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between py-2.5 pl-3 pr-2">
+                  <div className="flex-1 min-w-0 flex flex-col justify-between py-2.5 pl-3 pr-2 md:py-2 md:pl-2 md:pr-1.5">
                     {/* TOP ROW: name (left) · total price (top-right) */}
                     <div className="flex items-center justify-between gap-2">
                       <h4 className="pos-cart-name font-semibold text-foreground truncate">{prod.name}</h4>
@@ -1588,7 +1588,7 @@ export default function POS() {
                     </div>
                   </div>
                   {/* DELETE — hover reveal */}
-                  <button onClick={() => removeFromCart(item.productId)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive flex items-center pr-2 pl-0.5 shrink-0">
+                  <button onClick={() => removeFromCart(item.productId)} className="opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive flex items-center pr-2 pl-0.5 shrink-0">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -1716,7 +1716,7 @@ export default function POS() {
           }
           .cart-panel-closed { transform: translateX(100%); }
           .cart-panel-open   { transform: translateX(0); }
-          .cart-panel { width: 320px; }
+          .cart-panel { width: 300px; }
         }
         @media (min-width: 1024px) { .cart-panel { width: 380px; } }
         @media (min-width: 1280px) { .cart-panel { width: 450px; } }
@@ -1745,8 +1745,8 @@ export default function POS() {
           transition: right 320ms cubic-bezier(0.32, 0.72, 0, 1);
         }
         @media (min-width: 768px) {
-          .cart-strip-right.cart-pushed { right: 320px; }
-          .main-cart-pushed { margin-right: 320px; }
+          .cart-strip-right.cart-pushed { right: 300px; }
+          .main-cart-pushed { margin-right: 300px; }
         }
         @media (min-width: 1024px) {
           .cart-strip-right.cart-pushed { right: 380px; }
