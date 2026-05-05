@@ -1772,10 +1772,7 @@ export default function POS() {
         /* ── 3. Product grid ──────────────────────────────────────────────── */
         .product-grid {
           gap: 6px;
-          grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-        }
-        @media (min-width: 425px) {
-          .product-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+          grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
         }
         @media (min-width: 768px) {
           .product-grid {
