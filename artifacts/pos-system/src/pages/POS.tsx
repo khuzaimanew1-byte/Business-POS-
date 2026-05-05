@@ -1522,20 +1522,20 @@ export default function POS() {
                           <span className="text-base font-bold text-muted-foreground/50">{renderInitials(prod.name)}</span>
                         </div>}
                   </div>
-                  {/* CONTENT — left: name + per-unit · right column: total centered above controls */}
-                  <div className="flex-1 min-w-0 flex items-center gap-3 py-2.5 pl-3 pr-2">
-                    {/* LEFT: name + per-unit price stacked */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                  {/* CONTENT — two rows: [name + total] top · [per-unit + controls] bottom */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-between py-2.5 pl-3 pr-2">
+                    {/* TOP ROW: name (left) · total price (top-right) */}
+                    <div className="flex items-center justify-between gap-2">
                       <h4 className="pos-cart-name font-semibold text-foreground truncate">{prod.name}</h4>
+                      <Money value={prod.price * item.quantity} className="shrink-0 font-normal text-[14px] text-foreground" />
+                    </div>
+                    {/* BOTTOM ROW: per-unit price (left) · controls (right) */}
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-[12px] text-muted-foreground/55 inline-flex items-baseline gap-0.5">
                         <Money value={prod.price} />
                         <span>/ ea</span>
                       </span>
-                    </div>
-                    {/* RIGHT COLUMN: total price centered above qty controls */}
-                    <div className="shrink-0 flex flex-col items-center gap-1.5">
-                      <Money value={prod.price * item.quantity} className="font-normal text-[14px] text-foreground" />
-                      <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
+                      <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7 shrink-0">
                         <button
                           onClick={() => updateCartQty(item.productId, item.quantity - 1)}
                           className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground"
