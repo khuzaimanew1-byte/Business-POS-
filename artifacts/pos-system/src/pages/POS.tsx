@@ -1297,7 +1297,7 @@ export default function POS() {
                         <TooltipContent
                           side="top"
                           sideOffset={6}
-                          className="bg-zinc-900/90 text-white border border-zinc-700/60 text-xs rounded-lg px-2.5 py-1.5 max-w-[200px] whitespace-normal backdrop-blur-sm"
+                          className="bg-midnight/90 text-foreground border border-border/50 text-xs rounded-lg px-2.5 py-1.5 max-w-[200px] whitespace-normal backdrop-blur-sm"
                         >
                           {product.name}
                         </TooltipContent>
@@ -1309,7 +1309,7 @@ export default function POS() {
                       <div className="flex items-center justify-between mt-0.5">
                         <span className="pos-card-stock leading-none text-muted-foreground/50 inline-flex items-center gap-1">
                           {product.stock > 0 && product.stock < 20 && (
-                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                            <span className="inline-block w-1.5 h-1.5 rounded-full bg-danger shrink-0" />
                           )}
                           Stock: {product.stock}
                         </span>
@@ -1585,7 +1585,7 @@ export default function POS() {
           <Button
             className={`w-full h-12 sm:h-14 text-base sm:text-lg font-bold rounded-xl transition-all duration-200 active:scale-[0.98] ${
               checkoutSuccess
-                ? 'bg-emerald-600 hover:bg-emerald-600 text-white shadow-[0_0_0_3px_rgba(16,185,129,0.18)] disabled:opacity-100'
+                ? 'bg-success hover:bg-success text-white shadow-[0_0_0_3px_rgba(33,191,168,0.20)] disabled:opacity-100'
                 : ''
             }`}
             disabled={cartItems.length === 0 && !checkoutSuccess}
@@ -1660,8 +1660,8 @@ export default function POS() {
         :root {
           --mobile-nav-height: 0px;
           --bottom-strip-height: 48px;
-          --pos-stock-ok:    142 71% 45%;
-          --pos-stock-warn:  43  90% 58%;
+          --pos-stock-ok:    var(--success);
+          --pos-stock-warn:  var(--warn);
           --pos-stock-low:   22  90% 55%;
           --pos-chip-bg:     rgba(8, 10, 18, 0.84);
           --pos-chip-border: rgba(160, 160, 170, 0.30);
@@ -1799,7 +1799,7 @@ export default function POS() {
         }
         @media (min-width: 1024px) { .pos-card-name { font-size: 14px; } }
 
-        .pos-card-price { font-size: 12px; color: hsl(0 0% 70%); font-weight: 500; }
+        .pos-card-price { font-size: 12px; color: hsl(var(--rose-frost)); font-weight: 500; }
         @media (min-width: 1024px) { .pos-card-price { font-size: 13px; } }
 
         .pos-card-stock { font-size: 10px; }
@@ -1849,10 +1849,10 @@ export default function POS() {
           100% { opacity: 0.95; }
         }
         .quick-code-active {
-          background: rgba(59,110,165,0.78);
-          border-color: rgba(120,165,210,0.45);
+          background: rgba(38,127,204,0.78);
+          border-color: rgba(100,175,230,0.45);
           box-shadow:
-            0 0 0 1px rgba(80,130,185,0.28) inset,
+            0 0 0 1px rgba(50,140,210,0.28) inset,
             0 1px 0 rgba(255,255,255,0.12) inset;
           animation: quick-code-active-anim 180ms ease-out;
         }
@@ -1868,12 +1868,12 @@ export default function POS() {
           font-weight: 900;
           font-size: clamp(13px, 1.6vw, 18px);
           letter-spacing: 0.16em;
-          color: hsl(0 92% 62%);
+          color: hsl(var(--danger));
           padding: 6px 12px;
-          border: 2.5px solid hsl(0 92% 62% / 0.85);
+          border: 2.5px solid hsl(var(--danger) / 0.85);
           border-radius: 4px;
-          background: hsl(0 80% 18% / 0.18);
-          box-shadow: 0 0 0 1px hsl(0 92% 62% / 0.18) inset;
+          background: hsl(var(--danger) / 0.08);
+          box-shadow: 0 0 0 1px hsl(var(--danger) / 0.18) inset;
           text-shadow: 0 1px 0 rgba(0,0,0,0.35);
           transform: rotate(-12deg);
           animation: sold-out-stamp-in 320ms cubic-bezier(0.18, 1.2, 0.4, 1) both;
@@ -1936,20 +1936,20 @@ export default function POS() {
 
         /* ── Search-match highlight ───────────────────────────────────────── */
         .search-match-card {
-          border-color: rgba(212,175,90,0.55) !important;
+          border-color: rgba(33,191,168,0.55) !important;
           background:
-            linear-gradient(180deg, rgba(212,175,90,0.10), rgba(212,175,90,0.04)),
+            linear-gradient(180deg, rgba(33,191,168,0.10), rgba(33,191,168,0.04)),
             hsl(var(--card));
           box-shadow:
-            0 0 0 1px rgba(212,175,90,0.22),
-            0 4px 18px rgba(212,175,90,0.08);
+            0 0 0 1px rgba(33,191,168,0.22),
+            0 4px 18px rgba(33,191,168,0.08);
           transition: background 220ms ease, box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease;
         }
         .search-match-card:hover {
           transform: translateY(-1px);
           box-shadow:
-            0 0 0 1px rgba(212,175,90,0.32),
-            0 6px 22px rgba(212,175,90,0.12);
+            0 0 0 1px rgba(33,191,168,0.32),
+            0 6px 22px rgba(33,191,168,0.12);
         }
 
         /* ── Autofill neutralization ──────────────────────────────────────── */
@@ -1982,7 +1982,7 @@ export default function POS() {
         /* ── Cart flash ───────────────────────────────────────────────────── */
         @keyframes cart-flash-anim {
           0%   { background-color: transparent; }
-          25%  { background-color: rgba(99,102,241,0.08); }
+          25%  { background-color: rgba(100,80,200,0.08); }
           100% { background-color: transparent; }
         }
         .cart-flash { animation: cart-flash-anim 700ms cubic-bezier(0.4,0,0.2,1); }

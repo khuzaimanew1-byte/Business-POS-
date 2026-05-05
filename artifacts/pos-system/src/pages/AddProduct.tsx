@@ -439,7 +439,7 @@ export default function AddProduct() {
     setProducts(prev => [...prev, product]);
     // Product successfully saved — draft is no longer needed.
     clearDraft();
-    toast.success(`${product.name} created`, { icon: <Check className="text-green-500" /> });
+    toast.success(`${product.name} created`, { icon: <Check className="text-success" /> });
     if (mode === 'redirect') {
       setTimeout(() => { setSubmittingMode(null); setLocation('/'); }, 200);
     } else {

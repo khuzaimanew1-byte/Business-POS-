@@ -123,7 +123,7 @@ function TabButton({
   active: boolean;
   onClick: () => void;
 }) {
-  const dot = tone === "alert" ? "bg-red-400" : "bg-amber-400";
+  const dot = tone === "alert" ? "bg-danger" : "bg-warn";
   return (
     <button
       onClick={onClick}
@@ -162,12 +162,12 @@ function NotificationBar({
   const Icon = isAlert ? AlertOctagon : AlertTriangle;
 
   const accent = isAlert
-    ? "border-red-500/30 hover:border-red-500/50 bg-red-500/[0.04]"
-    : "border-amber-500/30 hover:border-amber-500/50 bg-amber-500/[0.04]";
-  const iconBg = isAlert ? "bg-red-500/15 text-red-400" : "bg-amber-500/15 text-amber-400";
+    ? "border-danger/30 hover:border-danger/50 bg-danger/[0.04]"
+    : "border-warn/30 hover:border-warn/50 bg-warn/[0.04]";
+  const iconBg = isAlert ? "bg-danger/15 text-danger" : "bg-warn/15 text-warn";
   const btnTone = isAlert
-    ? "bg-red-500/15 text-red-300 hover:bg-red-500/25"
-    : "bg-amber-500/15 text-amber-300 hover:bg-amber-500/25";
+    ? "bg-danger/15 text-danger hover:bg-danger/25"
+    : "bg-warn/15 text-warn hover:bg-warn/25";
 
   return (
     <div

@@ -110,8 +110,8 @@ export default function SettingsPage() {
                       onClick={() => setSection(s.id)}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                         section === s.id
-                          ? 'bg-secondary/70 text-foreground'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary/30'
+                          ? 'bg-surface-hi/70 text-foreground'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-surface-hi/30'
                       }`}
                     >
                       <span className={section === s.id ? 'text-primary' : 'text-muted-foreground/70'}>{s.icon}</span>
@@ -282,7 +282,7 @@ function ExperienceSection() {
                   data-testid={`speed-${opt.value}`}
                   className={`flex items-center gap-3 px-3.5 py-3 rounded-xl border text-left transition-all duration-200 ${
                     active
-                      ? 'border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(212,175,90,0.12)]'
+                      ? 'border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(33,191,168,0.15)]'
                       : 'border-border/50 bg-white/[0.015] hover:border-border hover:bg-white/[0.03]'
                   }`}
                 >
@@ -316,7 +316,7 @@ function ExperienceSection() {
                 >
                   <div
                     className={`shrink-0 flex items-center justify-center ${
-                      isInlineErrors ? 'text-[#b3372f]' : 'text-muted-foreground/80'
+                      isInlineErrors ? 'text-danger' : 'text-muted-foreground/80'
                     }`}
                     aria-hidden
                   >
@@ -334,7 +334,7 @@ function ExperienceSection() {
                     data-testid={`toggle-${t.key}`}
                     className={`relative shrink-0 w-10 h-6 rounded-full transition-all duration-200 ${
                       checked
-                        ? 'bg-primary shadow-[0_0_0_3px_rgba(212,175,90,0.18)]'
+                        ? 'bg-primary shadow-[0_0_0_3px_rgba(33,191,168,0.20)]'
                         : 'bg-secondary'
                     }`}
                   >
@@ -422,7 +422,7 @@ function CurrencyRatesBlock() {
   const cardBase =
     "group relative text-left px-3 py-2.5 rounded-xl border transition-all duration-300";
   const cardActive =
-    "border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(212,175,90,0.14)]";
+    "border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(33,191,168,0.18)]";
   const cardInactive =
     "border-border/50 bg-white/[0.015] hover:border-border hover:bg-white/[0.03]";
 
@@ -622,7 +622,7 @@ function TimeZoneBlock() {
               onClick={() => update("region", key)}
               className={`relative text-left px-3 py-2.5 rounded-xl border transition-all duration-300 cursor-pointer ${
                 isActive
-                  ? "border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(212,175,90,0.14)]"
+                  ? "border-primary/55 bg-primary/[0.07] shadow-[0_0_0_1px_rgba(33,191,168,0.18)]"
                   : "border-border/50 bg-white/[0.015] hover:border-border hover:bg-white/[0.03]"
               }`}
               data-testid={`card-region-${key.toLowerCase()}`}
@@ -631,7 +631,7 @@ function TimeZoneBlock() {
               {/* Active dot — top-right corner, both layouts */}
               <span
                 className={`absolute top-2.5 right-2.5 inline-block w-2 h-2 rounded-full transition-all duration-200 ${
-                  isActive ? "bg-primary shadow-[0_0_6px_rgba(212,175,90,0.7)]" : "bg-muted-foreground/25"
+                  isActive ? "bg-primary shadow-[0_0_6px_rgba(33,191,168,0.65)]" : "bg-muted-foreground/25"
                 }`}
                 aria-hidden="true"
               />
@@ -984,7 +984,7 @@ function MiniSwitch({
         disabled ? 'opacity-40 cursor-not-allowed' : ''
       } ${
         checked
-          ? 'bg-primary shadow-[0_0_0_3px_rgba(212,175,90,0.18)]'
+          ? 'bg-primary shadow-[0_0_0_3px_rgba(33,191,168,0.22)]'
           : 'bg-secondary'
       }`}
     >
@@ -1033,7 +1033,7 @@ function OptionRow({
         {control && <div className="shrink-0">{control}</div>}
       </div>
       {hint && (
-        <div className="mt-1.5 ml-7 text-[11px] text-amber-300/90 inline-flex items-center gap-1.5">
+        <div className="mt-1.5 ml-7 text-[11px] text-warn/90 inline-flex items-center gap-1.5">
           <Info size={12} /> {hint}
         </div>
       )}
