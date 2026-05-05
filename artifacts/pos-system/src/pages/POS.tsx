@@ -1635,7 +1635,7 @@ export default function POS() {
         /* ── 1. Design tokens ─────────────────────────────────────────────── */
         :root {
           --mobile-nav-height: 0px;
-          --bottom-strip-height: 4.5rem;
+          --bottom-strip-height: 48px;
           --pos-stock-ok:    142 71% 45%;
           --pos-stock-warn:  43  90% 58%;
           --pos-stock-low:   22  90% 55%;
@@ -1646,9 +1646,12 @@ export default function POS() {
         @media (max-width: 639px) {
           :root {
             --mobile-nav-height: 56px;
-            --bottom-strip-height: 3.5rem;
+            --bottom-strip-height: 48px;
           }
         }
+        @media (min-width: 768px)  { :root { --bottom-strip-height: 54px; } }
+        @media (min-width: 1024px) { :root { --bottom-strip-height: 62px; } }
+        @media (min-width: 1280px) { :root { --bottom-strip-height: 72px; } }
 
         /* ── 2. Cart panel slide transforms ───────────────────────────────── */
         .cart-panel {
@@ -1875,7 +1878,16 @@ export default function POS() {
           [data-radix-scroll-area-viewport] > div { padding-bottom: 124px !important; }
         }
         @media (min-width: 640px) {
-          [data-radix-scroll-area-viewport] > div { padding-bottom: 92px !important; }
+          [data-radix-scroll-area-viewport] > div { padding-bottom: 80px !important; }
+        }
+        @media (min-width: 768px) {
+          [data-radix-scroll-area-viewport] > div { padding-bottom: 94px !important; }
+        }
+        @media (min-width: 1024px) {
+          [data-radix-scroll-area-viewport] > div { padding-bottom: 106px !important; }
+        }
+        @media (min-width: 1280px) {
+          [data-radix-scroll-area-viewport] > div { padding-bottom: 118px !important; }
         }
 
         /* ── Hide spinners ────────────────────────────────────────────────── */
@@ -1932,8 +1944,9 @@ export default function POS() {
 
         /* ── Cart strip responsive height ────────────────────────────────── */
         .cart-strip-h { height: 48px; }
-        @media (min-width: 1024px) { .cart-strip-h { height: 52px; } }
-        @media (min-width: 1440px) { .cart-strip-h { height: 56px; } }
+        @media (min-width: 768px)  { .cart-strip-h { height: 54px; } }
+        @media (min-width: 1024px) { .cart-strip-h { height: 62px; } }
+        @media (min-width: 1280px) { .cart-strip-h { height: 72px; } }
 
         /* ── Tablet (768-1023px) cart item sizing ─────────────────────────── */
         @media (min-width: 768px) and (max-width: 1023px) {
