@@ -605,22 +605,22 @@ function Chart({
     >
       <svg width={size.w} height={size.h} className="block">
         <defs>
-          {/* Area fill — vertical fade, blends teal→amber to echo the line */}
+          {/* Area fill — vertical fade using palette teal → ocean */}
           <linearGradient id="aFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="hsl(43 88% 56%)"  stopOpacity="0.20" />
-            <stop offset="48%"  stopColor="hsl(168 50% 40%)" stopOpacity="0.10" />
-            <stop offset="100%" stopColor="hsl(168 44% 33%)" stopOpacity="0" />
+            <stop offset="0%"   stopColor="hsl(168 50% 48%)" stopOpacity="0.22" />
+            <stop offset="55%"  stopColor="hsl(214 38% 42%)" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="hsl(268 36% 38%)" stopOpacity="0" />
           </linearGradient>
-          {/* Line gradient — horizontal, teal → amber → warm orange */}
+          {/* Line gradient — horizontal, bio-teal → ocean → nebula */}
           <linearGradient
             id="lineGradient"
             x1={margin.left} y1="0"
             x2={margin.left + plotW} y2="0"
             gradientUnits="userSpaceOnUse"
           >
-            <stop offset="0%"   stopColor="hsl(168 52% 46%)" />
-            <stop offset="45%"  stopColor="hsl(43 88% 56%)"  />
-            <stop offset="100%" stopColor="hsl(28 72% 52%)"  />
+            <stop offset="0%"   stopColor="hsl(168 52% 52%)" />
+            <stop offset="45%"  stopColor="hsl(214 40% 58%)" />
+            <stop offset="100%" stopColor="hsl(268 40% 64%)" />
           </linearGradient>
           {/* Future-zone fade: transparent at the boundary, gently darker
               and desaturated toward the right edge. Communicates
