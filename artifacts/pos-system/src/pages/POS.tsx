@@ -1537,7 +1537,7 @@ export default function POS() {
                 return (
                 <div key={item.productId} className="flex items-stretch bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
                   {/* IMAGE — far left, fills full card height */}
-                  <div className="w-[68px] md:w-14 shrink-0 bg-secondary">
+                  <div className="w-[60px] h-[60px] self-center shrink-0 bg-secondary">
                     {prod.image
                       ? <img src={prod.image} alt={prod.name} className="w-full h-full object-cover block" />
                       : <div className="w-full h-full flex items-center justify-center">
@@ -1545,7 +1545,7 @@ export default function POS() {
                         </div>}
                   </div>
                   {/* CONTENT — two rows: [name + total] top · [per-unit + controls] bottom */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-between py-2.5 pl-3 pr-2 md:py-2 md:pl-2 md:pr-1.5">
+                  <div className="flex-1 min-w-0 flex flex-col justify-between py-2 pl-2.5 pr-2 md:py-1.5 md:pl-2 md:pr-1">
                     {/* TOP ROW: name (left) · total price (top-right) */}
                     <div className="flex items-center justify-between gap-2">
                       <h4 className="pos-cart-name font-semibold text-foreground truncate">{prod.name}</h4>
@@ -1772,34 +1772,25 @@ export default function POS() {
         /* ── 3. Product grid ──────────────────────────────────────────────── */
         .product-grid {
           gap: 6px;
-          grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
         }
-        @media (min-width: 640px) {
+        @media (min-width: 425px) {
+          .product-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
+        }
+        @media (min-width: 768px) {
           .product-grid {
             gap: 8px;
             grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
           }
         }
-        @media (min-width: 768px) {
-          .product-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-        }
         @media (min-width: 1024px) {
           .product-grid {
             gap: 10px;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
           }
         }
         @media (min-width: 1280px) {
-          .product-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-        }
-        @media (min-width: 1440px) {
-          .product-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-        }
-        @media (min-width: 1536px) {
-          .product-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
-        }
-        @media (min-width: 1920px) {
-          .product-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+          .product-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
         }
 
         /* ── 4. Typography ────────────────────────────────────────────────── */
