@@ -610,17 +610,6 @@ function Chart({
             <stop offset="0%"   stopColor="hsl(168 52% 48%)" stopOpacity="0.28" />
             <stop offset="100%" stopColor="hsl(168 52% 48%)" stopOpacity="0" />
           </linearGradient>
-          {/* Line gradient — horizontal, bio-teal → ocean → nebula */}
-          <linearGradient
-            id="lineGradient"
-            x1={margin.left} y1="0"
-            x2={margin.left + plotW} y2="0"
-            gradientUnits="userSpaceOnUse"
-          >
-            <stop offset="0%"   stopColor="hsl(168 52% 52%)" />
-            <stop offset="45%"  stopColor="hsl(214 40% 58%)" />
-            <stop offset="100%" stopColor="hsl(268 40% 64%)" />
-          </linearGradient>
           {/* Future-zone fade: transparent at the boundary, gently darker
               and desaturated toward the right edge. Communicates
               "space exists but is not yet defined" without hiding the grid. */}
@@ -716,7 +705,7 @@ function Chart({
             <path
               d={lineD}
               fill="none"
-              stroke="url(#lineGradient)"
+              stroke="hsl(168 58% 50%)"
               strokeWidth={2.5}
               strokeLinecap="round"
               strokeLinejoin="round"
