@@ -50,7 +50,7 @@ type CartItem = {
 
 export default function POS() {
   const [, setLocation] = useLocation();
-  const { products, setProducts, categories, setCategories } = useStore();
+  const { products, setProducts, categories, setCategories, customCategories } = useStore();
   const { settings } = useSettings();
   // Demo Mode pill sits above the cart strip and (on mobile) the bottom nav,
   // derived from the same CSS vars those elements use — no fixed pixels.
@@ -63,6 +63,21 @@ export default function POS() {
   // class can re-apply on subsequent focus requests for the same product.
   const [highlightId, setHighlightId] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<Category>("All");
+
+  // Demo-mode category visibility: when demo is OFF, hide the pre-seeded demo
+  // categories (Drinks, Snacks, etc.) — they're empty without demo products.
+  // User-created categories (tracked in customCategories) always appear.
+  const displayedCategories = settings.demoMode
+    ? categories
+    : categories.filter(c => c === 'All' || customCategories.has(c) || c === OUT_OF_STOCK_CATEGORY);
+
+  // Reset to "All" if the active tab is no longer visible (e.g. demo turned off
+  // while viewing "Drinks").
+  useEffect(() => {
+    if (!displayedCategories.includes(selectedCategory)) setSelectedCategory('All');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.demoMode]);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   // ── Cart persistence ────────────────────────────────────────────────────
@@ -125,9 +140,7 @@ export default function POS() {
   const [cartItems, setCartItems] = useState<CartItem[]>(() =>
     settings.demoMode ? buildDemoCart() : loadRealCart()
   );
-  const [isCartOpen, setIsCartOpen] = useState<boolean>(() =>
-    settings.demoMode ? true : loadRealCartOpen()
-  );
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(() => loadRealCartOpen());
 
   // Persistence — short-circuited while Demo Mode is active so demo-session
   // changes never clobber the real cart sitting in localStorage.
@@ -151,7 +164,6 @@ export default function POS() {
     if (now) {
       // Entering demo — replace the live cart with the pre-filled demo seed.
       setCartItems(buildDemoCart());
-      setIsCartOpen(true);
     } else {
       // Exiting demo — discard demo-session edits and restore the real cart
       // exactly as it was persisted before the demo session started.
@@ -1001,7 +1013,7 @@ export default function POS() {
               </>
             ) : (
               <>
-                {categories.map(cat => {
+                {displayedCategories.map(cat => {
                   // "Sold Out" is a status indicator, not a normal category —
                   // give it an alert-tinted, dashed-border appearance with a
                   // small leading dot so it reads as "items unavailable".
@@ -1369,20 +1381,16 @@ export default function POS() {
           style={{ bottom: 'var(--mobile-nav-height, 0px)' }}
           data-testid="cart-strip"
         >
-          <div className="flex items-center gap-3 sm:gap-4">
-            <div className="relative flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-secondary/70 text-foreground/70">
-              <ShoppingCart className="w-4 h-4 sm:w-5 sm:h-5" />
-            </div>
-            <div>
-              <p className="font-semibold text-[14px] sm:text-[17px]">Current Order</p>
-              <p className="text-muted-foreground text-[12px] sm:text-[13px]">
-                <span className="font-mono font-semibold text-foreground">{cartCount}</span> items
-              </p>
-            </div>
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            <ShoppingCart className="w-[17px] h-[17px] sm:w-[19px] sm:h-[19px] text-foreground/50 shrink-0" />
+            <span className="text-[13px] sm:text-[14px] text-muted-foreground">
+              <span className="font-bold text-foreground tabular-nums">{cartCount}</span>
+              {' '}{cartCount === 1 ? 'item' : 'items'}
+            </span>
           </div>
           <Money
             value={cartTotal}
-            className="currency-hero font-bold text-foreground tracking-tight text-xl sm:text-[26px]"
+            className="currency-hero font-bold text-foreground tracking-tight text-[18px] sm:text-[21px]"
           />
         </div>
 
@@ -1502,40 +1510,40 @@ export default function POS() {
                 // guard only; deletion also removes it from cartItems.
                 if (!prod) return null;
                 return (
-                <div key={item.productId} className="flex bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
-                  {/* IMAGE — edge-to-edge square */}
-                  <div className="cart-item-img-md w-[56px] h-[56px] sm:w-[62px] sm:h-[62px] lg:w-[72px] lg:h-[72px] shrink-0 bg-secondary">
+                <div key={item.productId} className="flex h-16 bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
+                  {/* IMAGE — fills full row height */}
+                  <div className="w-16 shrink-0 bg-secondary self-stretch">
                     {prod.image
                       ? <img src={prod.image} alt={prod.name} className="w-full h-full object-cover block" />
                       : <div className="w-full h-full flex items-center justify-center">
                           <span className="text-xs font-bold text-muted-foreground">{renderInitials(prod.name)}</span>
                         </div>}
                   </div>
-                  {/* CONTENT */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-center px-2.5 sm:px-3 py-2">
-                    <div className="flex justify-between items-start mb-0.5">
-                      <h4 className="pos-cart-name font-semibold truncate pr-2">{prod.name}</h4>
-                      <Money value={prod.price * item.quantity} className="font-semibold text-sm text-foreground/90 shrink-0" />
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground/60 inline-flex items-baseline gap-1">
+                  {/* CONTENT — single row, vertically centered */}
+                  <div className="flex-1 min-w-0 flex items-center px-2.5 sm:px-3 gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="pos-cart-name font-semibold truncate">{prod.name}</h4>
+                      <span className="text-[11px] text-muted-foreground/60 inline-flex items-baseline gap-0.5">
                         <Money value={prod.price} />
                         <span>/ ea</span>
                       </span>
-                      <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
-                        <button onClick={() => updateCartQty(item.productId, item.quantity - 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-minus-${item.productId}`}>
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <input type="number" value={item.quantity} onChange={e => updateCartQty(item.productId, parseInt(e.target.value) || 0)} className="w-8 h-full bg-transparent text-center text-xs font-medium outline-none no-spinners" />
-                        <button onClick={() => updateCartQty(item.productId, item.quantity + 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-plus-${item.productId}`}>
-                          <Plus className="w-3 h-3" />
-                        </button>
-                      </div>
                     </div>
+                    {/* QTY controls — pinned right, vertically centered */}
+                    <div className="shrink-0 flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
+                      <button onClick={() => updateCartQty(item.productId, item.quantity - 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-minus-${item.productId}`}>
+                        <Minus className="w-3 h-3" />
+                      </button>
+                      <input type="number" value={item.quantity} onChange={e => updateCartQty(item.productId, parseInt(e.target.value) || 0)} className="w-8 h-full bg-transparent text-center text-xs font-medium outline-none no-spinners" />
+                      <button onClick={() => updateCartQty(item.productId, item.quantity + 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-plus-${item.productId}`}>
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+                    {/* Item total */}
+                    <Money value={prod.price * item.quantity} className="shrink-0 font-semibold text-[13px] text-foreground/90 min-w-[40px] text-right" />
                   </div>
                   {/* DELETE */}
-                  <button onClick={() => removeFromCart(item.productId)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive self-center pr-3 pl-1 py-2 shrink-0">
-                    <Trash2 className="w-4 h-4" />
+                  <button onClick={() => removeFromCart(item.productId)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive self-center pr-2.5 pl-1 shrink-0">
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
                 );
@@ -1632,7 +1640,7 @@ export default function POS() {
           --pos-stock-warn:  43  90% 58%;
           --pos-stock-low:   22  90% 55%;
           --pos-chip-bg:     rgba(8, 10, 18, 0.84);
-          --pos-chip-border: rgba(160, 160, 170, 0.18);
+          --pos-chip-border: rgba(160, 160, 170, 0.30);
           --pos-chip-text:   hsl(0 0% 74%);
         }
         @media (max-width: 639px) {
@@ -1752,7 +1760,7 @@ export default function POS() {
 
         /* ── 4. Typography ────────────────────────────────────────────────── */
         .pos-card-name {
-          font-size: 12px;
+          font-size: 14px;
           overflow: hidden;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -1762,15 +1770,15 @@ export default function POS() {
         }
         @media (min-width: 640px) {
           .pos-card-name {
-            font-size: 13px;
+            font-size: 15px;
             -webkit-line-clamp: 1;
             white-space: nowrap;
           }
         }
-        @media (min-width: 1024px) { .pos-card-name { font-size: 14px; } }
+        @media (min-width: 1024px) { .pos-card-name { font-size: 15px; } }
 
-        .pos-card-price { font-size: 12px; color: hsl(0 0% 87%); }
-        @media (min-width: 1024px) { .pos-card-price { font-size: 13px; } }
+        .pos-card-price { font-size: 11px; color: hsl(0 0% 70%); font-weight: 500; }
+        @media (min-width: 1024px) { .pos-card-price { font-size: 12px; } }
 
         .pos-card-stock { font-size: 10px; }
         @media (min-width: 1024px) { .pos-card-stock { font-size: 11px; } }
@@ -1806,12 +1814,12 @@ export default function POS() {
           font-weight: 600;
           letter-spacing: 0.04em;
           color: var(--pos-chip-text);
-          font-size: 8px;
+          font-size: 9px;
           text-shadow: 0 1px 2px rgba(0,0,0,0.6);
           font-feature-settings: "tnum" 1, "ss01" 1;
         }
-        @media (min-width: 640px)  { .quick-code-text { font-size: 9px; } }
-        @media (min-width: 1024px) { .quick-code-text { font-size: 10px; } }
+        @media (min-width: 640px)  { .quick-code-text { font-size: 10px; } }
+        @media (min-width: 1024px) { .quick-code-text { font-size: 11px; } }
 
         @keyframes quick-code-active-anim {
           0%   { opacity: 0.85; }
