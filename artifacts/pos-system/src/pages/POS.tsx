@@ -206,6 +206,9 @@ export default function POS() {
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [importMenuOpen, setImportMenuOpen] = useState(false);
+  // Tracks the raw string a user is actively typing into a qty input.
+  // Keyed by productId. Populated on focus, cleared on blur (after commit).
+  const [qtyDrafts, setQtyDrafts] = useState<Record<string, string>>({});
 
   // ID of product whose quick code badge should briefly pulse after add-to-cart
   const [activeQuickCodeId, setActiveQuickCodeId] = useState<string | null>(null);
@@ -1510,39 +1513,57 @@ export default function POS() {
                 // guard only; deletion also removes it from cartItems.
                 if (!prod) return null;
                 return (
-                <div key={item.productId} className="flex h-16 bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
-                  {/* IMAGE — fills full row height */}
-                  <div className="w-16 shrink-0 bg-secondary self-stretch">
+                <div key={item.productId} className="flex items-stretch h-[72px] bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
+                  {/* IMAGE — far left, fills full row height */}
+                  <div className="w-[72px] shrink-0 bg-secondary">
                     {prod.image
                       ? <img src={prod.image} alt={prod.name} className="w-full h-full object-cover block" />
                       : <div className="w-full h-full flex items-center justify-center">
                           <span className="text-xs font-bold text-muted-foreground">{renderInitials(prod.name)}</span>
                         </div>}
                   </div>
-                  {/* CONTENT — single row, vertically centered */}
-                  <div className="flex-1 min-w-0 flex items-center px-2.5 sm:px-3 gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h4 className="pos-cart-name font-semibold truncate">{prod.name}</h4>
-                      <span className="text-[11px] text-muted-foreground/60 inline-flex items-baseline gap-0.5">
-                        <Money value={prod.price} />
-                        <span>/ ea</span>
-                      </span>
-                    </div>
-                    {/* QTY controls — pinned right, vertically centered */}
-                    <div className="shrink-0 flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
-                      <button onClick={() => updateCartQty(item.productId, item.quantity - 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-minus-${item.productId}`}>
+                  {/* MIDDLE — name + per-unit price stacked, vertically centered */}
+                  <div className="flex-1 min-w-0 flex flex-col justify-center px-2.5 sm:px-3">
+                    <h4 className="pos-cart-name font-semibold truncate">{prod.name}</h4>
+                    <span className="text-[11px] text-muted-foreground/60 inline-flex items-baseline gap-0.5">
+                      <Money value={prod.price} />
+                      <span>/ ea</span>
+                    </span>
+                  </div>
+                  {/* RIGHT — single horizontal line: minus, qty input, plus, total */}
+                  <div className="shrink-0 flex items-center gap-2 pr-2.5">
+                    <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7">
+                      <button
+                        onClick={() => updateCartQty(item.productId, item.quantity - 1)}
+                        className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground"
+                        data-testid={`btn-qty-minus-${item.productId}`}
+                      >
                         <Minus className="w-3 h-3" />
                       </button>
-                      <input type="number" value={item.quantity} onChange={e => updateCartQty(item.productId, parseInt(e.target.value) || 0)} className="w-8 h-full bg-transparent text-center text-xs font-medium outline-none no-spinners" />
-                      <button onClick={() => updateCartQty(item.productId, item.quantity + 1)} className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground" data-testid={`btn-qty-plus-${item.productId}`}>
+                      <input
+                        type="number"
+                        value={qtyDrafts[item.productId] ?? String(item.quantity)}
+                        onFocus={() => setQtyDrafts(d => ({ ...d, [item.productId]: String(item.quantity) }))}
+                        onChange={e => setQtyDrafts(d => ({ ...d, [item.productId]: e.target.value }))}
+                        onBlur={() => {
+                          const v = parseInt(qtyDrafts[item.productId] ?? '') || 0;
+                          updateCartQty(item.productId, v);
+                          setQtyDrafts(d => { const n = { ...d }; delete n[item.productId]; return n; });
+                        }}
+                        className="w-8 h-full bg-transparent text-center text-xs font-medium outline-none no-spinners"
+                      />
+                      <button
+                        onClick={() => updateCartQty(item.productId, item.quantity + 1)}
+                        className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground"
+                        data-testid={`btn-qty-plus-${item.productId}`}
+                      >
                         <Plus className="w-3 h-3" />
                       </button>
                     </div>
-                    {/* Item total */}
-                    <Money value={prod.price * item.quantity} className="shrink-0 font-semibold text-[13px] text-foreground/90 min-w-[40px] text-right" />
+                    <Money value={prod.price * item.quantity} className="shrink-0 font-semibold text-[13px] text-foreground/90 w-[52px] text-right" />
                   </div>
-                  {/* DELETE */}
-                  <button onClick={() => removeFromCart(item.productId)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive self-center pr-2.5 pl-1 shrink-0">
+                  {/* DELETE — hover reveal */}
+                  <button onClick={() => removeFromCart(item.productId)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-muted-foreground hover:text-destructive flex items-center pr-2 pl-0.5 shrink-0">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
