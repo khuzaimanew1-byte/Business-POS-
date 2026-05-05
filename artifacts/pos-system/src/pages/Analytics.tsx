@@ -761,8 +761,8 @@ function Chart({
           <>
             <line x1={hoverPx} x2={hoverPx} y1={margin.top} y2={baseY}
               stroke="hsl(240 5% 65%)" strokeWidth={1} strokeDasharray="4 4" opacity={0.6} />
-            <circle cx={hoverPx} cy={hoverPy} r={8} fill="hsl(43 88% 56%)" opacity={0.16} />
-            <circle cx={hoverPx} cy={hoverPy} r={4} fill="hsl(43 88% 56%)"
+            <circle cx={hoverPx} cy={hoverPy} r={8} fill="hsl(168 58% 50%)" opacity={0.20} />
+            <circle cx={hoverPx} cy={hoverPy} r={4} fill="hsl(168 58% 50%)"
               stroke="hsl(220 14% 9.5%)" strokeWidth={2} />
           </>
         )}
