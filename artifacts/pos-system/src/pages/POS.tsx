@@ -1135,18 +1135,7 @@ export default function POS() {
         </header>
 
         {/* CATEGORY BAR */}
-        <div
-          className="relative shrink-0 transition-all duration-400"
-          style={{
-            background: 'rgba(0,0,0,0.01)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            borderTop: '0.5px solid rgba(255,255,255,0.13)',
-            borderBottom: isEditMode
-              ? '0.5px solid rgba(33,191,168,0.35)'
-              : '0.5px solid rgba(255,255,255,0.07)',
-          }}
-        >
+        <div className={`relative border-b bg-background shrink-0 transition-colors duration-400 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
           <div className="flex items-center">
           <div ref={categoryBarRef} className="flex-1 min-w-0 flex items-center px-3 sm:px-4 py-2.5 gap-2 overflow-x-auto scrollbar-none scroll-smooth">
             {isEditMode ? (
