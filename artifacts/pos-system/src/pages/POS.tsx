@@ -54,7 +54,9 @@ export default function POS() {
   const { settings } = useSettings();
   // Demo Mode pill sits above the cart strip and (on mobile) the bottom nav,
   // derived from the same CSS vars those elements use — no fixed pixels.
-  useDemoIndicatorPlacement("52px");
+  useDemoIndicatorPlacement(
+    "calc(max(52px, var(--bottom-strip-height, 48px) + 4px))",
+  );
   const { unreadCount, pendingFocusId, consumeProductFocus } = useNotifications();
   // Product currently highlighted via a notification deep-link. The CSS
   // animation auto-completes; we just clear the id when it's done so the
@@ -214,6 +216,7 @@ export default function POS() {
   // ── Search/keyboard refs ───────────────────────────────────────────────
   const searchInputRef = useRef<HTMLInputElement>(null);
   const canvasNebulaRef = useRef<HTMLCanvasElement>(null);
+  const canvasStarsRef = useRef<HTMLCanvasElement>(null);
   // Long-press tracking (mobile)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFired = useRef(false);
@@ -254,7 +257,7 @@ export default function POS() {
       ctx.fillRect(0, 0, w, h);
       const vg = ctx.createRadialGradient(w/2, h/2, h*0.28, w/2, h/2, w*0.72);
       vg.addColorStop(0, 'rgba(0,0,0,0)');
-      vg.addColorStop(1, 'rgba(0,0,0,0.62)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.48)');
       ctx.fillStyle = vg;
       ctx.fillRect(0, 0, w, h);
     };
@@ -263,6 +266,97 @@ export default function POS() {
     return () => window.removeEventListener('resize', draw);
   }, []);
 
+  // ── Stars canvas (animated, mouse-interactive) ────────────────────────
+  useEffect(() => {
+    const canvas = canvasStarsRef.current;
+    if (!canvas) return;
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const getCount = () => w >= 1400 ? 200 : w >= 1024 ? 150 : w >= 768 ? 100 : 60;
+    type Star = { x: number; y: number; bx: number; by: number; size: number; tier: number; phase: number; speed: number; vx: number; vy: number; };
+    let stars: Star[] = [];
+    const init = () => {
+      stars = Array.from({ length: getCount() }, () => {
+        const tier = Math.random() < 0.60 ? 0 : Math.random() < 0.72 ? 1 : 2;
+        const size = tier === 0 ? 0.35 + Math.random()*0.55 : tier === 1 ? 0.9 + Math.random()*1.0 : 2.0 + Math.random()*1.8;
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        return { x, y, bx: x, by: y, size, tier, phase: Math.random()*Math.PI*2, speed: 0.3+Math.random()*0.8, vx: 0, vy: 0 };
+      });
+    };
+    init();
+    const mouse = { x: -999, y: -999 };
+    const onMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; };
+    const onLeave = () => { mouse.x = -999; mouse.y = -999; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseleave', onLeave);
+    const onResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; init(); };
+    window.addEventListener('resize', onResize);
+    let rafId = 0;
+    let last = 0;
+    const drawFrame = (t: number) => {
+      const dt = Math.min((t - last) / 16, 3);
+      last = t;
+      ctx.clearRect(0, 0, w, h);
+      for (const s of stars) {
+        const twinkle = 0.42 + 0.58 * Math.sin(t * 0.001 * s.speed + s.phase);
+        const dx = mouse.x - s.x;
+        const dy = mouse.y - s.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        let glow = 0;
+        if (dist < 100) {
+          const pull = (1 - dist/100) * 0.044 * dt;
+          s.vx += dx * pull;
+          s.vy += dy * pull;
+          if (dist < 60) glow = (1 - dist/60) * 0.85;
+        }
+        s.vx += (s.bx - s.x) * 0.075 * dt;
+        s.vy += (s.by - s.y) * 0.075 * dt;
+        s.vx *= 0.87;
+        s.vy *= 0.87;
+        s.x = Math.max(18, Math.min(w-18, s.x + s.vx));
+        s.y = Math.max(18, Math.min(h-18, s.y + s.vy));
+        const alpha = Math.min(1, twinkle + glow * 0.5);
+        if (s.tier === 2) {
+          const sk = s.size * 5.5;
+          ctx.save();
+          ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.22})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(s.x-sk, s.y); ctx.lineTo(s.x+sk, s.y);
+          ctx.moveTo(s.x, s.y-sk); ctx.lineTo(s.x, s.y+sk);
+          const sd = sk * 0.55;
+          ctx.moveTo(s.x-sd, s.y-sd); ctx.lineTo(s.x+sd, s.y+sd);
+          ctx.moveTo(s.x+sd, s.y-sd); ctx.lineTo(s.x-sd, s.y+sd);
+          ctx.stroke();
+          ctx.restore();
+        }
+        if (glow > 0) {
+          const gr = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size*9);
+          gr.addColorStop(0, `rgba(200,228,255,${glow*0.28})`);
+          gr.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = gr;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.size*9, 0, Math.PI*2);
+          ctx.fill();
+        }
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.fill();
+      }
+      rafId = requestAnimationFrame(drawFrame);
+    };
+    rafId = requestAnimationFrame(drawFrame);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseleave', onLeave);
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
 
   // Normalize a query so "wie", "wi-e", "#wi-e" all match the same code.
   const normalize = (s: string) => s.toLowerCase().replace(/[#\-\s]/g, '');
@@ -824,6 +918,7 @@ export default function POS() {
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground dark" style={{ background: '#04070a' }}>
       {/* ── BACKGROUND CANVASES ─────────────────────────────────────────── */}
       <canvas ref={canvasNebulaRef} aria-hidden className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }} />
+      <canvas ref={canvasStarsRef} aria-hidden className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }} />
 
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} />
@@ -833,9 +928,9 @@ export default function POS() {
         className="hidden sm:flex w-[72px] shrink-0 flex-col items-center py-4 z-20"
         style={{
           background: 'rgba(4,8,11,0.82)',
-          backdropFilter: 'blur(48px) saturate(160%)',
-          WebkitBackdropFilter: 'blur(48px) saturate(160%)',
-          borderRight: '1px solid rgba(255,255,255,0.07)',
+          backdropFilter: 'blur(48px)',
+          WebkitBackdropFilter: 'blur(48px)',
+          borderRight: '1px solid rgba(255,255,255,0.06)',
           position: 'relative',
           zIndex: 20,
         }}
@@ -885,13 +980,9 @@ export default function POS() {
           className={`h-14 sm:h-16 flex items-center px-3 sm:px-6 shrink-0 z-10 sticky top-0 transition-all duration-400 ${isSelectMode ? 'gap-2' : isEditMode ? 'border-b border-primary/25 justify-between' : 'justify-between'}`}
           style={{
             background: isEditMode ? 'rgba(33,191,168,0.06)' : 'rgba(6,11,15,0.72)',
-            backdropFilter: 'blur(32px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(32px) saturate(180%)',
-            boxShadow: isEditMode ? 'none' : '0 6px 28px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)',
-            borderRadius: isEditMode ? undefined : '13px',
-            border: isEditMode ? undefined : '1px solid rgba(255,255,255,0.07)',
-            borderTop: isEditMode ? undefined : '1px solid rgba(255,255,255,0.13)',
-            margin: isEditMode ? undefined : '6px 8px 0 8px',
+            backdropFilter: 'blur(32px)',
+            WebkitBackdropFilter: 'blur(32px)',
+            boxShadow: isEditMode ? 'none' : '0 4px 24px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.05)',
           }}
         >
           {isSelectMode ? (
@@ -1044,9 +1135,9 @@ export default function POS() {
         </header>
 
         {/* CATEGORY BAR */}
-        <div className={`relative shrink-0 transition-colors duration-400 ${isEditMode ? 'border-b border-primary/20' : ''}`}>
+        <div className={`relative border-b bg-background shrink-0 transition-colors duration-400 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
           <div className="flex items-center">
-          <div ref={categoryBarRef} className={`flex-1 min-w-0 flex items-center overflow-x-auto scrollbar-none scroll-smooth ${isEditMode ? 'px-3 sm:px-4 py-2.5 gap-2' : 'gap-1 px-2 py-2 cat-tabs-pill mx-2 my-1.5'}`}>
+          <div ref={categoryBarRef} className="flex-1 min-w-0 flex items-center px-3 sm:px-4 py-2.5 gap-2 overflow-x-auto scrollbar-none scroll-smooth">
             {isEditMode ? (
               <>
                 <button
@@ -1117,8 +1208,8 @@ export default function POS() {
                       : 'shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 border border-dashed border-destructive/45 bg-destructive/5 text-destructive/85 hover:bg-destructive/10 hover:border-destructive/60 hover:text-destructive';
                   } else {
                     chipClass = isActive
-                      ? 'shrink-0 px-3 sm:px-4 py-1.5 cat-chip font-medium transition-all duration-250 cat-chip-active'
-                      : 'shrink-0 px-3 sm:px-4 py-1.5 cat-chip font-medium transition-all duration-250 cat-chip-inactive';
+                      ? 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 text-primary-foreground bg-primary shadow-sm'
+                      : 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 text-muted-foreground/60 hover:bg-secondary hover:text-foreground/90';
                   }
                   const btn = (
                     <button
@@ -2071,54 +2162,20 @@ export default function POS() {
         }
         .cart-flash { animation: cart-flash-anim 700ms cubic-bezier(0.4,0,0.2,1); }
 
-        /* ── Category tabs pill container ────────────────────────────────── */
-        .cat-tabs-pill {
-          background: rgba(255,255,255,0.03);
-          border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 10px;
-          padding: 3px;
-        }
-
-        /* ── Active category tab — rimlight ───────────────────────────────── */
-        .cat-chip-active {
-          color: hsl(158,58%,52%);
-          background: rgba(32,178,120,0.06);
-          border-top: 1px solid rgba(32,178,120,0.45);
-          border-left: 1px solid rgba(32,178,120,0.20);
-          border-right: 1px solid rgba(32,178,120,0.20);
-          border-bottom: 1px solid transparent;
-          border-radius: 7px;
-          box-shadow: inset 0 1px 0 rgba(32,178,120,0.3);
-        }
-
-        /* ── Inactive category tab ────────────────────────────────────────── */
-        .cat-chip-inactive {
-          color: rgba(255,255,255,0.32);
-          border: 1px solid transparent;
-          background: none;
-          border-radius: 7px;
-        }
-        .cat-chip-inactive:hover {
-          color: rgba(255,255,255,0.65);
-          background: rgba(255,255,255,0.04);
-        }
-
         /* ── Glass product card ───────────────────────────────────────────── */
         .pos-glass-card {
-          background: rgba(255,255,255,0.042);
+          background: rgba(255,255,255,0.038);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
           border-top: 1px solid rgba(255,255,255,0.13);
           border-left: 1px solid rgba(255,255,255,0.07);
           border-right: 1px solid rgba(255,255,255,0.05);
-          border-bottom: 1px solid rgba(255,255,255,0.03);
-          border-radius: 14px;
+          border-bottom: 1px solid rgba(255,255,255,0.02);
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.3);
-          transition: transform 300ms cubic-bezier(0.34,1.4,0.64,1), box-shadow 300ms ease, border-top-color 300ms ease, background 300ms ease;
+          transition: transform 300ms cubic-bezier(0.34,1.4,0.64,1), box-shadow 300ms ease, border-top-color 300ms ease;
         }
         .pos-glass-card:hover {
           transform: translateY(-3px);
-          background: rgba(255,255,255,0.065);
           border-top-color: hsl(168,58%,48%);
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(33,191,168,0.15);
         }
@@ -2126,10 +2183,9 @@ export default function POS() {
           content: '';
           position: absolute;
           top: 0; left: 0;
-          width: 44px; height: 44px;
-          background: radial-gradient(circle at top left, rgba(255,255,255,0.08), transparent);
+          width: 42%; height: 1px;
+          background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0));
           pointer-events: none;
-          border-radius: 14px 0 0 0;
           z-index: 1;
         }
 
@@ -2138,29 +2194,7 @@ export default function POS() {
           background: rgba(3,6,9,0.88);
           backdrop-filter: blur(36px);
           -webkit-backdrop-filter: blur(36px);
-          border-top: 1px solid rgba(255,255,255,0.07);
-          box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
-        }
-
-        /* ── Cart panel specular corner highlights ────────────────────────── */
-        .pos-cart-panel { position: relative; }
-        .pos-cart-panel::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 0;
-          width: 60px; height: 60px;
-          background: radial-gradient(circle at top left, rgba(255,255,255,0.07), transparent);
-          pointer-events: none;
-          z-index: 0;
-        }
-        .pos-cart-panel::after {
-          content: '';
-          position: absolute;
-          top: 0; right: 0;
-          width: 60px; height: 60px;
-          background: radial-gradient(circle at top right, rgba(255,255,255,0.07), transparent);
-          pointer-events: none;
-          z-index: 0;
+          box-shadow: 0 -1px 0 rgba(255,255,255,0.05), 0 -8px 32px rgba(0,0,0,0.5);
         }
 
         /* ── Gold utility ─────────────────────────────────────────────────── */
