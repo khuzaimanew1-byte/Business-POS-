@@ -950,10 +950,9 @@ export default function POS() {
       <aside
         className="hidden sm:flex w-[72px] shrink-0 flex-col items-center py-4 z-20"
         style={{
-          background: 'rgba(4,8,11,0.82)',
           backdropFilter: 'blur(48px)',
           WebkitBackdropFilter: 'blur(48px)',
-          borderRight: '1px solid rgba(255,255,255,0.06)',
+          borderRight: '1px solid rgba(255,255,255,0.07)',
           position: 'relative',
           zIndex: 20,
         }}
@@ -1002,10 +1001,10 @@ export default function POS() {
         <header
           className={`h-14 sm:h-16 flex items-center px-3 sm:px-6 shrink-0 z-10 sticky top-0 transition-all duration-400 ${isSelectMode ? 'gap-2' : isEditMode ? 'border-b border-primary/25 justify-between' : 'justify-between'}`}
           style={{
-            background: isEditMode ? 'rgba(33,191,168,0.06)' : 'rgba(6,11,15,0.72)',
+            background: isEditMode ? 'rgba(33,191,168,0.05)' : 'transparent',
             backdropFilter: 'blur(32px)',
             WebkitBackdropFilter: 'blur(32px)',
-            boxShadow: isEditMode ? 'none' : '0 4px 24px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.05)',
+            boxShadow: isEditMode ? 'none' : 'inset 0 1px 0 rgba(255,255,255,0.04)',
           }}
         >
           {isSelectMode ? (
@@ -1127,7 +1126,7 @@ export default function POS() {
                             )}
                           </button>
                         </TooltipTrigger>
-                        <TooltipContent side="bottom" className="font-medium text-white border-0 px-2 py-1 rounded-md" style={{ background: 'rgba(10,10,16,0.88)', backdropFilter: 'blur(6px)', fontSize: '12px' }}>
+                        <TooltipContent side="bottom" className="font-medium text-white border border-white/[0.08] px-2 py-1 rounded-md" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', fontSize: '12px' }}>
                           Notifications
                         </TooltipContent>
                       </Tooltip>
@@ -1160,7 +1159,7 @@ export default function POS() {
         {/* CATEGORY BAR */}
         <div
           className={`relative shrink-0 transition-colors duration-400 ${isEditMode ? 'border-b border-primary/20' : 'border-b border-white/[0.05]'}`}
-          style={{ background: isEditMode ? 'rgba(33,191,168,0.025)' : 'rgba(4,7,10,0.48)', backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)' }}
+          style={{ background: isEditMode ? 'rgba(33,191,168,0.04)' : 'transparent', backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)' }}
         >
           <div className="flex items-center">
           <div ref={categoryBarRef} className="flex-1 min-w-0 flex items-center px-3 sm:px-4 py-2.5 gap-2 overflow-x-auto scrollbar-none scroll-smooth">
@@ -1662,10 +1661,9 @@ export default function POS() {
           md:top-0 md:bottom-0 md:left-auto md:right-0 md:h-auto md:rounded-none md:border-t-0 md:border-l md:border-l-white/[0.08]
           ${isCartOpen ? 'cart-panel-open' : 'cart-panel-closed'}`}
         style={{
-          background: 'rgba(6,12,16,0.78)',
           backdropFilter: 'blur(40px)',
           WebkitBackdropFilter: 'blur(40px)',
-          boxShadow: '-8px 0 48px rgba(0,0,0,0.5), inset 1px 0 0 rgba(255,255,255,0.06)',
+          boxShadow: '-8px 0 48px rgba(0,0,0,0.3), inset 1px 0 0 rgba(255,255,255,0.07)',
         }}
         data-testid="cart-sidebar"
       >
@@ -1876,7 +1874,7 @@ export default function POS() {
           --pos-stock-ok:    var(--success);
           --pos-stock-warn:  var(--warn);
           --pos-stock-low:   22  90% 55%;
-          --pos-chip-bg:     rgba(8, 10, 18, 0.84);
+          --pos-chip-bg:     rgba(255, 255, 255, 0.05);
           --pos-chip-border: rgba(160, 160, 170, 0.30);
           --pos-chip-text:   hsl(0 0% 74%);
         }
@@ -2231,7 +2229,6 @@ export default function POS() {
 
         /* ── Glass product card ───────────────────────────────────────────── */
         .pos-glass-card {
-          background: rgba(255,255,255,0.030);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
           border-top: 1px solid rgba(255,255,255,0.11);
@@ -2258,10 +2255,9 @@ export default function POS() {
 
         /* ── Glass bottom strip ───────────────────────────────────────────── */
         .pos-strip-glass {
-          background: rgba(4,7,10,0.72);
           backdrop-filter: blur(28px);
           -webkit-backdrop-filter: blur(28px);
-          box-shadow: 0 -1px 0 rgba(255,255,255,0.06), 0 -6px 28px rgba(0,0,0,0.38);
+          box-shadow: 0 -1px 0 rgba(255,255,255,0.06), 0 -6px 28px rgba(0,0,0,0.28);
         }
 
         /* ── Gold utility ─────────────────────────────────────────────────── */
