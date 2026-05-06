@@ -1324,7 +1324,7 @@ export default function POS() {
                         className={`w-full h-full object-cover transition-all duration-400 ease-in-out group-hover:scale-[1.015] ${product.stock <= 0 ? 'opacity-55 grayscale-[0.6]' : ''}`}
                       />
                     ) : (
-                      <div className={`w-full h-full bg-secondary/70 flex items-center justify-center text-xl font-bold text-muted-foreground/40 ${product.stock <= 0 ? 'opacity-55' : ''}`}>
+                      <div className={`w-full h-full flex items-center justify-center text-xl font-bold text-muted-foreground/25 ${product.stock <= 0 ? 'opacity-55' : ''}`} style={{ background: 'rgba(0,0,0,0.18)' }}>
                         {renderInitials(product.name)}
                       </div>
                     )}
@@ -2164,27 +2164,38 @@ export default function POS() {
 
         /* ── Glass product card ───────────────────────────────────────────── */
         .pos-glass-card {
-          background: rgba(255,255,255,0.038);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-top: 1px solid rgba(255,255,255,0.13);
-          border-left: 1px solid rgba(255,255,255,0.07);
-          border-right: 1px solid rgba(255,255,255,0.05);
+          background: rgba(0,0,0,0.10);
+          backdrop-filter: blur(20px) saturate(160%);
+          -webkit-backdrop-filter: blur(20px) saturate(160%);
+          border-top: 1px solid rgba(255,255,255,0.14);
+          border-left: 1px solid rgba(255,255,255,0.08);
+          border-right: 1px solid rgba(255,255,255,0.03);
           border-bottom: 1px solid rgba(255,255,255,0.02);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.3);
-          transition: transform 300ms cubic-bezier(0.34,1.4,0.64,1), box-shadow 300ms ease, border-top-color 300ms ease;
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.07),
+            0 4px 20px rgba(0,0,0,0.38),
+            0 1px 4px rgba(0,0,0,0.22);
+          transition: transform 300ms cubic-bezier(0.34,1.4,0.64,1),
+                      box-shadow 300ms ease,
+                      border-top-color 300ms ease,
+                      background 300ms ease;
         }
         .pos-glass-card:hover {
-          transform: translateY(-3px);
-          border-top-color: hsl(168,58%,48%);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(33,191,168,0.15);
+          background: rgba(0,0,0,0.16);
+          transform: translateY(-4px);
+          border-top-color: rgba(33,191,168,0.72);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.10),
+            0 16px 40px rgba(0,0,0,0.55),
+            0 0 0 1px rgba(33,191,168,0.22),
+            0 0 22px rgba(33,191,168,0.08);
         }
         .pos-glass-card::before {
           content: '';
           position: absolute;
           top: 0; left: 0;
-          width: 42%; height: 1px;
-          background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0));
+          width: 55%; height: 1px;
+          background: linear-gradient(90deg, rgba(255,255,255,0.22), rgba(255,255,255,0));
           pointer-events: none;
           z-index: 1;
         }
