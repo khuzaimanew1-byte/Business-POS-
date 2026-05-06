@@ -2227,30 +2227,12 @@ export default function POS() {
         }
         .cart-flash { animation: cart-flash-anim 700ms cubic-bezier(0.4,0,0.2,1); }
 
-        /* ── Glass product card ───────────────────────────────────────────── */
+        /* ── Glass product card — fully transparent ───────────────────────── */
         .pos-glass-card {
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border-top: 1px solid rgba(255,255,255,0.11);
-          border-left: 1px solid rgba(255,255,255,0.06);
-          border-right: 1px solid rgba(255,255,255,0.04);
-          border-bottom: 1px solid rgba(255,255,255,0.02);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 10px rgba(0,0,0,0.28);
-          transition: transform 300ms cubic-bezier(0.34,1.4,0.64,1), box-shadow 300ms ease, border-top-color 300ms ease;
+          transition: transform 300ms cubic-bezier(0.34,1.4,0.64,1);
         }
         .pos-glass-card:hover {
           transform: translateY(-3px);
-          border-top-color: rgba(33,191,168,0.52);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 12px 30px rgba(0,0,0,0.40), 0 0 0 1px rgba(33,191,168,0.10);
-        }
-        .pos-glass-card::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 0;
-          width: 42%; height: 1px;
-          background: linear-gradient(90deg, rgba(255,255,255,0.14), rgba(255,255,255,0));
-          pointer-events: none;
-          z-index: 1;
         }
 
         /* ── Glass bottom strip ───────────────────────────────────────────── */

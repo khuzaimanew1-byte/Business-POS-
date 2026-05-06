@@ -97,7 +97,6 @@ export function DemoModeIndicator() {
           style={{
             bottom:
               "calc(var(--demo-indicator-bottom, 1rem) + env(safe-area-inset-bottom, 0px))",
-            animation: entered ? "demo-float 3s ease-in-out infinite" : undefined,
           }}
         >
           <span
