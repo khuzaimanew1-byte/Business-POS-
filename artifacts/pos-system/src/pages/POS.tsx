@@ -227,43 +227,64 @@ export default function POS() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // ── Nebula canvas (static, redraws on resize) ─────────────────────────
+  // ── Nebula canvas (animated slow flow) ────────────────────────────────
   useEffect(() => {
     const canvas = canvasNebulaRef.current;
     if (!canvas) return;
-    const draw = () => {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      canvas.width = w;
-      canvas.height = h;
+    let rafId = 0;
+    const onResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    onResize();
+    window.addEventListener('resize', onResize);
+    const drawFrame = (t: number) => {
+      const w = canvas.width;
+      const h = canvas.height;
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) { rafId = requestAnimationFrame(drawFrame); return; }
+      // Very slow drift — full cycle ~90 s, barely perceptible
+      const s = t * 0.0000085;
+      ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = '#04070a';
       ctx.fillRect(0, 0, w, h);
-      const g1 = ctx.createRadialGradient(w*0.15, h*0.22, 0, w*0.15, h*0.22, w*0.48);
-      g1.addColorStop(0, 'rgba(0,78,68,0.055)');
+      // Upper-left: deep teal (~5% opacity, ~40% spread)
+      const cx1 = w * (0.14 + Math.sin(s * 0.65) * 0.022);
+      const cy1 = h * (0.20 + Math.cos(s * 0.50) * 0.018);
+      const g1 = ctx.createRadialGradient(cx1, cy1, 0, cx1, cy1, w * 0.44);
+      g1.addColorStop(0, 'rgba(0,92,76,0.052)');
       g1.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g1;
       ctx.fillRect(0, 0, w, h);
-      const g2 = ctx.createRadialGradient(w*0.84, h*0.76, 0, w*0.84, h*0.76, w*0.42);
-      g2.addColorStop(0, 'rgba(55,28,8,0.042)');
+      // Lower-right: warm neutral (~4% opacity)
+      const cx2 = w * (0.83 + Math.sin(s * 0.55 + 1.1) * 0.020);
+      const cy2 = h * (0.77 + Math.cos(s * 0.72 + 0.7) * 0.016);
+      const g2 = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, w * 0.40);
+      g2.addColorStop(0, 'rgba(50,26,8,0.040)');
       g2.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g2;
       ctx.fillRect(0, 0, w, h);
-      const g3 = ctx.createRadialGradient(w*0.5, h*0.44, 0, w*0.5, h*0.44, w*0.36);
-      g3.addColorStop(0, 'rgba(8,18,58,0.044)');
+      // Center: cool blue (<4% opacity)
+      const cx3 = w * (0.50 + Math.sin(s * 0.42 + 2.0) * 0.016);
+      const cy3 = h * (0.44 + Math.cos(s * 0.58 + 1.4) * 0.014);
+      const g3 = ctx.createRadialGradient(cx3, cy3, 0, cx3, cy3, w * 0.34);
+      g3.addColorStop(0, 'rgba(8,18,62,0.036)');
       g3.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = g3;
       ctx.fillRect(0, 0, w, h);
-      const vg = ctx.createRadialGradient(w/2, h/2, h*0.28, w/2, h/2, w*0.72);
+      // Vignette
+      const vg = ctx.createRadialGradient(w * 0.5, h * 0.5, h * 0.26, w * 0.5, h * 0.5, w * 0.72);
       vg.addColorStop(0, 'rgba(0,0,0,0)');
-      vg.addColorStop(1, 'rgba(0,0,0,0.48)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.50)');
       ctx.fillStyle = vg;
       ctx.fillRect(0, 0, w, h);
+      rafId = requestAnimationFrame(drawFrame);
     };
-    draw();
-    window.addEventListener('resize', draw);
-    return () => window.removeEventListener('resize', draw);
+    rafId = requestAnimationFrame(drawFrame);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', onResize);
+    };
   }, []);
 
   // ── Stars canvas (animated, mouse-interactive) ────────────────────────
@@ -319,10 +340,12 @@ export default function POS() {
         s.x = Math.max(18, Math.min(w-18, s.x + s.vx));
         s.y = Math.max(18, Math.min(h-18, s.y + s.vy));
         const alpha = Math.min(1, twinkle + glow * 0.5);
+        // Stars very low visibility — tier 0 (tiny) near-invisible, larger tiers slightly more present
+        const starAlpha = alpha * (s.tier === 0 ? 0.26 : s.tier === 1 ? 0.34 : 0.42);
         if (s.tier === 2) {
           const sk = s.size * 5.5;
           ctx.save();
-          ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.22})`;
+          ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.12})`;
           ctx.lineWidth = 0.5;
           ctx.beginPath();
           ctx.moveTo(s.x-sk, s.y); ctx.lineTo(s.x+sk, s.y);
@@ -335,7 +358,7 @@ export default function POS() {
         }
         if (glow > 0) {
           const gr = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size*9);
-          gr.addColorStop(0, `rgba(200,228,255,${glow*0.28})`);
+          gr.addColorStop(0, `rgba(200,228,255,${glow*0.16})`);
           gr.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = gr;
           ctx.beginPath();
@@ -344,7 +367,7 @@ export default function POS() {
         }
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
-        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.fillStyle = `rgba(255,255,255,${starAlpha})`;
         ctx.fill();
       }
       rafId = requestAnimationFrame(drawFrame);
@@ -1135,7 +1158,10 @@ export default function POS() {
         </header>
 
         {/* CATEGORY BAR */}
-        <div className={`relative border-b bg-background shrink-0 transition-colors duration-400 ${isEditMode ? 'border-primary/20' : 'border-border'}`}>
+        <div
+          className={`relative shrink-0 transition-colors duration-400 ${isEditMode ? 'border-b border-primary/20' : 'border-b border-white/[0.05]'}`}
+          style={{ background: isEditMode ? 'rgba(33,191,168,0.025)' : 'rgba(4,7,10,0.48)', backdropFilter: 'blur(22px)', WebkitBackdropFilter: 'blur(22px)' }}
+        >
           <div className="flex items-center">
           <div ref={categoryBarRef} className="flex-1 min-w-0 flex items-center px-3 sm:px-4 py-2.5 gap-2 overflow-x-auto scrollbar-none scroll-smooth">
             {isEditMode ? (
@@ -1208,8 +1234,8 @@ export default function POS() {
                       : 'shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 border border-dashed border-destructive/45 bg-destructive/5 text-destructive/85 hover:bg-destructive/10 hover:border-destructive/60 hover:text-destructive';
                   } else {
                     chipClass = isActive
-                      ? 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 text-primary-foreground bg-primary shadow-sm'
-                      : 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 text-muted-foreground/60 hover:bg-secondary hover:text-foreground/90';
+                      ? 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 cat-chip-rim-active'
+                      : 'shrink-0 px-3 sm:px-4 py-1.5 rounded-full cat-chip font-medium transition-all duration-250 cat-chip-rim-inactive';
                   }
                   const btn = (
                     <button
@@ -1255,7 +1281,7 @@ export default function POS() {
             )}
           </div>
           {/* Right-edge fade — signals horizontal overflow without hiding labels */}
-          <div className="pointer-events-none absolute right-10 top-0 bottom-0 w-10 bg-gradient-to-l from-background to-transparent" aria-hidden="true" />
+          <div className="pointer-events-none absolute right-10 top-0 bottom-0 w-10" style={{ background: 'linear-gradient(to left, rgba(4,7,10,0.70) 0%, transparent 100%)' }} aria-hidden="true" />
           {/* Add category button — fixed at right edge, never scrolls */}
           {!isEditMode && (
             <div className="shrink-0 pr-2 sm:pr-3 pl-1">
@@ -1889,6 +1915,27 @@ export default function POS() {
         @media (min-width: 1536px) { .cart-panel { width: 450px; } }
         @media (min-width: 1920px) { .cart-panel { width: 480px; } }
 
+        /* ── Cart panel corner highlights ─────────────────────────────────── */
+        .cart-panel { position: relative; }
+        .cart-panel::before,
+        .cart-panel::after {
+          content: '';
+          pointer-events: none;
+          position: absolute;
+          top: 0;
+          width: 64px;
+          height: 64px;
+          z-index: 1;
+        }
+        .cart-panel::before {
+          left: 0;
+          background: radial-gradient(ellipse at top left, rgba(255,255,255,0.07) 0%, transparent 68%);
+        }
+        .cart-panel::after {
+          right: 0;
+          background: radial-gradient(ellipse at top right, rgba(255,255,255,0.07) 0%, transparent 68%);
+        }
+
         /* ── Mobile cart backdrop ─────────────────────────────────────────── */
         .cart-backdrop {
           background: rgba(0,0,0,0.35);
@@ -1986,6 +2033,26 @@ export default function POS() {
         .cat-chip { font-size: 11px; }
         @media (min-width: 640px)  { .cat-chip { font-size: 12px; } }
         @media (min-width: 1024px) { .cat-chip { font-size: 13px; } }
+
+        /* ── Category chip rim-light states ───────────────────────────────── */
+        .cat-chip-rim-active {
+          color: hsl(168, 60%, 66%);
+          background: rgba(33,191,168,0.04);
+          border: 1px solid rgba(33,191,168,0.50);
+          box-shadow:
+            0 0 0 1px rgba(33,191,168,0.12),
+            inset 0 1px 0 rgba(255,255,255,0.07),
+            0 0 10px rgba(33,191,168,0.10);
+        }
+        .cat-chip-rim-inactive {
+          color: rgba(255,255,255,0.34);
+          border: 1px solid transparent;
+        }
+        .cat-chip-rim-inactive:hover {
+          color: rgba(255,255,255,0.68);
+          background: rgba(255,255,255,0.024);
+          border-color: rgba(255,255,255,0.06);
+        }
 
         /* ── 5. Stock status colors ───────────────────────────────────────── */
         .pos-stock-ok   { color: hsl(var(--pos-stock-ok));   opacity: 0.9; }
@@ -2164,37 +2231,37 @@ export default function POS() {
 
         /* ── Glass product card ───────────────────────────────────────────── */
         .pos-glass-card {
-          background: rgba(255,255,255,0.038);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-top: 1px solid rgba(255,255,255,0.13);
-          border-left: 1px solid rgba(255,255,255,0.07);
-          border-right: 1px solid rgba(255,255,255,0.05);
+          background: rgba(255,255,255,0.030);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border-top: 1px solid rgba(255,255,255,0.11);
+          border-left: 1px solid rgba(255,255,255,0.06);
+          border-right: 1px solid rgba(255,255,255,0.04);
           border-bottom: 1px solid rgba(255,255,255,0.02);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.3);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 2px 10px rgba(0,0,0,0.28);
           transition: transform 300ms cubic-bezier(0.34,1.4,0.64,1), box-shadow 300ms ease, border-top-color 300ms ease;
         }
         .pos-glass-card:hover {
           transform: translateY(-3px);
-          border-top-color: hsl(168,58%,48%);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(33,191,168,0.15);
+          border-top-color: rgba(33,191,168,0.52);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.07), 0 12px 30px rgba(0,0,0,0.40), 0 0 0 1px rgba(33,191,168,0.10);
         }
         .pos-glass-card::before {
           content: '';
           position: absolute;
           top: 0; left: 0;
           width: 42%; height: 1px;
-          background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0));
+          background: linear-gradient(90deg, rgba(255,255,255,0.14), rgba(255,255,255,0));
           pointer-events: none;
           z-index: 1;
         }
 
-        /* ── Heavy glass bottom strip ─────────────────────────────────────── */
+        /* ── Glass bottom strip ───────────────────────────────────────────── */
         .pos-strip-glass {
-          background: rgba(3,6,9,0.88);
-          backdrop-filter: blur(36px);
-          -webkit-backdrop-filter: blur(36px);
-          box-shadow: 0 -1px 0 rgba(255,255,255,0.05), 0 -8px 32px rgba(0,0,0,0.5);
+          background: rgba(4,7,10,0.72);
+          backdrop-filter: blur(28px);
+          -webkit-backdrop-filter: blur(28px);
+          box-shadow: 0 -1px 0 rgba(255,255,255,0.06), 0 -6px 28px rgba(0,0,0,0.38);
         }
 
         /* ── Gold utility ─────────────────────────────────────────────────── */
