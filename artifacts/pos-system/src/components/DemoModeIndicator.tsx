@@ -44,8 +44,6 @@ export function DemoModeIndicator() {
   const onAllowedRoute = VISIBLE_ROUTES.has(location);
   const shouldShow = settings.demoMode && onAllowedRoute;
 
-  // Two-phase mount/unmount lets the entrance + exit transitions complete
-  // before the node is actually removed from the tree (no layout pop).
   const [mounted, setMounted] = useState(shouldShow);
   const [entered, setEntered] = useState(false);
 
@@ -60,8 +58,6 @@ export function DemoModeIndicator() {
     return () => window.clearTimeout(t);
   }, [shouldShow]);
 
-  // If demo mode flips off through any path (Settings page, etc.) while the
-  // confirm dialog is open, dismiss the dialog so it doesn't outlive the pill.
   useEffect(() => {
     if (!settings.demoMode && confirmOpen) setConfirmOpen(false);
   }, [settings.demoMode, confirmOpen]);
@@ -79,46 +75,59 @@ export function DemoModeIndicator() {
           aria-live="polite"
           data-testid="demo-mode-indicator"
           className={[
-            "demo-mode-indicator fixed left-4 sm:left-[76px] z-40",
-            "flex items-center gap-2.5 pl-3 pr-1.5 py-1.5",
-            "rounded-full",
-            "border border-[hsl(168_44%_35%/0.22)]",
-            "bg-[hsl(168_44%_8%/0.72)] supports-[backdrop-filter]:bg-[hsl(168_44%_8%/0.60)]",
-            "backdrop-blur-xl backdrop-saturate-150",
-            "shadow-[0_8px_28px_-12px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.06)]",
-            "text-[12px] sm:text-[13px] text-foreground/90 font-medium",
+            "demo-mode-indicator fixed left-[76px] z-20",
+            "flex items-center gap-2 pl-3 pr-1.5 py-1.5",
             "select-none",
-            "transition-[opacity,background-color] duration-200 ease-out",
-            "hover:bg-[hsl(168_44%_12%/0.80)]",
+            "transition-opacity duration-200 ease-out",
             entered
               ? "opacity-100"
               : "opacity-0 pointer-events-none",
           ].join(" ")}
           style={{
-            bottom:
-              "calc(var(--demo-indicator-bottom, 1rem) + env(safe-area-inset-bottom, 0px))",
-            animation: entered ? "demo-float 3s ease-in-out infinite" : undefined,
+            bottom: "calc(var(--demo-indicator-bottom, 1rem) + env(safe-area-inset-bottom, 0px))",
+            background: "rgba(4,8,12,0.70)",
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: "20px",
+            animation: entered ? "demo-float 5s ease-in-out infinite" : undefined,
           }}
         >
           <span
             aria-hidden="true"
-            className="demo-mode-dot inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]"
+            style={{
+              display: "inline-block",
+              width: 5,
+              height: 5,
+              borderRadius: "50%",
+              background: "#2db87a",
+              flexShrink: 0,
+            }}
           />
-          <span className="leading-none">Demo Mode</span>
+          <span
+            style={{
+              fontSize: 10,
+              color: "rgba(255,255,255,0.45)",
+              lineHeight: 1,
+              fontWeight: 500,
+            }}
+          >
+            Demo Mode
+          </span>
           <button
             type="button"
             aria-label="Turn off Demo Mode"
             onClick={() => setConfirmOpen(true)}
             className={[
               "inline-flex items-center justify-center w-5 h-5 rounded-full",
-              "text-foreground/60 hover:text-foreground",
               "hover:bg-white/10 active:scale-95",
               "transition-[color,background-color,transform] duration-150",
               "focus:outline-none focus-visible:ring-1 focus-visible:ring-foreground/40",
             ].join(" ")}
+            style={{ color: "rgba(255,255,255,0.35)" }}
             data-testid="demo-mode-close"
           >
-            <X className="w-3.5 h-3.5" strokeWidth={2.25} />
+            <X className="w-3 h-3" strokeWidth={2} />
           </button>
         </div>
       )}

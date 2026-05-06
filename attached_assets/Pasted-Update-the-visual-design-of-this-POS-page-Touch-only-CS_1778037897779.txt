@@ -1,0 +1,90 @@
+Update the visual design of this POS page. Touch only CSS 
+and the background canvas drawing code — everything else 
+stays exactly as it is.
+
+BACKGROUND
+The page background is plain black right now. Add a fixed 
+canvas element behind everything. On load and on window 
+resize, fill it with #04070a then paint three nebula clouds 
+using radial gradients — first one in the upper-left area, 
+deep teal color at around 5% opacity, spread about 40% of 
+screen width. Second one lower-right, a barely warm neutral 
+tone at 4% opacity. Third one near center, cool blue at 
+under 4% opacity. All three should be so faint the eye 
+feels depth without consciously seeing clouds. Finish with 
+a vignette — radial gradient transparent at center fading 
+to rgba(0,0,0,0.62) at the outer edges. This canvas never 
+animates after the initial draw.
+
+ACTIVE CATEGORY TAB
+Give it a rimlight feel, not a solid fill. Teal text, 
+a bright teal line along the top edge using box-shadow 
+inset 0 1px 0 rgba(32,178,120,0.3), border-top 
+rgba(32,178,120,0.45), side borders rgba(32,178,120,0.20), 
+bottom border transparent, background rgba(32,178,120,0.06),
+border-radius 7px. The tabs container gets a faint glass 
+pill — background rgba(255,255,255,0.03), border 
+rgba(255,255,255,0.07), border-radius 10px, padding 3px.
+Inactive tabs are rgba(255,255,255,0.32) text, nothing else.
+
+PRODUCT CARDS
+Each card gets glass material — background 
+rgba(255,255,255,0.042), backdrop-filter blur(16px). 
+Borders are asymmetric: top edge rgba(255,255,255,0.13), 
+left rgba(255,255,255,0.07), right rgba(255,255,255,0.05), 
+bottom rgba(255,255,255,0.03). Border-radius 14px. 
+A tiny specular highlight in the top-left corner using 
+a ::before pseudo-element — 44x44px radial gradient 
+from rgba(255,255,255,0.08) to transparent, pointer-events 
+none. On hover the card lifts 3px, background goes to 
+rgba(255,255,255,0.065), top border shifts to teal.
+
+TOP BAR
+The top bar container gets background rgba(6,11,15,0.72), 
+backdrop-filter blur(32px) saturate(180%), border 
+rgba(255,255,255,0.07) with top edge rgba(255,255,255,0.13), 
+border-radius 13px, drop shadow below. The search field 
+inside looks recessed — darker background rgba(0,0,0,0.28), 
+inset shadow, top border brighter than the sides.
+
+SIDEBAR
+Background rgba(4,8,11,0.82), backdrop-filter blur(48px) 
+saturate(160%), right border rgba(255,255,255,0.07). Active 
+nav item has teal-tinted background and border, plus a 
+vertical left-edge line that fades at top and bottom using 
+a linear-gradient from transparent through teal back to 
+transparent on a 2px wide ::before element positioned at 
+left -1px.
+
+CART PANEL
+The right cart panel gets background rgba(6,12,16,0.78), 
+backdrop-filter blur(40px), left and top borders 
+rgba(255,255,255,0.07). Two small specular highlights 
+on top-left and top-right corners using ::before and 
+::after pseudo-elements, each a 60x60px radial gradient 
+fading from rgba(255,255,255,0.07) to transparent. 
+Cart item rows get hairline separators at rgba(255,255,255,0.05). 
+Quantity plus and minus buttons get teal-dim background 
+rgba(32,178,120,0.13) and teal border. All price values 
+inside the cart use gold color hsl(43,90%,56%). 
+The checkout button at the bottom is solid teal 
+hsl(158,63%,42%) with dark text #04070a, full width, 
+no border-radius, no glass effect — the only fully 
+opaque element in the UI.
+
+BOTTOM STRIP
+Background rgba(3,6,9,0.88), backdrop-filter blur(36px), 
+top border rgba(255,255,255,0.07). The cart icon sits 
+inside a 30x30px circle with teal-dim background and 
+teal border. Order label text at rgba(255,255,255,0.65), 
+unit count at rgba(255,255,255,0.28), total amount in 
+gold hsl(43,90%,56%) bold monospace.
+
+DEMO BADGE
+Position it fixed, 52px from bottom, 76px from left, 
+z-index 20. Glass pill — background rgba(4,8,12,0.70), 
+backdrop-filter blur(20px), border rgba(255,255,255,0.08), 
+border-radius 20px. Text 10px at rgba(255,255,255,0.45). 
+Green static dot 5px circle background #2db87a. 
+Animate it with a gentle float — translateY cycling 
+between 0 and -3px over 5 seconds ease-in-out infinite.
