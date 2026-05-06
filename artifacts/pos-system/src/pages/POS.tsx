@@ -1281,7 +1281,7 @@ export default function POS() {
           */}
           <div
             className={`p-2 sm:p-3 product-grid${isEditModeArming ? ' edit-mode-arming' : ''}`}
-            style={{ display: 'grid', background: 'radial-gradient(ellipse at 22% 28%, rgba(33,191,168,0.06) 0%, transparent 52%), radial-gradient(ellipse at 78% 72%, rgba(55,65,168,0.045) 0%, transparent 52%)' }}
+            style={{ display: 'grid' }}
           >
             {filteredProducts.map(product => {
               const currentImage = isEditMode ? (editDrafts[product.id]?.image ?? product.image) : product.image;
@@ -1324,7 +1324,7 @@ export default function POS() {
                         className={`w-full h-full object-cover transition-all duration-400 ease-in-out group-hover:scale-[1.015] ${product.stock <= 0 ? 'opacity-55 grayscale-[0.6]' : ''}`}
                       />
                     ) : (
-                      <div className={`w-full h-full flex items-center justify-center text-xl font-bold text-muted-foreground/22 ${product.stock <= 0 ? 'opacity-55' : ''}`} style={{ background: 'linear-gradient(145deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01))' }}>
+                      <div className={`w-full h-full bg-secondary/70 flex items-center justify-center text-xl font-bold text-muted-foreground/40 ${product.stock <= 0 ? 'opacity-55' : ''}`}>
                         {renderInitials(product.name)}
                       </div>
                     )}
@@ -1467,7 +1467,7 @@ export default function POS() {
                       </div>
                     </div>
                   ) : (
-                    <div className="p-2 sm:p-2.5 flex flex-col gap-1" style={{ background: 'linear-gradient(to bottom, rgba(4,6,12,0.22), rgba(4,6,12,0.52))' }}>
+                    <div className="p-2 sm:p-2.5 flex flex-col gap-1">
                       <Tooltip delayDuration={300}>
                         <TooltipTrigger asChild>
                           <p className="pos-card-name font-semibold text-foreground cursor-default">{product.name}</p>
@@ -2111,30 +2111,20 @@ export default function POS() {
 
         /* ── Search-match highlight ───────────────────────────────────────── */
         .search-match-card {
-          border-top: 1px solid rgba(33,191,168,0.55) !important;
-          border-left: 1px solid rgba(33,191,168,0.28) !important;
-          border-right: 1px solid rgba(33,191,168,0.14) !important;
-          border-bottom: 1px solid rgba(33,191,168,0.08) !important;
-          background: linear-gradient(158deg,
-            rgba(33,191,168,0.11) 0%,
-            rgba(255,255,255,0.04) 50%,
-            rgba(33,191,168,0.03) 100%);
-          backdrop-filter: blur(20px) saturate(160%);
-          -webkit-backdrop-filter: blur(20px) saturate(160%);
+          border-color: hsl(var(--primary) / 0.4) !important;
+          background:
+            linear-gradient(180deg, hsl(var(--primary) / 0.09), hsl(var(--primary) / 0.03)),
+            hsl(var(--card));
           box-shadow:
-            inset 0 1px 0 rgba(33,191,168,0.18),
-            0 4px 18px rgba(0,0,0,0.42),
-            0 0 0 1px rgba(33,191,168,0.14),
-            0 0 18px rgba(33,191,168,0.09);
+            0 0 0 1px hsl(var(--primary) / 0.18),
+            0 4px 18px hsl(var(--primary) / 0.07);
           transition: background 220ms ease, box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease;
         }
         .search-match-card:hover {
-          transform: translateY(-4px);
+          transform: translateY(-1px);
           box-shadow:
-            inset 0 1px 0 rgba(33,191,168,0.24),
-            0 16px 40px rgba(0,0,0,0.52),
-            0 0 0 1px rgba(33,191,168,0.28),
-            0 0 28px rgba(33,191,168,0.12);
+            0 0 0 1px hsl(var(--primary) / 0.28),
+            0 6px 22px hsl(var(--primary) / 0.10);
         }
 
         /* ── Autofill neutralization ──────────────────────────────────────── */
@@ -2174,50 +2164,29 @@ export default function POS() {
 
         /* ── Glass product card ───────────────────────────────────────────── */
         .pos-glass-card {
-          background: linear-gradient(158deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.025) 100%);
-          backdrop-filter: blur(20px) saturate(160%);
-          -webkit-backdrop-filter: blur(20px) saturate(160%);
-          border-top: 1px solid rgba(255,255,255,0.20);
-          border-left: 1px solid rgba(255,255,255,0.11);
-          border-right: 1px solid rgba(255,255,255,0.04);
+          background: rgba(255,255,255,0.038);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-top: 1px solid rgba(255,255,255,0.13);
+          border-left: 1px solid rgba(255,255,255,0.07);
+          border-right: 1px solid rgba(255,255,255,0.05);
           border-bottom: 1px solid rgba(255,255,255,0.02);
-          box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.09),
-            0 4px 18px rgba(0,0,0,0.40),
-            0 1px 4px rgba(0,0,0,0.24);
-          transition: transform 300ms cubic-bezier(0.34,1.4,0.64,1),
-                      box-shadow 300ms ease,
-                      border-top-color 300ms ease,
-                      background 300ms ease;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.3);
+          transition: transform 300ms cubic-bezier(0.34,1.4,0.64,1), box-shadow 300ms ease, border-top-color 300ms ease;
         }
         .pos-glass-card:hover {
-          background: linear-gradient(158deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%);
-          transform: translateY(-4px);
-          border-top-color: rgba(33,191,168,0.72);
-          box-shadow:
-            inset 0 1px 0 rgba(255,255,255,0.12),
-            0 16px 40px rgba(0,0,0,0.55),
-            0 0 0 1px rgba(33,191,168,0.22),
-            0 0 22px rgba(33,191,168,0.08);
+          transform: translateY(-3px);
+          border-top-color: hsl(168,58%,48%);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(33,191,168,0.15);
         }
         .pos-glass-card::before {
           content: '';
           position: absolute;
           top: 0; left: 0;
-          width: 58%; height: 1px;
-          background: linear-gradient(90deg, rgba(255,255,255,0.30), rgba(255,255,255,0));
+          width: 42%; height: 1px;
+          background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0));
           pointer-events: none;
           z-index: 1;
-        }
-        .pos-glass-card::after {
-          content: '';
-          position: absolute;
-          top: 0; left: 0; right: 0;
-          height: 38%;
-          background: linear-gradient(to bottom, rgba(255,255,255,0.028), rgba(255,255,255,0));
-          pointer-events: none;
-          z-index: 0;
-          border-radius: inherit;
         }
 
         /* ── Heavy glass bottom strip ─────────────────────────────────────── */
