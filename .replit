@@ -26,13 +26,13 @@ args = "API Server"
 name = "Start application"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "PORT=5000 pnpm --filter @workspace/pos-system run dev"
 waitForPort = 5000
-
-[workflows.workflow.metadata]
-outputType = "webview"
 
 [[workflows.workflow]]
 name = "API Server"
@@ -52,11 +52,7 @@ externalPort = 6000
 
 [[ports]]
 localPort = 5000
-externalPort = 5000
-
-[[ports]]
-localPort = 5001
-externalPort = 3003
+externalPort = 80
 
 [[ports]]
 localPort = 5173
