@@ -1305,7 +1305,7 @@ export default function POS() {
             We use a CSS custom property approach via inline style + CSS var trick.
           */}
           <div
-            className={`p-2 sm:p-3 product-grid${isEditModeArming ? ' edit-mode-arming' : ''}`}
+            className={`pt-2 pr-2 pb-2 sm:pt-3 sm:pr-3 sm:pb-3 product-grid${isEditModeArming ? ' edit-mode-arming' : ''}`}
             style={{ display: 'grid' }}
           >
             {filteredProducts.map(product => {
