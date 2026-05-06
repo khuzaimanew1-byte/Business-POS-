@@ -1,0 +1,60 @@
+Update the design of my existing POS page. Don't change 
+any layout, functionality, or JavaScript — only update 
+the visual styling.
+
+Add two fixed canvas elements behind everything for the 
+background. First canvas: fill #04070a base, paint three 
+ultra-faint nebula clouds with radial gradients — deep 
+teal upper-left, barely warm lower-right, cool blue 
+center — all below 6% opacity. Add a dark vignette at 
+edges. Static, redraws on resize only. Second canvas: 
+animated pure white stars only, count based on screen 
+width (200 / 150 / 100 / 60 for breakpoints 1400 / 1024 
+/ 768 / smaller). Stars have three size tiers, large ones 
+get diffraction cross spikes. Each star twinkles 
+independently. Mouse within 100px pulls them gently, 
+within 60px they glow brighter. Spring return when mouse 
+leaves. Hard 18px clamp — no star leaves canvas.
+
+Style the sidebar as deep dark glass: rgba(4,8,11,0.82) 
+with blur(48px). Active nav item gets teal icon, teal 
+label, teal-tinted background, and a vertical left-edge 
+line that fades at top and bottom. Inactive items at 32% 
+white opacity.
+
+Style the top bar as a floating glass panel: 
+rgba(6,11,15,0.72) blur(32px), subtle drop shadow, 
+specular highlight on top inner edge. Make the search 
+bar look recessed inside the glass — darker fill, 
+inset shadow.
+
+Style product cards as near-transparent glass: ~4% white 
+fill, blur(16px), asymmetric rim borders (top brightest 
+at 13% white, sides dimmer, bottom almost invisible). 
+Tiny specular highlight in top-left corner. Hover lifts 
+3px with spring easing and top border turns teal. No 
+category color differences — all cards identical glass.
+
+Change all product prices to gold color hsl(43,90%,56%) 
+using DM Mono font, tabular numbers. Product names stay 
+white. Stock counts at 28% white opacity, red when low.
+
+Style the cart panel as a warmer foreground glass window: 
+rgba(6,12,16,0.78) blur(40px). Add small specular 
+highlights at top-left and top-right corners. Quantity 
+control buttons get teal styling. All price values in 
+cart use gold color. Make the Checkout button fully solid 
+teal hsl(158,63%,42%) with dark text — no glass, no blur, 
+full width, zero border radius.
+
+Style the bottom strip as heavy grounded glass: 
+rgba(3,6,9,0.88) blur(36px), anchored to bottom, not 
+floating. Cart icon in a teal-bordered circle. Total 
+amount in gold.
+
+Move the demo badge to a fixed floating position about 
+52px from bottom and 76px from left. Give it dark pill 
+glass styling with a gentle up-down float animation.
+
+Use DM Sans for all text, DM Mono for prices and codes. 
+Import both from Google Fonts.

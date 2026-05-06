@@ -1,59 +1,59 @@
 # POS System — Replit Project
 
-## Overview
+A full-featured Point of Sale (POS) system built as a pnpm monorepo with a cinematic dark glass UI.
 
-A full-featured Point of Sale (POS) system built as a pnpm monorepo. It includes a React frontend for the POS interface and an Express API backend.
+## Run & Operate
 
-## Architecture
+- **Frontend dev**: `PORT=5000 pnpm --filter @workspace/pos-system run dev`
+- **API dev**: `PORT=3000 pnpm --filter @workspace/api-server run dev`
+- **Build API**: `pnpm --filter @workspace/api-server run build`
 
-### Monorepo Structure
+## Stack
+
+- **Package manager**: pnpm workspace monorepo
+- **Frontend**: React 19, Vite 7, TailwindCSS 4 (CSS-first `@theme inline`), Wouter, Radix UI, Sonner
+- **Backend**: Express 5, Pino, CORS
+- **DB**: Drizzle ORM + PostgreSQL (schema not yet populated)
+- **Fonts**: DM Sans (UI), DM Mono (prices/codes) via Google Fonts
+
+## Where Things Live
 
 ```
-artifacts/
-  pos-system/    — React + Vite frontend (POS UI)
-  api-server/    — Express 5 API server (Node.js)
-lib/
-  api-zod/       — Shared Zod schema definitions
-  db/            — Drizzle ORM + PostgreSQL database layer
+artifacts/pos-system/    — React + Vite frontend
+  src/pages/POS.tsx      — main POS UI (all canvas + glass styling in-file)
+  src/index.css          — Tailwind v4 theme + global tokens
+  index.html             — font imports
+artifacts/api-server/    — Express 5 API
+lib/api-zod/             — shared Zod schemas
+lib/db/                  — Drizzle ORM schema
 ```
 
-### Tech Stack
+## Architecture Decisions
 
-- **Package manager**: pnpm (workspace monorepo)
-- **Frontend**: React 19, Vite 7, TailwindCSS 4, TanStack Query, Wouter (routing), Radix UI, Sonner
-- **Backend**: Express 5, Pino (logging), CORS
-- **Database**: Drizzle ORM + PostgreSQL (schema not yet populated)
-- **Language**: TypeScript throughout
+- **Canvas layers**: Two fixed `<canvas>` elements at z-index 0/1; nebula static (redraws on resize), stars animated with mouse spring interaction
+- **Glass system**: All panels use `rgba(...)` + `backdrop-filter: blur()` inline styles since Tailwind v4 doesn't support arbitrary rgba in class names cleanly
+- **Gold prices**: `.pos-card-price` and `.pos-gold` utility use `hsl(43,90%,56%)` + DM Mono throughout
+- **Demo badge placement**: Controlled via `--demo-indicator-bottom` CSS var set by `useDemoIndicatorPlacement()` hook in each host page
+- **Cart persistence**: localStorage (`pos.cart.items.v1`); demo cart is memory-only
 
-## Ports
+## Product
 
-- **Frontend** (pos-system): port 5000 — served via Vite dev server
-- **Backend** (api-server): port 3000 — Express server
-
-## Workflows
-
-- `Start application` — `PORT=5000 pnpm --filter @workspace/pos-system run dev` (webview, port 5000)
-- `API Server` — `PORT=3000 pnpm --filter @workspace/api-server run dev` (console, port 3000)
-
-## Key Features
-
-- Product catalogue with categories, stock tracking, quick codes
-- Shopping cart with checkout
-- Demo Mode (toggle in Settings) — loads sample products without affecting real data
-- Analytics page
-- Cart history
-- Notifications system
+- Product catalogue: categories, stock, quick codes, image upload
+- Shopping cart: qty controls (teal), gold prices, solid teal checkout button
+- Demo Mode: sample products + seeded cart, floated pill badge (bottom-left, 76px from sidebar)
+- Analytics, Cart History, Notifications, Settings pages
 - Keyboard shortcuts
 
-## Development Notes
+## User Preferences
 
-- Frontend stores user products in `localStorage` (key: `pos.products.v1`)
-- Demo products are memory-only and reset on each demo session
-- Vite config already sets `allowedHosts: true` and `host: 0.0.0.0` for Replit proxy compatibility
-- API server builds with esbuild (`build.mjs`) before starting
+- Color palette: desaturated bio-teal primary, gold prices (`hsl(43,90%,56%)`), no yellow, no indigo
+- Glass UI: deep dark glass panels, asymmetric card borders, hover-lift spring on cards
+- Fonts: DM Sans everywhere, DM Mono for all prices and quick codes
+- Product grid: `minmax(100/120/140/160px)` across breakpoints 640/768/1024/1280
 
-## Deployment
+## Gotchas
 
-Configured as `autoscale` deployment:
-- **Build**: builds api-server and pos-system
-- **Run**: starts the API server on port 5000
+- Tailwind v4 uses `@theme inline` — no `tailwind.config.js`; tokens live in `index.css`
+- Canvas z-index: nebula=0, stars=1, main content `.pos-main-layer`=2, sidebar inline z=20
+- `backdrop-filter` requires non-`transparent` background on the element to work in Safari
+- API server rebuilds on each `dev` start via esbuild (`build.mjs`)

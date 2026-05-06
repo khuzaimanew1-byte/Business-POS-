@@ -79,26 +79,25 @@ export function DemoModeIndicator() {
           aria-live="polite"
           data-testid="demo-mode-indicator"
           className={[
-            "demo-mode-indicator fixed left-3 sm:left-4 z-40",
+            "demo-mode-indicator fixed left-4 sm:left-[76px] z-40",
             "flex items-center gap-2.5 pl-3 pr-1.5 py-1.5",
             "rounded-full",
-            // Glass / frosted look — translucent, blurred, soft teal-tinted border.
             "border border-[hsl(168_44%_35%/0.22)]",
-            "bg-[hsl(168_44%_15%/0.22)] supports-[backdrop-filter]:bg-[hsl(168_44%_15%/0.16)]",
+            "bg-[hsl(168_44%_8%/0.72)] supports-[backdrop-filter]:bg-[hsl(168_44%_8%/0.60)]",
             "backdrop-blur-xl backdrop-saturate-150",
-            "shadow-[0_8px_28px_-12px_rgba(0,0,0,0.55)]",
+            "shadow-[0_8px_28px_-12px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.06)]",
             "text-[12px] sm:text-[13px] text-foreground/90 font-medium",
             "select-none",
-            // Entrance / exit + light hover affordance on the pill itself.
-            "transition-[opacity,transform,background-color] duration-200 ease-out",
-            "hover:bg-[hsl(168_44%_15%/0.32)]",
+            "transition-[opacity,background-color] duration-200 ease-out",
+            "hover:bg-[hsl(168_44%_12%/0.80)]",
             entered
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-2 pointer-events-none",
+              ? "opacity-100"
+              : "opacity-0 pointer-events-none",
           ].join(" ")}
           style={{
             bottom:
               "calc(var(--demo-indicator-bottom, 1rem) + env(safe-area-inset-bottom, 0px))",
+            animation: entered ? "demo-float 3s ease-in-out infinite" : undefined,
           }}
         >
           <span

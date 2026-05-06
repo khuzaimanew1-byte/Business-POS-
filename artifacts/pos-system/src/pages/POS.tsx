@@ -55,7 +55,7 @@ export default function POS() {
   // Demo Mode pill sits above the cart strip and (on mobile) the bottom nav,
   // derived from the same CSS vars those elements use — no fixed pixels.
   useDemoIndicatorPlacement(
-    "calc(var(--mobile-nav-height, 0px) + var(--bottom-strip-height, 0px) + 12px)",
+    "calc(max(52px, var(--bottom-strip-height, 48px) + 4px))",
   );
   const { unreadCount, pendingFocusId, consumeProductFocus } = useNotifications();
   // Product currently highlighted via a notification deep-link. The CSS
@@ -215,6 +215,8 @@ export default function POS() {
 
   // ── Search/keyboard refs ───────────────────────────────────────────────
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const canvasNebulaRef = useRef<HTMLCanvasElement>(null);
+  const canvasStarsRef = useRef<HTMLCanvasElement>(null);
   // Long-press tracking (mobile)
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFired = useRef(false);
@@ -224,6 +226,137 @@ export default function POS() {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 150);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // ── Nebula canvas (static, redraws on resize) ─────────────────────────
+  useEffect(() => {
+    const canvas = canvasNebulaRef.current;
+    if (!canvas) return;
+    const draw = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.fillStyle = '#04070a';
+      ctx.fillRect(0, 0, w, h);
+      const g1 = ctx.createRadialGradient(w*0.15, h*0.22, 0, w*0.15, h*0.22, w*0.48);
+      g1.addColorStop(0, 'rgba(0,78,68,0.055)');
+      g1.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g1;
+      ctx.fillRect(0, 0, w, h);
+      const g2 = ctx.createRadialGradient(w*0.84, h*0.76, 0, w*0.84, h*0.76, w*0.42);
+      g2.addColorStop(0, 'rgba(55,28,8,0.042)');
+      g2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g2;
+      ctx.fillRect(0, 0, w, h);
+      const g3 = ctx.createRadialGradient(w*0.5, h*0.44, 0, w*0.5, h*0.44, w*0.36);
+      g3.addColorStop(0, 'rgba(8,18,58,0.044)');
+      g3.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g3;
+      ctx.fillRect(0, 0, w, h);
+      const vg = ctx.createRadialGradient(w/2, h/2, h*0.28, w/2, h/2, w*0.72);
+      vg.addColorStop(0, 'rgba(0,0,0,0)');
+      vg.addColorStop(1, 'rgba(0,0,0,0.48)');
+      ctx.fillStyle = vg;
+      ctx.fillRect(0, 0, w, h);
+    };
+    draw();
+    window.addEventListener('resize', draw);
+    return () => window.removeEventListener('resize', draw);
+  }, []);
+
+  // ── Stars canvas (animated, mouse-interactive) ────────────────────────
+  useEffect(() => {
+    const canvas = canvasStarsRef.current;
+    if (!canvas) return;
+    let w = canvas.width = window.innerWidth;
+    let h = canvas.height = window.innerHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    const getCount = () => w >= 1400 ? 200 : w >= 1024 ? 150 : w >= 768 ? 100 : 60;
+    type Star = { x: number; y: number; bx: number; by: number; size: number; tier: number; phase: number; speed: number; vx: number; vy: number; };
+    let stars: Star[] = [];
+    const init = () => {
+      stars = Array.from({ length: getCount() }, () => {
+        const tier = Math.random() < 0.60 ? 0 : Math.random() < 0.72 ? 1 : 2;
+        const size = tier === 0 ? 0.35 + Math.random()*0.55 : tier === 1 ? 0.9 + Math.random()*1.0 : 2.0 + Math.random()*1.8;
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        return { x, y, bx: x, by: y, size, tier, phase: Math.random()*Math.PI*2, speed: 0.3+Math.random()*0.8, vx: 0, vy: 0 };
+      });
+    };
+    init();
+    const mouse = { x: -999, y: -999 };
+    const onMove = (e: MouseEvent) => { mouse.x = e.clientX; mouse.y = e.clientY; };
+    const onLeave = () => { mouse.x = -999; mouse.y = -999; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseleave', onLeave);
+    const onResize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; init(); };
+    window.addEventListener('resize', onResize);
+    let rafId = 0;
+    let last = 0;
+    const drawFrame = (t: number) => {
+      const dt = Math.min((t - last) / 16, 3);
+      last = t;
+      ctx.clearRect(0, 0, w, h);
+      for (const s of stars) {
+        const twinkle = 0.42 + 0.58 * Math.sin(t * 0.001 * s.speed + s.phase);
+        const dx = mouse.x - s.x;
+        const dy = mouse.y - s.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        let glow = 0;
+        if (dist < 100) {
+          const pull = (1 - dist/100) * 0.044 * dt;
+          s.vx += dx * pull;
+          s.vy += dy * pull;
+          if (dist < 60) glow = (1 - dist/60) * 0.85;
+        }
+        s.vx += (s.bx - s.x) * 0.075 * dt;
+        s.vy += (s.by - s.y) * 0.075 * dt;
+        s.vx *= 0.87;
+        s.vy *= 0.87;
+        s.x = Math.max(18, Math.min(w-18, s.x + s.vx));
+        s.y = Math.max(18, Math.min(h-18, s.y + s.vy));
+        const alpha = Math.min(1, twinkle + glow * 0.5);
+        if (s.tier === 2) {
+          const sk = s.size * 5.5;
+          ctx.save();
+          ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.22})`;
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(s.x-sk, s.y); ctx.lineTo(s.x+sk, s.y);
+          ctx.moveTo(s.x, s.y-sk); ctx.lineTo(s.x, s.y+sk);
+          const sd = sk * 0.55;
+          ctx.moveTo(s.x-sd, s.y-sd); ctx.lineTo(s.x+sd, s.y+sd);
+          ctx.moveTo(s.x+sd, s.y-sd); ctx.lineTo(s.x-sd, s.y+sd);
+          ctx.stroke();
+          ctx.restore();
+        }
+        if (glow > 0) {
+          const gr = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size*9);
+          gr.addColorStop(0, `rgba(200,228,255,${glow*0.28})`);
+          gr.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = gr;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.size*9, 0, Math.PI*2);
+          ctx.fill();
+        }
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+        ctx.fill();
+      }
+      rafId = requestAnimationFrame(drawFrame);
+    };
+    rafId = requestAnimationFrame(drawFrame);
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseleave', onLeave);
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
 
   // Normalize a query so "wie", "wi-e", "#wi-e" all match the same code.
   const normalize = (s: string) => s.toLowerCase().replace(/[#\-\s]/g, '');
@@ -782,12 +915,26 @@ export default function POS() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground dark">
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground dark" style={{ background: '#04070a' }}>
+      {/* ── BACKGROUND CANVASES ─────────────────────────────────────────── */}
+      <canvas ref={canvasNebulaRef} aria-hidden className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 0 }} />
+      <canvas ref={canvasStarsRef} aria-hidden className="fixed inset-0 w-full h-full pointer-events-none" style={{ zIndex: 1 }} />
+
       {/* Hidden file input */}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleImageFileChange} />
 
       {/* ── DESKTOP LEFT SIDEBAR (hidden on mobile) ────────────────────── */}
-      <aside className="hidden sm:flex w-[72px] shrink-0 border-r border-border bg-sidebar flex-col items-center py-4 z-20">
+      <aside
+        className="hidden sm:flex w-[72px] shrink-0 flex-col items-center py-4 z-20"
+        style={{
+          background: 'rgba(4,8,11,0.82)',
+          backdropFilter: 'blur(48px)',
+          WebkitBackdropFilter: 'blur(48px)',
+          borderRight: '1px solid rgba(255,255,255,0.06)',
+          position: 'relative',
+          zIndex: 20,
+        }}
+      >
         {/* ── Brand ─────────────────────────────────────────────────────── */}
         <div className="flex flex-col items-center gap-2 mb-4 pb-4 border-b border-border/25 w-full px-2">
           <div
@@ -825,11 +972,19 @@ export default function POS() {
 
       {/* ── MAIN CONTENT AREA ─────────────────────────────────────────────── */}
       <main
-        className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out${isCartOpen ? ' main-cart-pushed' : ''}`}
+        className={`pos-main-layer flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out${isCartOpen ? ' main-cart-pushed' : ''}`}
       >
 
         {/* TOP BAR */}
-        <header className={`h-14 sm:h-16 flex items-center px-3 sm:px-6 shrink-0 backdrop-blur-sm z-10 sticky top-0 transition-all duration-400 ${isSelectMode ? 'bg-background/90 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)] gap-2' : isEditMode ? 'border-b border-primary/25 bg-primary/5 shadow-none justify-between' : 'bg-background/90 shadow-[0_1px_0_rgba(255,255,255,0.04),0_4px_24px_rgba(0,0,0,0.22)] justify-between'}`}>
+        <header
+          className={`h-14 sm:h-16 flex items-center px-3 sm:px-6 shrink-0 z-10 sticky top-0 transition-all duration-400 ${isSelectMode ? 'gap-2' : isEditMode ? 'border-b border-primary/25 justify-between' : 'justify-between'}`}
+          style={{
+            background: isEditMode ? 'rgba(33,191,168,0.06)' : 'rgba(6,11,15,0.72)',
+            backdropFilter: 'blur(32px)',
+            WebkitBackdropFilter: 'blur(32px)',
+            boxShadow: isEditMode ? 'none' : '0 4px 24px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.05)',
+          }}
+        >
           {isSelectMode ? (
             /* ── SELECT MODE: unified full-width toolbar ───────────────── */
             <>
@@ -900,7 +1055,8 @@ export default function POS() {
                       setSearchQuery('');
                     }
                   }}
-                  className="w-full bg-input/50 border border-transparent focus:border-ring/50 focus:ring-1 focus:ring-ring/20 rounded-full py-2 pl-9 pr-9 outline-none transition-all duration-250 placeholder:text-muted-foreground text-[14px] sm:text-[16px]"
+                  className="w-full border border-white/[0.06] focus:border-primary/40 focus:ring-1 focus:ring-primary/20 rounded-full py-2 pl-9 pr-9 outline-none transition-all duration-250 placeholder:text-muted-foreground/60 text-[14px] sm:text-[16px]"
+                  style={{ background: 'rgba(2,4,7,0.65)', boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.45)' }}
                   data-testid="input-search"
                 />
                 {searchQuery && (
@@ -1136,14 +1292,14 @@ export default function POS() {
               const cardCommonProps = {
                 'data-testid': `card-product-${product.id}`,
                 'data-quick-code': qc,
-                className: `group relative bg-card rounded-xl overflow-hidden transition-all duration-250 ease-in-out flex flex-col ${
+                className: `group relative rounded-xl overflow-hidden transition-all duration-250 ease-in-out flex flex-col ${
                   isHighlighted ? 'product-card-highlight ' : ''
                 }${
                   isEditMode
-                    ? 'border border-primary/20 cursor-default'
+                    ? 'pos-glass-card border border-primary/20 cursor-default'
                     : isSelectMode
-                      ? `border-2 ${isSelected ? 'border-primary shadow-[0_0_0_3px_rgba(33,191,168,0.18)]' : 'border-card-border hover:border-primary/40'} cursor-pointer`
-                      : `border ${isTopMatch ? 'search-match-card' : 'border-card-border'} hover:-translate-y-0.5 hover:shadow-md cursor-pointer`
+                      ? `border-2 ${isSelected ? 'border-primary bg-primary/[0.06] shadow-[0_0_0_3px_rgba(33,191,168,0.18)]' : 'border-white/[0.08] bg-white/[0.03] hover:border-primary/40'} cursor-pointer backdrop-blur-[16px]`
+                      : `${isTopMatch ? 'search-match-card' : 'pos-glass-card'} cursor-pointer`
                 }`,
                 onClick: () => {
                   if (isEditMode) return;
@@ -1402,12 +1558,14 @@ export default function POS() {
         {/* BOTTOM CART STRIP */}
         <div
           onClick={() => setIsCartOpen(!isCartOpen)}
-          className={`fixed left-0 sm:left-[72px] right-0 cart-strip-h glass-panel border-t flex items-center justify-between px-4 sm:px-7 cursor-pointer hover:bg-background/70 transition-colors duration-250 z-20 cart-strip-right${isCartOpen ? ' cart-pushed' : ''}${cartFlash ? ' cart-flash' : ''}`}
+          className={`fixed left-0 sm:left-[72px] right-0 cart-strip-h pos-strip-glass border-t border-white/[0.06] flex items-center justify-between px-4 sm:px-7 cursor-pointer transition-colors duration-250 z-20 cart-strip-right${isCartOpen ? ' cart-pushed' : ''}${cartFlash ? ' cart-flash' : ''}`}
           style={{ bottom: 'var(--mobile-nav-height, 0px)' }}
           data-testid="cart-strip"
         >
           <div className="flex items-center gap-2 sm:gap-2.5">
-            <ShoppingCart className="w-[17px] h-[17px] sm:w-[19px] sm:h-[19px] text-foreground/50 shrink-0" />
+            <div className="w-8 h-8 rounded-full border border-primary/55 flex items-center justify-center shrink-0">
+              <ShoppingCart className="w-[14px] h-[14px] sm:w-[16px] sm:h-[16px] text-primary shrink-0" />
+            </div>
             <span className="text-[13px] sm:text-[14px] text-muted-foreground">
               <span className="font-bold text-foreground tabular-nums">{cartCount}</span>
               {' '}{cartCount === 1 ? 'item' : 'items'}
@@ -1415,7 +1573,7 @@ export default function POS() {
           </div>
           <Money
             value={cartTotal}
-            className="currency-hero font-bold text-foreground tracking-tight text-[18px] sm:text-[21px]"
+            className="currency-hero font-bold tracking-tight text-[18px] sm:text-[21px] pos-gold"
           />
         </div>
 
@@ -1473,10 +1631,16 @@ export default function POS() {
 
       {/* Cart panel — bottom sheet on mobile, right sidebar on desktop */}
       <aside
-        className={`cart-panel fixed z-50 bg-background shadow-2xl flex flex-col
-          bottom-0 left-0 right-0 h-[80vh] rounded-t-3xl border-t border-border
-          md:top-0 md:bottom-0 md:left-auto md:right-0 md:h-auto md:rounded-none md:border-t-0 md:border-l
+        className={`cart-panel fixed z-50 flex flex-col
+          bottom-0 left-0 right-0 h-[80vh] rounded-t-3xl border-t border-white/[0.08]
+          md:top-0 md:bottom-0 md:left-auto md:right-0 md:h-auto md:rounded-none md:border-t-0 md:border-l md:border-l-white/[0.08]
           ${isCartOpen ? 'cart-panel-open' : 'cart-panel-closed'}`}
+        style={{
+          background: 'rgba(6,12,16,0.78)',
+          backdropFilter: 'blur(40px)',
+          WebkitBackdropFilter: 'blur(40px)',
+          boxShadow: '-8px 0 48px rgba(0,0,0,0.5), inset 1px 0 0 rgba(255,255,255,0.06)',
+        }}
         data-testid="cart-sidebar"
       >
         {/* Drag handle pill — mobile only */}
@@ -1535,7 +1699,7 @@ export default function POS() {
                 // guard only; deletion also removes it from cartItems.
                 if (!prod) return null;
                 return (
-                <div key={item.productId} className="flex items-stretch bg-secondary/30 rounded-xl border border-border/50 overflow-hidden group transition-colors duration-200" data-testid={`cart-item-${item.productId}`}>
+                <div key={item.productId} className="flex items-stretch rounded-xl overflow-hidden group transition-colors duration-200" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }} data-testid={`cart-item-${item.productId}`}>
                   {/* IMAGE — far left, fills full card height */}
                   <div className="w-[60px] h-[60px] self-center shrink-0 bg-secondary">
                     {prod.image
@@ -1549,7 +1713,7 @@ export default function POS() {
                     {/* TOP ROW: name (left) · total price (top-right) */}
                     <div className="flex items-center justify-between gap-2">
                       <h4 className="pos-cart-name font-semibold text-foreground truncate">{prod.name}</h4>
-                      <Money value={prod.price * item.quantity} className="shrink-0 font-normal text-[14px] text-foreground" />
+                      <Money value={prod.price * item.quantity} className="shrink-0 font-normal text-[14px] pos-gold" />
                     </div>
                     {/* BOTTOM ROW: per-unit price (left) · controls (right) */}
                     <div className="flex items-center justify-between gap-2">
@@ -1557,10 +1721,10 @@ export default function POS() {
                         <Money value={prod.price} />
                         <span>/ ea</span>
                       </span>
-                      <div className="flex items-center bg-background rounded-full border border-border overflow-hidden h-7 shrink-0">
+                      <div className="flex items-center rounded-full overflow-hidden h-7 shrink-0" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(33,191,168,0.25)' }}>
                         <button
                           onClick={() => updateCartQty(item.productId, item.quantity - 1)}
-                          className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground"
+                          className="px-2 h-full transition-colors duration-200 text-primary/70 hover:text-primary hover:bg-primary/[0.12]"
                           data-testid={`btn-qty-minus-${item.productId}`}
                         >
                           <Minus className="w-3 h-3" />
@@ -1575,11 +1739,11 @@ export default function POS() {
                             updateCartQty(item.productId, v);
                             setQtyDrafts(d => { const n = { ...d }; delete n[item.productId]; return n; });
                           }}
-                          className="w-8 h-full bg-transparent text-center text-xs font-medium outline-none no-spinners"
+                          className="w-8 h-full bg-transparent text-center text-xs font-medium outline-none no-spinners text-foreground"
                         />
                         <button
                           onClick={() => updateCartQty(item.productId, item.quantity + 1)}
-                          className="px-2 h-full hover:bg-secondary transition-colors duration-200 text-muted-foreground hover:text-foreground"
+                          className="px-2 h-full transition-colors duration-200 text-primary/70 hover:text-primary hover:bg-primary/[0.12]"
                           data-testid={`btn-qty-plus-${item.productId}`}
                         >
                           <Plus className="w-3 h-3" />
@@ -1599,17 +1763,18 @@ export default function POS() {
         </ScrollArea>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border bg-background shrink-0 pb-safe">
+        <div className="p-4 border-t border-white/[0.07] shrink-0 pb-safe" style={{ background: 'rgba(3,7,10,0.45)' }}>
           <div className="flex justify-between font-bold text-lg mb-4 text-foreground">
             <span>Total</span>
-            <Money value={cartTotal} className="currency-hero text-primary" />
+            <Money value={cartTotal} className="currency-hero pos-gold" />
           </div>
           <Button
-            className={`w-full h-12 sm:h-14 text-base sm:text-lg font-bold rounded-xl transition-all duration-200 active:scale-[0.98] ${
+            className={`w-full h-12 sm:h-14 text-base sm:text-lg font-bold rounded-none transition-all duration-200 active:scale-[0.98] border-0 ${
               checkoutSuccess
-                ? 'bg-success hover:bg-success text-white shadow-[0_0_0_3px_rgba(33,191,168,0.20)] disabled:opacity-100'
+                ? 'bg-success hover:bg-success text-foreground/90 shadow-none disabled:opacity-100'
                 : ''
             }`}
+            style={!checkoutSuccess ? { background: 'hsl(158,63%,42%)', color: 'rgba(0,0,0,0.82)', borderRadius: 0 } : { borderRadius: 0 }}
             disabled={cartItems.length === 0 && !checkoutSuccess}
             onClick={checkout}
             data-testid="btn-checkout"
@@ -1809,7 +1974,7 @@ export default function POS() {
         }
         @media (min-width: 1024px) { .pos-card-name { font-size: 14px; } }
 
-        .pos-card-price { font-size: 12px; color: hsl(var(--rose-frost)); font-weight: 500; }
+        .pos-card-price { font-size: 12px; color: hsl(43,90%,56%); font-weight: 500; font-family: 'DM Mono', ui-monospace, monospace; font-variant-numeric: tabular-nums; }
         @media (min-width: 1024px) { .pos-card-price { font-size: 13px; } }
 
         .pos-card-stock { font-size: 10px; }
@@ -1992,10 +2157,55 @@ export default function POS() {
         /* ── Cart flash ───────────────────────────────────────────────────── */
         @keyframes cart-flash-anim {
           0%   { background-color: transparent; }
-          25%  { background-color: rgba(100,80,200,0.08); }
+          25%  { background-color: rgba(33,191,168,0.06); }
           100% { background-color: transparent; }
         }
         .cart-flash { animation: cart-flash-anim 700ms cubic-bezier(0.4,0,0.2,1); }
+
+        /* ── Glass product card ───────────────────────────────────────────── */
+        .pos-glass-card {
+          background: rgba(255,255,255,0.038);
+          backdrop-filter: blur(16px);
+          -webkit-backdrop-filter: blur(16px);
+          border-top: 1px solid rgba(255,255,255,0.13);
+          border-left: 1px solid rgba(255,255,255,0.07);
+          border-right: 1px solid rgba(255,255,255,0.05);
+          border-bottom: 1px solid rgba(255,255,255,0.02);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 2px 8px rgba(0,0,0,0.3);
+          transition: transform 300ms cubic-bezier(0.34,1.4,0.64,1), box-shadow 300ms ease, border-top-color 300ms ease;
+        }
+        .pos-glass-card:hover {
+          transform: translateY(-3px);
+          border-top-color: hsl(168,58%,48%);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(33,191,168,0.15);
+        }
+        .pos-glass-card::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0;
+          width: 42%; height: 1px;
+          background: linear-gradient(90deg, rgba(255,255,255,0.18), rgba(255,255,255,0));
+          pointer-events: none;
+          z-index: 1;
+        }
+
+        /* ── Heavy glass bottom strip ─────────────────────────────────────── */
+        .pos-strip-glass {
+          background: rgba(3,6,9,0.88);
+          backdrop-filter: blur(36px);
+          -webkit-backdrop-filter: blur(36px);
+          box-shadow: 0 -1px 0 rgba(255,255,255,0.05), 0 -8px 32px rgba(0,0,0,0.5);
+        }
+
+        /* ── Gold utility ─────────────────────────────────────────────────── */
+        .pos-gold {
+          color: hsl(43,90%,56%);
+          font-family: 'DM Mono', ui-monospace, monospace;
+          font-variant-numeric: tabular-nums;
+        }
+
+        /* ── Z-index: main content above canvas layers ────────────────────── */
+        .pos-main-layer { position: relative; z-index: 2; }
       `}</style>
     </div>
   );
@@ -2007,9 +2217,12 @@ function TooltipItem({ icon, label, active = false, hideLabel = false, onClick }
   return (
     <button
       onClick={onClick}
-      className={`relative flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl w-[56px] transition-all duration-250 ease-in-out group ${active ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"}`}
+      className={`relative flex flex-col items-center gap-1 px-1 py-2.5 rounded-xl w-[56px] transition-all duration-250 ease-in-out group ${active ? "text-primary" : "text-white/[0.32] hover:text-white/80 hover:bg-white/[0.04]"}`}
+      style={active ? { background: 'rgba(33,191,168,0.1)' } : undefined}
     >
-      {active && <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary rounded-r-md" />}
+      {active && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full" style={{ height: '36px', background: 'linear-gradient(180deg, rgba(33,191,168,0) 0%, hsl(168,58%,52%) 35%, hsl(168,58%,52%) 65%, rgba(33,191,168,0) 100%)' }} />
+      )}
       {icon}
       {!hideLabel && (
         <span className={`text-[8px] font-semibold uppercase tracking-wider leading-none transition-opacity duration-200 ${active ? 'opacity-100 text-primary' : 'opacity-55 group-hover:opacity-100'}`}>
