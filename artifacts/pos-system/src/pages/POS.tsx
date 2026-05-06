@@ -1306,7 +1306,7 @@ export default function POS() {
           */}
           <div
             className={`p-2 sm:p-3 product-grid${isEditModeArming ? ' edit-mode-arming' : ''}`}
-            style={{ display: 'grid' }}
+            style={{ display: 'grid', width: '100%' }}
           >
             {filteredProducts.map(product => {
               const currentImage = isEditMode ? (editDrafts[product.id]?.image ?? product.image) : product.image;
@@ -2136,6 +2136,12 @@ export default function POS() {
         .img-upload-circle { transition: background 220ms ease, transform 200ms ease; }
         @media (hover: none)       { .img-upload-btn { opacity: 1; background: rgba(0,0,0,0.12); } }
         @media (max-width: 639px)  { .img-upload-btn { opacity: 1; background: rgba(0,0,0,0.12); } }
+
+        /* ── Scroll area — force full width so grid 1fr resolves correctly ── */
+        [data-radix-scroll-area-viewport] > div {
+          width: 100% !important;
+          min-width: 100% !important;
+        }
 
         /* ── Scroll area padding ──────────────────────────────────────────── */
         @media (max-width: 639px) {
