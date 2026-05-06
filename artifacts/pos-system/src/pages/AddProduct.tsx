@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
+import NebulaBackground from "@/components/NebulaBackground";
 import { ArrowLeft, Plus, Check, X, ChevronDown, FolderPlus, Loader2, Trash2, Upload } from "lucide-react";
 import { useStore, normalizeCode, isOutOfStockCategoryName, type Product } from "@/lib/store";
 import { useSettings, getCurrencySymbol, formatAmountForCurrency, convertToUSD } from "@/lib/settings";
@@ -506,8 +507,9 @@ export default function AddProduct() {
   // ── render ────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen w-full bg-background text-foreground dark add-product-page">
+      <NebulaBackground />
       {/* Header (page-local, no global nav) */}
-      <header className="h-14 sm:h-16 flex items-center justify-between px-3 sm:px-7 sticky top-0 z-20 bg-background/85 backdrop-blur-md border-b border-border/40">
+      <header className="relative z-[2] h-14 sm:h-16 flex items-center justify-between px-3 sm:px-7 sticky top-0 z-20 bg-background/85 backdrop-blur-md border-b border-border/40">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             onClick={() => setLocation('/')}
@@ -530,7 +532,7 @@ export default function AddProduct() {
       </header>
 
       {/* Body */}
-      <main className="max-w-5xl mx-auto px-3 sm:px-8 pt-6 sm:pt-9 pb-20">
+      <main className="relative z-[2] max-w-5xl mx-auto px-3 sm:px-8 pt-6 sm:pt-9 pb-20">
         <div className="grid grid-cols-1 md:grid-cols-[minmax(160px,200px)_minmax(0,1fr)] gap-6 sm:gap-8">
           {/* ── LEFT: IMAGE ─────────────────────────────────────── */}
           {/* Entry animation: form sections soft-fade upward in sequence.

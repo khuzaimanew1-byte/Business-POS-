@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
+import NebulaBackground from "@/components/NebulaBackground";
 import {
   ArrowLeft,
   AlertOctagon,
@@ -50,7 +51,8 @@ export default function NotificationsPage() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <NebulaBackground />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-[2]">
 
         {/* Header — back arrow + title (matches Analytics header treatment) */}
         <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md h-14 flex items-center gap-3 px-3 sm:px-5 border-b border-border/40">

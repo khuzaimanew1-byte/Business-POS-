@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
+import NebulaBackground from "@/components/NebulaBackground";
 import {
   ArrowLeft, ChevronDown, ChevronRight, CircleDollarSign, Clock, Receipt,
   ShoppingCart, TrendingUp,
@@ -244,8 +245,9 @@ export default function CartHistory() {
   // is always pinned. The middle <main> owns its own scroll regions.
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
+      <NebulaBackground />
       {/* ── HEADER ──────────────────────────────────────────────────── */}
-      <header className="h-14 sm:h-16 flex items-center gap-3 px-3 sm:px-6 border-b border-border bg-background/90 backdrop-blur-sm shrink-0">
+      <header className="relative z-[2] h-14 sm:h-16 flex items-center gap-3 px-3 sm:px-6 border-b border-border bg-background/90 backdrop-blur-sm shrink-0">
         <button
           onClick={() => setLocation("/")}
           className="p-2 rounded-full hover:bg-secondary transition-colors"
@@ -272,7 +274,7 @@ export default function CartHistory() {
       </header>
 
       {/* ── BODY ────────────────────────────────────────────────────── */}
-      <main className="flex-1 min-h-0 flex flex-col sm:flex-row">
+      <main className="relative z-[2] flex-1 min-h-0 flex flex-col sm:flex-row">
         {orders.length === 0 ? (
           <div className="flex-1 flex items-center justify-center min-h-0">
             <EmptyState />
@@ -447,7 +449,7 @@ export default function CartHistory() {
 
       {/* Desktop: 3 segments — left half (320px wide, mirroring the orders
           aside above) holds Revenue + Profit; right half holds Order Total. */}
-      <footer className="hidden sm:flex shrink-0 border-t border-border bg-background/95 backdrop-blur-sm">
+      <footer className="relative z-[2] hidden sm:flex shrink-0 border-t border-border bg-background/95 backdrop-blur-sm">
         <div className="w-[320px] lg:w-[360px] xl:w-[400px] 2xl:w-[440px] flex border-r border-border shrink-0 transition-[width] duration-300">
           {RevenueSegment}
           <div className="w-px bg-border/60 self-stretch my-2" aria-hidden="true" />
@@ -459,7 +461,7 @@ export default function CartHistory() {
       {/* Mobile: 2 segments — Revenue + Profit. There's no permanent
           "selected order" on mobile (cards are independently expandable),
           so we omit Order Total here. */}
-      <footer className="sm:hidden shrink-0 border-t border-border bg-background/95 backdrop-blur-sm flex">
+      <footer className="relative z-[2] sm:hidden shrink-0 border-t border-border bg-background/95 backdrop-blur-sm flex">
         {RevenueSegment}
         <div className="w-px bg-border/60 self-stretch my-2" aria-hidden="true" />
         {ProfitSegment}

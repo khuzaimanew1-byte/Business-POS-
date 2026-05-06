@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLocation } from "wouter";
+import NebulaBackground from "@/components/NebulaBackground";
 import { Calendar as CalendarIcon, Check, Search, ArrowLeft, ShoppingBag, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -1228,9 +1229,9 @@ export default function Analytics() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
-
+      <NebulaBackground />
       {/* ── MAIN COLUMN ──────────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative z-[2]">
 
         {/* Minimal header — back arrow + title + time mode pills */}
         <header className="sticky top-0 z-20 bg-background/95 backdrop-blur-md h-14 flex items-center gap-3 px-3 sm:px-5 xl:px-8 2xl:px-12">
